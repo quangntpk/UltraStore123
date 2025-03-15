@@ -34,12 +34,10 @@ namespace UltraStrore.Data
         public virtual DbSet<Video> Videos { get; set; } = null!;
         public virtual DbSet<Voucher> Vouchers { get; set; } = null!;
         public virtual DbSet<YeuThich> YeuThiches { get; set; } = null!;
-<<<<<<< Updated upstream
         public virtual DbSet<LienHe> LienHes { get; set; } = null!;
         public virtual DbSet<TinNhan> TinNhans { get; set; } = null!;
-=======
         public virtual DbSet<ChiTietGioHangSupport> GioHangSupports {get;set;} 
->>>>>>> Stashed changes
+
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -128,18 +126,9 @@ namespace UltraStrore.Data
                 .HasColumnName("ma_san_pham");
             entity.Property(e => e.SoLuong).HasColumnName("so_luong");
             entity.Property(e => e.ThanhTien).HasColumnName("thanh_tien");
-
-            entity.HasOne(d => d.MaComboNavigation).WithMany(p => p.ChiTietGioHangs)
-                .HasForeignKey(d => d.MaCombo)
-                .HasConstraintName("FK_CHI_TIET_GIO_HANG_COM_BO_SAN_PHAM");
-
             entity.HasOne(d => d.MaGioHangNavigation).WithMany(p => p.ChiTietGioHangs)
                 .HasForeignKey(d => d.MaGioHang)
                 .HasConstraintName("FK_CHI_TIET_GIO_HANG_GIO_HANG");
-
-            entity.HasOne(d => d.MaSanPhamNavigation).WithMany(p => p.ChiTietGioHangs)
-                .HasForeignKey(d => d.MaSanPham)
-                .HasConstraintName("FK_CHI_TIET_GIO_HANG_SAN_PHAM");
         });
 
             modelBuilder.Entity<ComBoSanPham>(entity =>
@@ -496,10 +485,6 @@ namespace UltraStrore.Data
 
                 entity.Property(e => e.SoTimBinhLuan).HasColumnName("so_tim_binh_luan");
 
-                entity.HasOne(d => d.MaSanPhamNavigation)
-                    .WithMany(p => p.MaBinhLuans)
-                    .HasForeignKey(d => d.MaSanPham)
-                    .HasConstraintName("FK_BINH_LUAN_SAN_PHAM");
             });
 
             modelBuilder.Entity<ChiTietComBo>(entity =>
@@ -965,10 +950,6 @@ namespace UltraStrore.Data
 
                 entity.Property(e => e.SoLuongYeuThich).HasColumnName("so_luong_yeu_thich");
 
-                entity.HasOne(d => d.MaSanPhamNavigation)
-                    .WithMany(p => p.YeuThiches)
-                    .HasForeignKey(d => d.MaSanPham)
-                    .HasConstraintName("FK_YEU_THICH_SAN_PHAM");
             });
 
             modelBuilder.Entity<TinNhan>(entity =>
@@ -1372,7 +1353,7 @@ namespace UltraStrore.Data
                     MatKhau = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
                     NgayTao = DateTime.Now,
                     VaiTro = 0,
-<<<<<<< Updated upstream
+
                 },
                 new NguoiDung
                 {
@@ -1687,11 +1668,8 @@ namespace UltraStrore.Data
                                 MoTa = "Gần trung tâm thương mại",
                                 DiaChi = "909 Phố Cách Mạng",
                                 TrangThai = true
-                            }
-                        );
-
-=======
-                });
+                            });
+                        
             modelBuilder.Entity<ComBoSanPham>().HasData(
                 new ComBoSanPham
                 {
@@ -1719,7 +1697,7 @@ namespace UltraStrore.Data
                 MaSanPham = "A00001",
                 SoLuong = 1,
             });
->>>>>>> Stashed changes
+
             OnModelCreatingPartial(modelBuilder);
         }
         partial void OnModelCreatingPartial(ModelBuilder modelBuilder);

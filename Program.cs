@@ -26,16 +26,16 @@ namespace UltraStrore
             builder.Services.AddScoped<INguoiDungServices, NguoiDungServices>();
             builder.Services.AddScoped<IDanhSachDiaChiServices, DanhSachDiaChiServices>();
             builder.Services.AddScoped<ICommetServices, CommetServices>();
-<<<<<<< Updated upstream
+
             builder.Services.AddScoped<IJwtTokenServices, JwtTokenGenerator>();
             builder.Services.AddSingleton<ITokenBlacklistService, TokenBlacklistService>();
             builder.Services.AddScoped<IEmailServices, EmailServices>();
             builder.Services.AddScoped<ILienHeServices, LienHeServices>();
             builder.Services.AddScoped<ITinNhanServices, TinNhanServices>();
             builder.Services.AddTransient<EmailService>();
-=======
+
             builder.Services.AddScoped<IComboServices, ComboServices>();
->>>>>>> Stashed changes
+
 
             /*builder.Services.AddScoped<INguoiDungServices, NguoiDungServices>();*/
 
