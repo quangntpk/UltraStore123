@@ -1,0 +1,706 @@
+[
+  {
+    "ContainingType": "UltraStrore.Controllers.CartController",
+    "Method": "GioHangByKhachHang",
+    "RelativePath": "api/Cart/GioHangByKhachHang",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.CartController",
+    "Method": "ThemComboVaoGioHang",
+    "RelativePath": "api/Cart/ThemComboVaoGioHang",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "info",
+        "Type": "UltraStrore.Models.CreateModels.ChiTietGioHangComboCreate",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.CartController",
+    "Method": "ThemSanPhamVaoGioHang",
+    "RelativePath": "api/Cart/ThemSanPhamVaoGioHang",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "info",
+        "Type": "UltraStrore.Models.CreateModels.ChiTietGioHangSanPhamCreate",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.ComboController",
+    "Method": "ComboSanPhamView",
+    "RelativePath": "api/Combo/ComboSanPhamView",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=8.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.ComboController",
+    "Method": "AddCombo",
+    "RelativePath": "api/Combo/CreateComboSanPham",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "info",
+        "Type": "UltraStrore.Models.CreateModels.ComboCreate",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.ComboController",
+    "Method": "EditCombo",
+    "RelativePath": "api/Combo/EditComboSanPham",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "info",
+        "Type": "UltraStrore.Models.EditModels.ComboEdit",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.CommentController",
+    "Method": "AddBinhLuan",
+    "RelativePath": "api/Comment/add",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "binhLuan",
+        "Type": "UltraStrore.Data.BinhLuan",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "UltraStrore.Data.BinhLuan",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.CommentController",
+    "Method": "ApproveBinhLuan",
+    "RelativePath": "api/Comment/approve/{maBinhLuan}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "maBinhLuan",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.CommentController",
+    "Method": "DeleteBinhLuan",
+    "RelativePath": "api/Comment/delete/{maBinhLuan}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "maBinhLuan",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.CommentController",
+    "Method": "ListBinhLuan",
+    "RelativePath": "api/Comment/list",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.List\u00601[[UltraStrore.Models.ViewModels.BinhLuanView, UltraStrore, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.CommentController",
+    "Method": "UnapproveBinhLuan",
+    "RelativePath": "api/Comment/unapprove/{maBinhLuan}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "maBinhLuan",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.CommentController",
+    "Method": "UpdateBinhLuan",
+    "RelativePath": "api/Comment/update/{maBinhLuan}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "maBinhLuan",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "binhLuan",
+        "Type": "UltraStrore.Data.BinhLuan",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "UltraStrore.Data.BinhLuan",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.DanhSachDiaChiController",
+    "Method": "GetAll",
+    "RelativePath": "api/DanhSachDiaChi",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "searchTerm",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.DanhSachDiaChiController",
+    "Method": "Create",
+    "RelativePath": "api/DanhSachDiaChi",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "UltraStrore.Models.CreateModels.DanhSachDiaChiCreate",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.DanhSachDiaChiController",
+    "Method": "GetById",
+    "RelativePath": "api/DanhSachDiaChi/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.DanhSachDiaChiController",
+    "Method": "Update",
+    "RelativePath": "api/DanhSachDiaChi/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "model",
+        "Type": "UltraStrore.Models.EditModels.DanhSachDiaChiEdit",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.DanhSachDiaChiController",
+    "Method": "Delete",
+    "RelativePath": "api/DanhSachDiaChi/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.DanhSachDiaChiController",
+    "Method": "GetByMaNguoiDung",
+    "RelativePath": "api/DanhSachDiaChi/maNguoiDung/{maNguoiDung}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "maNguoiDung",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.GeminiController",
+    "Method": "TraLoi",
+    "RelativePath": "api/Gemini/TraLoi",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "question",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "LoaiSanPhamController",
+    "Method": "GetLoaiSanPham",
+    "RelativePath": "api/LoaiSanPham",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "keyword",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "LoaiSanPhamController",
+    "Method": "PostLoaiSanPham",
+    "RelativePath": "api/LoaiSanPham",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "UltraStrore.Models.CreateModels.LoaiSanPhamCreate",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "LoaiSanPhamController",
+    "Method": "PutLoaiSanPham",
+    "RelativePath": "api/LoaiSanPham/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "model",
+        "Type": "UltraStrore.Models.EditModels.LoaiSanPhamEdit",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "LoaiSanPhamController",
+    "Method": "DeleteLoaiSanPham",
+    "RelativePath": "api/LoaiSanPham/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.NguoiDungController",
+    "Method": "GetAll",
+    "RelativePath": "api/NguoiDung",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "searchTerm",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.NguoiDungController",
+    "Method": "Create",
+    "RelativePath": "api/NguoiDung",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "UltraStrore.Models.CreateModels.NguoiDungCreate",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.NguoiDungController",
+    "Method": "GetById",
+    "RelativePath": "api/NguoiDung/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.NguoiDungController",
+    "Method": "Update",
+    "RelativePath": "api/NguoiDung/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.String",
+        "IsRequired": true
+      },
+      {
+        "Name": "model",
+        "Type": "UltraStrore.Models.EditModels.NguoiDungEdit",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.NguoiDungController",
+    "Method": "Delete",
+    "RelativePath": "api/NguoiDung/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.String",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.SanPhamController",
+    "Method": "ActiveSanPham",
+    "RelativePath": "api/SanPham/ActiveSanPham",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.SanPhamController",
+    "Method": "CreateSanPham",
+    "RelativePath": "api/SanPham/CreateSanPham",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "info",
+        "Type": "System.Collections.Generic.List\u00601[[UltraStrore.Models.CreateModels.SanPhamCreate, UltraStrore, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.SanPhamController",
+    "Method": "DeleteSanPham",
+    "RelativePath": "api/SanPham/DeleteSanPham",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.SanPhamController",
+    "Method": "EditSanPham",
+    "RelativePath": "api/SanPham/EditSanPham",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "info",
+        "Type": "System.Collections.Generic.List\u00601[[UltraStrore.Models.EditModels.SanPhamEdit, UltraStrore, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.SanPhamController",
+    "Method": "ListSanPham",
+    "RelativePath": "api/SanPham/ListSanPham",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.SanPhamController",
+    "Method": "NewSanPham",
+    "RelativePath": "api/SanPham/NewSanPham",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.SanPhamController",
+    "Method": "SanPhamByID",
+    "RelativePath": "api/SanPham/SanPhamByID",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.SanPhamController",
+    "Method": "SanPhamByIDSorted",
+    "RelativePath": "api/SanPham/SanPhamByIDSorted",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ThuongHieuController",
+    "Method": "GetThuongHieu",
+    "RelativePath": "api/ThuongHieu",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "keyword",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ThuongHieuController",
+    "Method": "PostThuongHieu",
+    "RelativePath": "api/ThuongHieu",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "UltraStrore.Models.CreateModels.ThuongHieuCreate",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ThuongHieuController",
+    "Method": "PutThuongHieu",
+    "RelativePath": "api/ThuongHieu/{id}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "model",
+        "Type": "UltraStrore.Models.EditModels.ThuongHieuEdit",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "ThuongHieuController",
+    "Method": "DeleteThuongHieu",
+    "RelativePath": "api/ThuongHieu/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.WeatherForecastController",
+    "Method": "Get",
+    "RelativePath": "WeatherForecast",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[UltraStrore.WeatherForecast, UltraStrore, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ],
+    "EndpointName": "GetWeatherForecast"
+  }
+]

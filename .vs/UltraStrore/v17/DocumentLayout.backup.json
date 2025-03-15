@@ -211,7 +211,7 @@
               "RelativeDocumentMoniker": "Services\\CartServices.cs",
               "ToolTip": "E:\\Studying\\Git\\UltraStore123\\Services\\CartServices.cs",
               "RelativeToolTip": "Services\\CartServices.cs",
-              "ViewState": "AgIAADMAAAAAAAAAAAAowCEAAABCAAAAAAAAAA==",
+              "ViewState": "AgIAACUAAAAAAAAAAAAiwDoAAAA1AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-03-14T02:24:38.885Z",
               "EditorCaption": ""
@@ -226,7 +226,8 @@
               "RelativeToolTip": "Models\\ViewModels\\ChiTietGioHangComboView.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAqwAkAAAATAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-12T14:55:54.974Z"
+              "WhenOpened": "2025-03-12T14:55:54.974Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -238,7 +239,8 @@
               "RelativeToolTip": "Models\\CreateModels\\ChiTietChiTietCombo.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAqwAIAAAARAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-14T12:41:45.536Z"
+              "WhenOpened": "2025-03-14T12:41:45.536Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -250,7 +252,8 @@
               "RelativeToolTip": "Models\\ViewModels\\ChiTietGioHangSanPhamView.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAqwAsAAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-14T15:22:15.54Z"
+              "WhenOpened": "2025-03-14T15:22:15.54Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -286,7 +289,8 @@
               "RelativeToolTip": "Services\\SanPhamServices.cs",
               "ViewState": "AgIAADEAAAAAAAAAAAAawBYAAAAzAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-11T02:22:50.591Z"
+              "WhenOpened": "2025-03-11T02:22:50.591Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -298,7 +302,8 @@
               "RelativeToolTip": "Models\\ViewModels\\SanPhamView.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAIAAAARAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-12T14:56:09.918Z"
+              "WhenOpened": "2025-03-12T14:56:09.918Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -310,7 +315,8 @@
               "RelativeToolTip": "Models\\EditModels\\SanPhamEdit.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-12T14:54:11.23Z"
+              "WhenOpened": "2025-03-12T14:54:11.23Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -322,7 +328,8 @@
               "RelativeToolTip": "Data\\SanPham.cs",
               "ViewState": "AgIAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-11T06:45:07.08Z"
+              "WhenOpened": "2025-03-11T06:45:07.08Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -334,7 +341,8 @@
               "RelativeToolTip": "Services\\ComboServices.cs",
               "ViewState": "AgIAADYAAAAAAAAAAAAowDsAAAAqAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-03-11T02:22:53.237Z"
+              "WhenOpened": "2025-03-11T02:22:53.237Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",

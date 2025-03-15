@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("UltraStrore")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+56e841dcdf2117d02ac9d81c75470cc7b50a1809")]
 [assembly: System.Reflection.AssemblyProductAttribute("UltraStrore")]
 [assembly: System.Reflection.AssemblyTitleAttribute("UltraStrore")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

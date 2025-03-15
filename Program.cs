@@ -21,7 +21,7 @@ namespace UltraStrore
             builder.Services.AddScoped<INguoiDungServices, NguoiDungServices>();
             builder.Services.AddScoped<IDanhSachDiaChiServices, DanhSachDiaChiServices>();
             builder.Services.AddScoped<ICommetServices, CommetServices>();
-
+            builder.Services.AddScoped<IComboServices, ComboServices>();
 
             /*builder.Services.AddScoped<INguoiDungServices, NguoiDungServices>();*/
 
