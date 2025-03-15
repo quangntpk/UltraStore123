@@ -28,11 +28,11 @@ namespace UltraStrore.Services
             string prefix = "ND";
             if (vaiTro.HasValue)
             {
-                if (vaiTro.Value == 0)
+                if (vaiTro.Value == 1)
                     prefix = "AD";
-                else if (vaiTro.Value == 1)
-                    prefix = "NV";
                 else if (vaiTro.Value == 2)
+                    prefix = "NV";
+                else if (vaiTro.Value == 0)
                     prefix = "ND";
             }
 
@@ -241,18 +241,18 @@ namespace UltraStrore.Services
             string hashedPassword = PasswordHasher.HashPassword(model.MatKhau);
             var newUser = new NguoiDung
             {
-                MaNguoiDung = GenerateMaNguoiDung(2),
+                MaNguoiDung = GenerateMaNguoiDung(0),
                 HoTen = model.HoTen,
                 Email = model.Email,
                 TaiKhoan = model.TaiKhoan,
                 MatKhau = hashedPassword,
                 NgayTao = DateTime.Now,
                 TrangThai = 1, // Active
-                VaiTro = 2 // User thường
+                VaiTro = 0 // User thường
             };
 
             _context.NguoiDungs.Add(newUser);
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync();  
 
             return new NguoiDungView
             {
