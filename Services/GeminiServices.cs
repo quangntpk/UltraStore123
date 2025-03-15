@@ -18,7 +18,7 @@ namespace UltraStrore.Services
             APIResponse response1 = new APIResponse();
             try
             {
-                string Openning = "Hãy đóng vai Rem và trả lời giúp tôi câu hỏi sau:";              
+                string Openning = "";              
                 var GoogleAPIKey = _authSettings.Google.GoogleAPIKey;
                 var GoogleAPIUrl = _authSettings.Google.GoogleAPIUrl;
 

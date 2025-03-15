@@ -34,6 +34,8 @@ namespace UltraStrore.Data
         public virtual DbSet<Video> Videos { get; set; } = null!;
         public virtual DbSet<Voucher> Vouchers { get; set; } = null!;
         public virtual DbSet<YeuThich> YeuThiches { get; set; } = null!;
+        public virtual DbSet<LienHe> LienHes { get; set; } = null!;
+        public virtual DbSet<TinNhan> TinNhans { get; set; } = null!;
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -958,12 +960,183 @@ namespace UltraStrore.Data
                     .HasForeignKey(d => d.MaSanPham)
                     .HasConstraintName("FK_YEU_THICH_SAN_PHAM");
             });
+
+            modelBuilder.Entity<TinNhan>(entity =>
+            {
+                entity.HasKey(e => e.MaTinNhan).HasName("PK_TIN_NHAN");
+                entity.ToTable("TIN_NHAN");
+                entity.Property(e => e.MaTinNhan)
+                      .ValueGeneratedOnAdd()
+                      .HasColumnName("ma_tin_nhan");
+                entity.Property(e => e.NguoiGuiId)
+                      .IsRequired()
+                      .HasMaxLength(50)
+                      .HasColumnName("nguoi_gui_id");
+                entity.Property(e => e.NguoiNhanId)
+                      .IsRequired()
+                      .HasMaxLength(50)
+                      .HasColumnName("nguoi_nhan_id");
+                entity.Property(e => e.NoiDung)
+                      .IsRequired()
+                      .HasColumnName("noi_dung");
+                entity.Property(e => e.NgayTao)
+                      .HasColumnType("datetime")
+                      .HasDefaultValueSql("GETDATE()")
+                      .HasColumnName("ngay_tao");
+                entity.Property(e => e.TrangThai)
+                      .IsRequired()
+                      .HasMaxLength(20)
+                      .HasColumnName("trang_thai");
+            });
+            modelBuilder.Entity<LienHe>(entity =>
+            {
+                entity.HasKey(e => e.MaLienHe)
+                      .HasName("PK_LIEN_HE");
+
+                entity.ToTable("LIEN_HE");
+
+                // Map each property to its corresponding column name and set any constraints (e.g., max length)
+                entity.Property(e => e.MaLienHe)
+                      .HasColumnName("ma_lien_he");
+
+                entity.Property(e => e.HoTen)
+                      .HasMaxLength(100)
+                      .HasColumnName("ho_ten");
+
+                entity.Property(e => e.Sdt)
+                      .HasMaxLength(15)
+                      .HasColumnName("sdt");
+
+                entity.Property(e => e.Email)
+                      .HasMaxLength(100)
+                      .HasColumnName("email");
+
+                entity.Property(e => e.NoiDung)
+                      .HasColumnName("noi_dung");
+
+                entity.Property(e => e.TrangThai)
+                      .HasColumnName("trang_thai");
+            });
+
+
+            modelBuilder.Entity<LienHe>().HasData(
+                new LienHe
+                {
+                    MaLienHe = 1,
+                    HoTen = "Nguyễn Văn Aann",
+                    Sdt = "0123456789",
+                    Email = "nguyenvana@example.com",
+                    NoiDung = "Yêu cầu thông tin sản phẩm",
+                    TrangThai = 0 // 0: Hoạt động
+                },
+                new LienHe
+                {
+                    MaLienHe = 2,
+                    HoTen = "Trần Thị Bính",
+                    Sdt = "0987654321",
+                    Email = "tranthib@example.com",
+                    NoiDung = "Hỏi về giá sản phẩm",
+                    TrangThai = 0
+                },
+                new LienHe
+                {
+                    MaLienHe = 3,
+                    HoTen = "Lê Văn Cinn",
+                    Sdt = "0123987654",
+                    Email = "levanc@example.com",
+                    NoiDung = "Góp ý về dịch vụ",
+                    TrangThai = 1 // 1: Không hoạt động (hoặc trạng thái khác, ví dụ: chưa xử lý)
+                },
+                new LienHe
+                {
+                    MaLienHe = 4,
+                    HoTen = "Phạm Thị Dyet",
+                    Sdt = "0901234567",
+                    Email = "phamthid@example.com",
+                    NoiDung = "Phản hồi về giao hàng",
+                    TrangThai = 0
+                },
+                new LienHe
+                {
+                    MaLienHe = 5,
+                    HoTen = "Hoàng Văn Em",
+                    Sdt = "0912345678",
+                    Email = "hoangvane@example.com",
+                    NoiDung = "Yêu cầu hoàn tiền",
+                    TrangThai = 1
+                },
+                new LienHe
+                {
+                    MaLienHe = 6,
+                    HoTen = "Đỗ Thị Fann",
+                    Sdt = "0923456789",
+                    Email = "dothif@example.com",
+                    NoiDung = "Thắc mắc về bảo hành",
+                    TrangThai = 0
+                },
+                new LienHe
+                {
+                    MaLienHe = 7,
+                    HoTen = "Bùi Văn Giim",
+                    Sdt = "0934567890",
+                    Email = "buivang@example.com",
+                    NoiDung = "Hỏi về thời gian giao hàng",
+                    TrangThai = 0
+                },
+                new LienHe
+                {
+                    MaLienHe = 8,
+                    HoTen = "Võ Thị Hai",
+                    Sdt = "0945678901",
+                    Email = "vothih@example.com",
+                    NoiDung = "Yêu cầu hỗ trợ thanh toán",
+                    TrangThai = 1
+                },
+                new LienHe
+                {
+                    MaLienHe = 9,
+                    HoTen = "Ngô Văn Im",
+                    Sdt = "0956789012",
+                    Email = "ngovan.i@example.com",
+                    NoiDung = "Hỏi về chính sách bảo hành",
+                    TrangThai = 0
+                },
+                new LienHe
+                {
+                    MaLienHe = 10,
+                    HoTen = "Đặng Thị Jiinn",
+                    Sdt = "0967890123",
+                    Email = "dangthij@example.com",
+                    NoiDung = "Phản hồi về chất lượng sản phẩm",
+                    TrangThai = 0
+                },
+                new LienHe
+                {
+                    MaLienHe = 11,
+                    HoTen = "Phạm Văn Khanh",
+                    Sdt = "0978901234",
+                    Email = "phamvank@example.com",
+                    NoiDung = "Gửi yêu cầu báo giá",
+                    TrangThai = 1
+                },
+                new LienHe
+                {
+                    MaLienHe = 12,
+                    HoTen = "Lê Thị Linh",
+                    Sdt = "0989012345",
+                    Email = "lethil@example.com",
+                    NoiDung = "Góp ý cải tiến website",
+                    TrangThai = 0
+                }
+            );
+
+
             modelBuilder.Entity<ThuongHieu>().HasData(
-          new ThuongHieu
-          {
-              MaThuongHieu = 1,
-              TenThuongHieu = "Gucci"
-          }
+              new ThuongHieu
+              {
+                  MaThuongHieu = 1,
+                  TenThuongHieu = "Gucci"
+              }
           );
             modelBuilder.Entity<LoaiSanPham>().HasData(
                 new LoaiSanPham
@@ -1144,6 +1317,7 @@ namespace UltraStrore.Data
                      ThanhTien = 450000,
                  }
                 );
+
             modelBuilder.Entity<NguoiDung>().HasData(
                 new NguoiDung
                 {
@@ -1160,7 +1334,322 @@ namespace UltraStrore.Data
                     MatKhau = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
                     NgayTao = DateTime.Now,
                     VaiTro = 0,
-                });
+                },
+                new NguoiDung
+                {
+                    MaNguoiDung = "ND00001",
+                    TaiKhoan = "user1",
+                    HoTen = "Nguyen Van An",
+                    NgaySinh = new DateTime(1990, 1, 1),
+                    Sdt = "0123456789",
+                    Cccd = "111111111111",
+                    Email = "user1@example.com",
+                    DiaChi = "123 Main Street",
+                    TrangThai = 0, // 0: Hoạt động
+                    HinhAnh = null,
+                    MatKhau = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+                    NgayTao = DateTime.Now,
+                    VaiTro = 0  // Người dùng
+                },
+                new NguoiDung
+                {
+                    MaNguoiDung = "ND00002",
+                    TaiKhoan = "user2",
+                    HoTen = "Tran Thi Bình",
+                    NgaySinh = new DateTime(1992, 2, 2),
+                    Sdt = "0987654321",
+                    Cccd = "222222222222",
+                    Email = "user2@example.com",
+                    DiaChi = "456 Market Street",
+                    TrangThai = 0,
+                    HinhAnh = null,
+                    MatKhau = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+                    NgayTao = DateTime.Now,
+                    VaiTro = 0
+                },
+                new NguoiDung
+                {
+                    MaNguoiDung = "ND00003",
+                    TaiKhoan = "user3",
+                    HoTen = "Le Van Chính",
+                    NgaySinh = new DateTime(1991, 3, 3),
+                    Sdt = "0912345678",
+                    Cccd = "333333333333",
+                    Email = "user3@example.com",
+                    DiaChi = "789 Broadway",
+                    TrangThai = 0,
+                    HinhAnh = null,
+                    MatKhau = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+                    NgayTao = DateTime.Now,
+                    VaiTro = 0
+                },
+                new NguoiDung
+                {
+                    MaNguoiDung = "ND00004",
+                    TaiKhoan = "user4",
+                    HoTen = "Pham Thi Dung",
+                    NgaySinh = new DateTime(1989, 4, 4),
+                    Sdt = "0901234567",
+                    Cccd = "444444444444",
+                    Email = "user4@example.com",
+                    DiaChi = "101 Center Ave",
+                    TrangThai = 0,
+                    HinhAnh = null,
+                    MatKhau = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+                    NgayTao = DateTime.Now,
+                    VaiTro = 0
+                },
+                new NguoiDung
+                {
+                    MaNguoiDung = "ND00005",
+                    TaiKhoan = "user5",
+                    HoTen = "Do Van Em",
+                    NgaySinh = new DateTime(1993, 5, 5),
+                    Sdt = "0934567890",
+                    Cccd = "555555555555",
+                    Email = "user5@example.com",
+                    DiaChi = "202 Park Lane",
+                    TrangThai = 0,
+                    HinhAnh = null,
+                    MatKhau = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+                    NgayTao = DateTime.Now,
+                    VaiTro = 0
+                },
+                new NguoiDung
+                {
+                    MaNguoiDung = "NV00006",
+                    TaiKhoan = "user6",
+                    HoTen = "Nguyen Thi Fan",
+                    NgaySinh = new DateTime(1994, 6, 6),
+                    Sdt = "0945678901",
+                    Cccd = "666666666666",
+                    Email = "user6@example.com",
+                    DiaChi = "303 Sunset Blvd",
+                    TrangThai = 0,
+                    HinhAnh = null,
+                    MatKhau = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+                    NgayTao = DateTime.Now,
+                    VaiTro = 2
+                },
+                new NguoiDung
+                {
+                    MaNguoiDung = "NV00007",
+                    TaiKhoan = "user7",
+                    HoTen = "Tran Van Gin",
+                    NgaySinh = new DateTime(1990, 7, 7),
+                    Sdt = "0956789012",
+                    Cccd = "777777777777",
+                    Email = "user7@example.com",
+                    DiaChi = "404 Broadway",
+                    TrangThai = 0,
+                    HinhAnh = null,
+                    MatKhau = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+                    NgayTao = DateTime.Now,
+                    VaiTro = 2
+                },
+                new NguoiDung
+                {
+                    MaNguoiDung = "NV00008",
+                    TaiKhoan = "user8",
+                    HoTen = "Le Thi Hải",
+                    NgaySinh = new DateTime(1991, 8, 8),
+                    Sdt = "0967890123",
+                    Cccd = "888888888888",
+                    Email = "user8@example.com",
+                    DiaChi = "505 Industrial Way",
+                    TrangThai = 0,
+                    HinhAnh = null,
+                    MatKhau = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+                    NgayTao = DateTime.Now,
+                    VaiTro = 2
+                },
+                new NguoiDung
+                {
+                    MaNguoiDung = "NV00009",
+                    TaiKhoan = "user9",
+                    HoTen = "Pham Van Im",
+                    NgaySinh = new DateTime(1992, 9, 9),
+                    Sdt = "0978901234",
+                    Cccd = "999999999999",
+                    Email = "user9@example.com",
+                    DiaChi = "606 Hill Road",
+                    TrangThai = 0,
+                    HinhAnh = null,
+                    MatKhau = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+                    NgayTao = DateTime.Now,
+                    VaiTro = 2
+                },
+                new NguoiDung
+                {
+                    MaNguoiDung = "AD00010",
+                    TaiKhoan = "user10",
+                    HoTen = "Tran Thi Jin",
+                    NgaySinh = new DateTime(1993, 10, 10),
+                    Sdt = "0989012345",
+                    Cccd = "101010101010",
+                    Email = "user10@example.com",
+                    DiaChi = "707 Park Ave",
+                    TrangThai = 0,
+                    HinhAnh = null,
+                    MatKhau = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+                    NgayTao = DateTime.Now,
+                    VaiTro = 1
+                },
+                new NguoiDung
+                {
+                    MaNguoiDung = "AD00011",
+                    TaiKhoan = "user11",
+                    HoTen = "Le Van Khánh",
+                    NgaySinh = new DateTime(1994, 11, 11),
+                    Sdt = "0990123456",
+                    Cccd = "111111111111",
+                    Email = "user11@example.com",
+                    DiaChi = "808 Ocean Drive",
+                    TrangThai = 0,
+                    HinhAnh = null,
+                    MatKhau = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+                    NgayTao = DateTime.Now,
+                    VaiTro = 1
+                },
+                new NguoiDung
+                {
+                    MaNguoiDung = "AD00012",
+                    TaiKhoan = "user12",
+                    HoTen = "Tran Van Lung",
+                    NgaySinh = new DateTime(1995, 12, 12),
+                    Sdt = "0901234567",
+                    Cccd = "121212121212",
+                    Email = "user12@example.com",
+                    DiaChi = "909 Downtown St",
+                    TrangThai = 0,
+                    HinhAnh = null,
+                    MatKhau = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
+                    NgayTao = DateTime.Now,
+                    VaiTro = 1
+                }
+            );
+            modelBuilder.Entity<DanhSachDiaChi>().HasData(
+                            new DanhSachDiaChi
+                            {
+                                MaDiaChi = 1,
+                                MaNguoiDung = "ND00001",
+                                HoTen = "Nguyễn Văn Anh",
+                                Sdt = "0901111222",
+                                MoTa = "Gần chợ",
+                                DiaChi = "123 Đường Chính",
+                                TrangThai = true
+                            },
+                            new DanhSachDiaChi
+                            {
+                                MaDiaChi = 2,
+                                MaNguoiDung = "ND00001",
+                                HoTen = "Lê Thị Bim",
+                                Sdt = "0902222333",
+                                MoTa = "Gần công viên",
+                                DiaChi = "456 Phố Hẻo",
+                                TrangThai = true
+                            },
+                            new DanhSachDiaChi
+                            {
+                                MaDiaChi = 3,
+                                MaNguoiDung = "ND00001",
+                                HoTen = "Trần Văn Cinn",
+                                Sdt = "0903333444",
+                                MoTa = "Cách trung tâm 10km",
+                                DiaChi = "789 Phố Cổ",
+                                TrangThai = false
+                            },
+                            new DanhSachDiaChi
+                            {
+                                MaDiaChi = 4,
+                                MaNguoiDung = "ND00001",
+                                HoTen = "Phạm Thị Dung",
+                                Sdt = "0904444555",
+                                MoTa = "Gần trường học",
+                                DiaChi = "101 Đường Lê Lợi",
+                                TrangThai = true
+                            },
+                            new DanhSachDiaChi
+                            {
+                                MaDiaChi = 5,
+                                MaNguoiDung = "ND00002",
+                                HoTen = "Đỗ Văn Em",
+                                Sdt = "0905555666",
+                                MoTa = "Gần bệnh viện",
+                                DiaChi = "202 Đường Nguyễn Trãi",
+                                TrangThai = false
+                            },
+                            new DanhSachDiaChi
+                            {
+                                MaDiaChi = 6,
+                                MaNguoiDung = "ND00002",
+                                HoTen = "Hoàng Thị Fann",
+                                Sdt = "0906666777",
+                                MoTa = "Gần siêu thị",
+                                DiaChi = "303 Đường Láng",
+                                TrangThai = true
+                            },
+                            new DanhSachDiaChi
+                            {
+                                MaDiaChi = 7,
+                                MaNguoiDung = "ND00002",
+                                HoTen = "Nguyễn Văn Giin",
+                                Sdt = "0907777888",
+                                MoTa = "Gần ga tàu",
+                                DiaChi = "404 Phố Huế",
+                                TrangThai = true
+                            },
+                            new DanhSachDiaChi
+                            {
+                                MaDiaChi = 8,
+                                MaNguoiDung = "ND00002",
+                                HoTen = "Trần Thị Hải",
+                                Sdt = "0908888999",
+                                MoTa = "Gần công viên",
+                                DiaChi = "505 Phố Tây",
+                                TrangThai = false
+                            },
+                            new DanhSachDiaChi
+                            {
+                                MaDiaChi = 9,
+                                MaNguoiDung = "ND00002",
+                                HoTen = "Lê Văn Im",
+                                Sdt = "0909999000",
+                                MoTa = "Cách trung tâm 5km",
+                                DiaChi = "606 Phố Đông",
+                                TrangThai = true
+                            },
+                            new DanhSachDiaChi
+                            {
+                                MaDiaChi = 10,
+                                MaNguoiDung = "AD00012",
+                                HoTen = "Trần Thị Jin",
+                                Sdt = "0910000111",
+                                MoTa = "Gần trường đại học",
+                                DiaChi = "707 Phố Vọng",
+                                TrangThai = true
+                            },
+                            new DanhSachDiaChi
+                            {
+                                MaDiaChi = 11,
+                                MaNguoiDung = "AD00012",
+                                HoTen = "Đỗ Văn Khang",
+                                Sdt = "0911111222",
+                                MoTa = "Gần bệnh viện",
+                                DiaChi = "808 Phố Lê Duẩn",
+                                TrangThai = false
+                            },
+                            new DanhSachDiaChi
+                            {
+                                MaDiaChi = 12,
+                                MaNguoiDung = "AD00012",
+                                HoTen = "Nguyễn Thị Lung",
+                                Sdt = "0912222333",
+                                MoTa = "Gần trung tâm thương mại",
+                                DiaChi = "909 Phố Cách Mạng",
+                                TrangThai = true
+                            }
+                        );
 
             OnModelCreatingPartial(modelBuilder);
         }

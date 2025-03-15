@@ -21,7 +21,8 @@ namespace UltraStrore
             builder.Services.AddScoped<INguoiDungServices, NguoiDungServices>();
             builder.Services.AddScoped<IDanhSachDiaChiServices, DanhSachDiaChiServices>();
             builder.Services.AddScoped<ICommetServices, CommetServices>();
-
+            builder.Services.AddScoped<ILienHeServices, LienHeServices>();
+            builder.Services.AddScoped<ITinNhanServices, TinNhanServices>();
 
             /*builder.Services.AddScoped<INguoiDungServices, NguoiDungServices>();*/
 
@@ -30,7 +31,7 @@ namespace UltraStrore
             builder.Services.Configure<GeminiSettings>(
                 builder.Configuration.GetSection("Authentication"));
             builder.Services.AddControllers();
-
+            builder.Services.AddTransient<EmailService>();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             // Định nghĩa chính sách CORS
