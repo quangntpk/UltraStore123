@@ -13,6 +13,7 @@ namespace UltraStrore.Middleware
             _blacklistService = blacklistService;
         }
 
+        //black list
         public async Task InvokeAsync(HttpContext context)
         {
             var token = context.Request.Headers["Authorization"].ToString().Replace("Bearer ", "");
