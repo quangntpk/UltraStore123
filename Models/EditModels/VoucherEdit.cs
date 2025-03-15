@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace UltraStrore.Data
+﻿namespace UltraStrore.Models.EditModels
 {
-    public partial class Voucher
+    public class VoucherEdit
     {
         public int? MaVoucher { get; set; } = null!;
         public string? TenVoucher { get; set; }
@@ -11,12 +8,10 @@ namespace UltraStrore.Data
         public string? MoTa { get; set; }
         public DateTime? NgayBatDau { get; set; }
         public DateTime? NgayKetThuc { get; set; }
-        public byte[]? HinhAnh { get; set; }
+        public string? HinhAnh { get; set; }
         public decimal? DieuKien { get; set; }
         public int? SoLuong { get; set; }
 
         public int? TrangThai { get; set; }
-
-        public virtual ICollection<Coupon> Coupons { get; set; }
     }
 }

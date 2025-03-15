@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace UltraStrore.Data
+﻿namespace UltraStrore.Models.EditModels
 {
-    public partial class BinhLuan
+    public class CommentEdit
     {
-
-        public int MaBinhLuan { get; set; }
+        public int? MaBinhLuan { get; set; }
         public string? MaSanPham { get; set; }
         public string? MaNguoiDung { get; set; }
         public string? NoiDungBinhLuan { get; set; }
@@ -14,7 +10,5 @@ namespace UltraStrore.Data
         public double? DanhGia { get; set; }
         public int? TrangThai { get; set; }
         public DateTime? NgayBinhLuan { get; set; }
-
-      
     }
 }

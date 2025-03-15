@@ -1,11 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace UltraStrore.Data
+﻿namespace UltraStrore.Models.CreateModels
 {
-    public partial class BinhLuan
+    public class CommentCreate
     {
-
         public int MaBinhLuan { get; set; }
         public string? MaSanPham { get; set; }
         public string? MaNguoiDung { get; set; }
@@ -15,6 +11,7 @@ namespace UltraStrore.Data
         public int? TrangThai { get; set; }
         public DateTime? NgayBinhLuan { get; set; }
 
-      
+
+
     }
 }

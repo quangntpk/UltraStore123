@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "zJaR9bY84TugN/Sas3BBzSTkTEqbC92N2ECJ7uqqAMi5qREKvnnPT0UkqXQmI1WETfWrB3ZZXaXk2In/xrfFNg==",
+  "dgSpecHash": "iPpOcxlcRlMeNd9xxEqQ65OvVJGaNGvAOnL6Bvv9klyCZJ+NQYmWA6JDqWirX3HzkcKOj5E0MdDXXXT91EI21g==",
   "success": true,
-  "projectFilePath": "D:\\UltraStrore\\UltraStrore.csproj",
+  "projectFilePath": "D:\\FPT\\XE_SAT_SAU\\C6\\UltraStrore.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\PC\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
     "C:\\Users\\PC\\.nuget\\packages\\azure.identity\\1.11.4\\azure.identity.1.11.4.nupkg.sha512",
