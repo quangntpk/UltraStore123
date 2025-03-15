@@ -29,7 +29,13 @@ namespace UltraStrore
                 resolver.GetRequiredService<IOptions<GeminiSettings>>().Value);
             builder.Services.Configure<GeminiSettings>(
                 builder.Configuration.GetSection("Authentication"));
-            builder.Services.AddControllers();
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
+                {
+                    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve;
+                    options.JsonSerializerOptions.MaxDepth = 64; // Tăng độ sâu tối đa nếu cần
+                });
+
 
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();

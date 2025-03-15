@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-
-namespace UltraStrore.Data
+﻿namespace UltraStoreApi.ViewModels
 {
-    public partial class DonHang
+    public class DonHangView
     {
         public int MaDonHang { get; set; }
         public string? MaNguoiDung { get; set; }
@@ -15,8 +12,7 @@ namespace UltraStrore.Data
         public string? TenNguoiNhan { get; set; }
         public string? Sdt { get; set; }
         public string? DiaChi { get; set; }
-
-        public virtual NguoiDung? MaNguoiDungNavigation { get; set; }
-        public virtual ICollection<ChiTietDonHang>? ChiTietDonHangs { get; set; }
+        public string? TenNguoiDung { get; set; } 
+        public List<ChiTietDonHangView>? ChiTietDonHangs { get; set; }
     }
 }

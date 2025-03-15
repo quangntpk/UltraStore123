@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace UltraStrore.Data
 {
     public partial class SanPham
-    {            
+    {
         public string MaSanPham { get; set; } = null!;
         public string? TenSanPham { get; set; }
         public int? SoLuong { get; set; }
@@ -19,10 +19,10 @@ namespace UltraStrore.Data
         public string? MoTa { get; set; }
         public virtual LoaiSanPham? MaLoaiSanPhamNavigation { get; set; }
         public virtual ThuongHieu? MaThuongHieuNavigation { get; set; }
-        public virtual ICollection<ChiTietDonHang> ChiTietDonHangs { get; set; }
+        public virtual ICollection<ChiTietDonHang> ChiTietDonHangs { get; set; } 
         public virtual ICollection<ChiTietGioHang> ChiTietGioHangs { get; set; }
-        public virtual ICollection<Video> Videos { get; set; } 
-        public virtual ICollection<YeuThich> YeuThiches { get; set; } 
+        public virtual ICollection<Video> Videos { get; set; }
+        public virtual ICollection<YeuThich> YeuThiches { get; set; }
         public virtual ICollection<BinhLuan> MaBinhLuans { get; set; }
     }
 }
