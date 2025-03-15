@@ -2,9 +2,12 @@
 {
     public class ChiTietGioHangComboView
     {
-        public string IDSanPham { get; set; }
-        public string TenCombo { get; set; }
+        public int? IDCombo { get; set; }
+        public string? TenCombo { get; set; }
+        public List<SanPhamInGioHangCombo>? SanPhamList {get ; set; }
         public int SoLuong { get; set; }
-        public int TienCombo { get; set; }
+        public byte[]? HinhAnh { get; set; }
+        public int? Gia { get; set; }
+
     }
 }

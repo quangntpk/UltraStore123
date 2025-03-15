@@ -14,7 +14,6 @@ namespace UltraStrore.Services
     public class SanPhamServices : ISanPhamServices
     {
         private readonly ApplicationDbContext _context;
-
         public SanPhamServices(ApplicationDbContext context)
         {
             _context = context;

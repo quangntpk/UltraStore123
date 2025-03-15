@@ -9,5 +9,6 @@ namespace UltraStrore.Repository
     {
         Task<APIResponse> ThemSanPham(ChiTietGioHangSanPhamCreate info);
         Task<GioHangView> GioHangViews(string MaKhachHang);
+        Task<APIResponse> ThemCombo(ChiTietGioHangComboCreate info);
     }
 }
