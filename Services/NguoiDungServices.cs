@@ -1,20 +1,26 @@
 
 using Microsoft.EntityFrameworkCore;
+using Org.BouncyCastle.Crypto.Generators;
 using UltraStrore.Data;
 using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.EditModels;
 using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
 using UltraStrore.Utils;
+using BCrypt.Net;
 namespace UltraStrore.Services
 {
     public class NguoiDungServices : INguoiDungServices
     {
         private readonly ApplicationDbContext _context;
+        private readonly IJwtTokenServices _jwtTokenGenerator;
+        private readonly IEmailServices _emailService;
 
-        public NguoiDungServices(ApplicationDbContext context)
+        public NguoiDungServices(ApplicationDbContext context, IJwtTokenServices jwtTokenGenerator, IEmailServices emailService)
         {
             _context = context;
+            _jwtTokenGenerator = jwtTokenGenerator;
+            _emailService = emailService;
         }
 
         private string GenerateMaNguoiDung(int? vaiTro)
@@ -111,7 +117,10 @@ namespace UltraStrore.Services
             };
         }
 
-
+        public async Task<NguoiDung> GetNguoiDungByEmailAsync(string email)
+        {
+            return await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Email == email);
+        }
 
         public async Task<NguoiDungView> CreateNguoiDung(NguoiDungCreate model)
         {
@@ -243,7 +252,7 @@ namespace UltraStrore.Services
             };
 
             _context.NguoiDungs.Add(newUser);
-            await _context.SaveChangesAsync();  
+            await _context.SaveChangesAsync();
 
             return new NguoiDungView
             {
@@ -258,10 +267,10 @@ namespace UltraStrore.Services
             };
         }
 
-        public async Task<(NguoiDungView User,string Token)> DangNhap (DangNhapView model)
+        public async Task<(NguoiDungView User, string Token)> DangNhap(DangNhapView model)
         {
             var user = await _context.NguoiDungs
-                .FirstOrDefaultAsync ( u => u.TaiKhoan == model.TaiKhoan );
+                .FirstOrDefaultAsync(u => u.TaiKhoan == model.TaiKhoan);
 
             if (user == null)
                 throw new Exception("Tài khoản không tồn tại.");
@@ -292,11 +301,11 @@ namespace UltraStrore.Services
             var user = await GetNguoiDungByEmailAsync(email);
             if (user == null)
             {
-                return false; 
+                return false;
             }
 
-            var otp = new Random().Next(100000, 999999).ToString(); 
-            var otpExpiry = DateTime.UtcNow.AddMinutes(10); 
+            var otp = new Random().Next(100000, 999999).ToString();
+            var otpExpiry = DateTime.UtcNow.AddMinutes(10);
 
             user.Otp = otp;
             user.OtpExpiry = otpExpiry;
@@ -312,7 +321,7 @@ namespace UltraStrore.Services
             var user = await GetNguoiDungByEmailAsync(email);
             if (user == null || user.Otp != otp || user.OtpExpiry == null)
             {
-                return false; 
+                return false;
             }
 
             // Kiểm tra OTP có hết hạn không

@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Collections.Generic;
 
 namespace UltraStrore.Data
@@ -19,12 +20,13 @@ namespace UltraStrore.Data
         public byte[]? HinhAnh { get; set; }
         public DateTime? NgayTao { get; set; }
         public string? MoTa { get; set; }
+        public string? Otp { get; set; }
+        public DateTime? OtpExpiry { get; set; }
         public int? CancelConunt { get; set; }
         public DateTime? LockoutEndDate { get; set; }
 
         public virtual ICollection<DanhSachDiaChi> DanhSachDiaChis { get; set; }
         public virtual ICollection<DonHang> DonHangMaNguoiDungNavigations { get; set; }
         public virtual ICollection<GioHang> GioHangs { get; set; }
-
     }
 }
