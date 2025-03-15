@@ -1161,7 +1161,6 @@ namespace UltraStrore.Data
                     NgayTao = DateTime.Now,
                     VaiTro = 0,
                 });
-
             OnModelCreatingPartial(modelBuilder);
         }
         partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
