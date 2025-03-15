@@ -23,6 +23,9 @@ namespace UltraStrore
             builder.Services.AddScoped<ICommetServices, CommetServices>();
             builder.Services.AddScoped<ILienHeServices, LienHeServices>();
             builder.Services.AddScoped<ITinNhanServices, TinNhanServices>();
+            builder.Services.AddScoped<IVoucherServices, VoucherServices>();
+
+            builder.Services.AddScoped<IComboServices, ComboServices>();
 
             /*builder.Services.AddScoped<INguoiDungServices, NguoiDungServices>();*/
 

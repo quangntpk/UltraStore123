@@ -8,5 +8,6 @@
         public string? KickThuoc { get; set; }
         public int? SoLuong { get; set; }
         public int? TienSanPham { get;set; }
+        public byte[]? HinhAnh { get; set; }
     }
 }

@@ -14,7 +14,7 @@ namespace UltraStrore.Services
             _authSettings = authSettings;
         }
         public async Task<APIResponse> TraLoi(string userInput)
-        {
+        {  
             APIResponse response1 = new APIResponse();
             try
             {
@@ -39,7 +39,6 @@ namespace UltraStrore.Services
                         }
                     }
                 };
-
                 var jsonRequestBody = JsonConvert.SerializeObject(requestBody);
                 var content = new StringContent(jsonRequestBody, Encoding.UTF8, "application/json");
                 using (var client = new HttpClient())
