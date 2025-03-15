@@ -14,11 +14,11 @@ namespace UltraStrore.Services
             _authSettings = authSettings;
         }
         public async Task<APIResponse> TraLoi(string userInput)
-        {
+        {  
             APIResponse response1 = new APIResponse();
             try
             {
-                string Openning = "Hãy đóng vai Rem và trả lời giúp tôi câu hỏi sau:";              
+                string Openning = "Hãy đóng vai là 1 nhân viên cửa hàng để trả lời câu hỏi";              
                 var GoogleAPIKey = _authSettings.Google.GoogleAPIKey;
                 var GoogleAPIUrl = _authSettings.Google.GoogleAPIUrl;
 
@@ -39,7 +39,6 @@ namespace UltraStrore.Services
                         }
                     }
                 };
-
                 var jsonRequestBody = JsonConvert.SerializeObject(requestBody);
                 var content = new StringContent(jsonRequestBody, Encoding.UTF8, "application/json");
                 using (var client = new HttpClient())
