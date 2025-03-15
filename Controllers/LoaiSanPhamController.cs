@@ -27,8 +27,7 @@ public class LoaiSanPhamController : ControllerBase
             .Select(l => new LoaiSanPhamView
             {
                 MaLoaiSanPham = l.MaLoaiSanPham,
-                TenLoaiSanPham = l.TenLoaiSanPham,
-                KiHieu = l.KiHieu // Thêm KiHieu vào ViewModel
+                TenLoaiSanPham = l.TenLoaiSanPham
             })
             .ToListAsync();
 
@@ -42,11 +41,7 @@ public class LoaiSanPhamController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var loaiSanPham = new LoaiSanPham
-        {
-            TenLoaiSanPham = model.TenLoaiSanPham,
-            KiHieu = model.KiHieu // Thêm KiHieu vào khi tạo mới
-        };
+        var loaiSanPham = new LoaiSanPham { TenLoaiSanPham = model.TenLoaiSanPham };
         _context.LoaiSanPhams.Add(loaiSanPham);
         await _context.SaveChangesAsync();
 
@@ -65,7 +60,6 @@ public class LoaiSanPhamController : ControllerBase
             return NotFound();
 
         loaiSanPham.TenLoaiSanPham = model.TenLoaiSanPham;
-        loaiSanPham.KiHieu = model.KiHieu; // Cập nhật KiHieu
         await _context.SaveChangesAsync();
 
         return NoContent();

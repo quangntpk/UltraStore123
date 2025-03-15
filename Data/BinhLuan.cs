@@ -15,6 +15,7 @@ namespace UltraStrore.Data
         public int? TrangThai { get; set; }
         public DateTime? NgayBinhLuan { get; set; }
 
-      
+        public virtual SanPham? MaSanPhamNavigation { get; set; }
+        public virtual ICollection<HinhAnh> HinhAnhs { get; set; }
     }
 }

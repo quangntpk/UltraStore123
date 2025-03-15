@@ -10,5 +10,7 @@
         public int? TrangThai { get; set; }
         public DateTime? NgayTao { get; set; }
         public int? VaiTro { get; set; }
+
+
     }
 }

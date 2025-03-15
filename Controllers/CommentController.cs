@@ -5,8 +5,6 @@ using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using UltraStrore.Models.EditModels;
-using UltraStrore.Models.CreateModels; 
 
 namespace UltraStrore.Controllers
 {
@@ -35,7 +33,7 @@ namespace UltraStrore.Controllers
 
         // Thêm bình luận mới
         [HttpPost("add")]
-        public async Task<ActionResult<BinhLuanView>> AddBinhLuan([FromBody] CommentCreate binhLuan)
+        public async Task<ActionResult<BinhLuan>> AddBinhLuan([FromBody] BinhLuan binhLuan)
         {
             if (binhLuan == null)
             {
@@ -43,14 +41,14 @@ namespace UltraStrore.Controllers
             }
 
             var addedBinhLuan = await _commetServices.AddBinhLuan(binhLuan);
-            return CreatedAtAction(nameof(ListBinhLuan), new { maBinhLuan = addedBinhLuan.MaBinhLuan }, addedBinhLuan); // Sửa 'ma' thành 'maBinhLuan'
+            return CreatedAtAction(nameof(ListBinhLuan), new { ma = addedBinhLuan.MaSanPham }, addedBinhLuan);
         }
 
         // Sửa bình luận
         [HttpPut("update/{maBinhLuan}")]
-        public async Task<ActionResult<BinhLuanView>> UpdateBinhLuan(int maBinhLuan, [FromBody] CommentEdit binhLuan) // Đổi CommentCreate thành CommentEdit
+        public async Task<ActionResult<BinhLuan>> UpdateBinhLuan(int maBinhLuan, [FromBody] BinhLuan binhLuan)
         {
-            if (binhLuan == null)
+            if (binhLuan == null || maBinhLuan != binhLuan.MaBinhLuan)
             {
                 return BadRequest("Dữ liệu bình luận không hợp lệ.");
             }
