@@ -25,6 +25,7 @@ namespace UltraStrore.Controllers
             var list = await _services.GetNguoiDungList(searchTerm);
             return Ok(list);
         }
+        //
 
         // GET: api/NguoiDung/{id}
         [HttpGet("{id}")]

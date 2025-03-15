@@ -27,5 +27,11 @@ namespace UltraStrore.Controllers
             var data = await this.services.GioHangViews(id);
             return Ok(data);
         }
+        [HttpPost("ThemComboVaoGioHang")]
+        public async Task<IActionResult> ThemComboVaoGioHang(ChiTietGioHangComboCreate info)
+        {
+            var data = await this.services.ThemCombo(info);
+            return Ok(data);
+        }
     }
 }

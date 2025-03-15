@@ -1,20 +1,26 @@
 
 using Microsoft.EntityFrameworkCore;
+using Org.BouncyCastle.Crypto.Generators;
 using UltraStrore.Data;
 using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.EditModels;
 using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
 using UltraStrore.Utils;
+using BCrypt.Net;
 namespace UltraStrore.Services
 {
     public class NguoiDungServices : INguoiDungServices
     {
         private readonly ApplicationDbContext _context;
+        private readonly IJwtTokenServices _jwtTokenGenerator;
+        private readonly IEmailServices _emailService;
 
-        public NguoiDungServices(ApplicationDbContext context)
+        public NguoiDungServices(ApplicationDbContext context, IJwtTokenServices jwtTokenGenerator, IEmailServices emailService)
         {
             _context = context;
+            _jwtTokenGenerator = jwtTokenGenerator;
+            _emailService = emailService;
         }
 
         private string GenerateMaNguoiDung(int? vaiTro)
@@ -22,10 +28,12 @@ namespace UltraStrore.Services
             string prefix = "ND";
             if (vaiTro.HasValue)
             {
-                if (vaiTro.Value == 1)
+                if (vaiTro.Value == 0)
                     prefix = "AD";
-                else if (vaiTro.Value == 2)
+                else if (vaiTro.Value == 1)
                     prefix = "NV";
+                else if (vaiTro.Value == 2)
+                    prefix = "ND";
             }
 
             // Lấy người dùng có mã lớn nhất với tiền tố tương ứng
@@ -109,7 +117,10 @@ namespace UltraStrore.Services
             };
         }
 
-
+        public async Task<NguoiDung> GetNguoiDungByEmailAsync(string email)
+        {
+            return await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Email == email);
+        }
 
         public async Task<NguoiDungView> CreateNguoiDung(NguoiDungCreate model)
         {
@@ -213,6 +224,137 @@ namespace UltraStrore.Services
                 return false;
             _context.NguoiDungs.Remove(user);
             await _context.SaveChangesAsync();
+            return true;
+        }
+
+
+        public async Task<NguoiDungView> DangKy(DangKyView model)
+        {
+
+            if (await _context.NguoiDungs.AnyAsync(u => u.Email == model.Email))
+                throw new Exception("Email đã được sử dụng.");
+
+
+            if (await _context.NguoiDungs.AnyAsync(u => u.TaiKhoan == model.TaiKhoan))
+                throw new Exception("Tài khoản đã tồn tại.");
+
+            string hashedPassword = PasswordHasher.HashPassword(model.MatKhau);
+            var newUser = new NguoiDung
+            {
+                MaNguoiDung = GenerateMaNguoiDung(2),
+                HoTen = model.HoTen,
+                Email = model.Email,
+                TaiKhoan = model.TaiKhoan,
+                MatKhau = hashedPassword,
+                NgayTao = DateTime.Now,
+                TrangThai = 1, // Active
+                VaiTro = 2 // User thường
+            };
+
+            _context.NguoiDungs.Add(newUser);
+            await _context.SaveChangesAsync();
+
+            return new NguoiDungView
+            {
+                MaNguoiDung = newUser.MaNguoiDung,
+                HoTen = model.HoTen,
+                Email = newUser.Email,
+                TaiKhoan = newUser.TaiKhoan,
+                MatKhau = newUser.MatKhau,
+                VaiTro = newUser.VaiTro,
+                TrangThai = newUser.TrangThai,
+                NgayTao = newUser.NgayTao
+            };
+        }
+
+        public async Task<(NguoiDungView User,string Token)> DangNhap (DangNhapView model)
+        {
+            var user = await _context.NguoiDungs
+                .FirstOrDefaultAsync ( u => u.TaiKhoan == model.TaiKhoan );
+
+            if (user == null)
+                throw new Exception("Tài khoản không tồn tại.");
+
+            if (user.TrangThai != 1)
+                throw new Exception("Tài khoản đã bị khóa hoặc chưa được kích hoạt.");
+
+            if (!PasswordHasher.VerifyPassword(model.MatKhau, user.MatKhau))
+                throw new Exception("Mật khẩu không đúng.");
+
+            var userView = new NguoiDungView
+            {
+                MaNguoiDung = user.MaNguoiDung,
+                HoTen = user.HoTen,
+                Email = user.Email,
+                TaiKhoan = user.TaiKhoan,
+                VaiTro = user.VaiTro,
+                TrangThai = user.TrangThai,
+                NgayTao = user.NgayTao
+            };
+
+            var token = _jwtTokenGenerator.GenerateToken(userView);
+            return (userView, token);
+        }
+
+        public async Task<bool> GenerateAndSendOtpAsync(string email)
+        {
+            var user = await GetNguoiDungByEmailAsync(email);
+            if (user == null)
+            {
+                return false; 
+            }
+
+            var otp = new Random().Next(100000, 999999).ToString(); 
+            var otpExpiry = DateTime.UtcNow.AddMinutes(10); 
+
+            user.Otp = otp;
+            user.OtpExpiry = otpExpiry;
+            await _context.SaveChangesAsync();
+
+            // Gửi email chứa OTP
+            await _emailService.SendOtpEmailAsync(user.Email, otp);
+            return true;
+        }
+
+        public async Task<bool> VerifyOtpAsync(string email, string otp)
+        {
+            var user = await GetNguoiDungByEmailAsync(email);
+            if (user == null || user.Otp != otp || user.OtpExpiry == null)
+            {
+                return false; 
+            }
+
+            // Kiểm tra OTP có hết hạn không
+            if (DateTime.UtcNow > user.OtpExpiry)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public async Task<bool> ResetPasswordAsync(string email, string otp, string newPassword)
+        {
+            // Xác minh OTP trước
+            if (!await VerifyOtpAsync(email, otp))
+            {
+                return false; // OTP không hợp lệ hoặc hết hạn
+            }
+
+            var user = await GetNguoiDungByEmailAsync(email);
+            if (user == null)
+            {
+                return false;
+            }
+
+            string hashedPassword = PasswordHasher.HashPassword(newPassword);
+
+            // Cập nhật mật khẩu mới
+            user.MatKhau = hashedPassword;
+            user.Otp = null; // Xóa OTP sau khi sử dụng
+            user.OtpExpiry = null;
+            await _context.SaveChangesAsync();
+
             return true;
         }
 
