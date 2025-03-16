@@ -26,6 +26,7 @@ namespace UltraStrore
             builder.Services.AddScoped<INguoiDungServices, NguoiDungServices>();
             builder.Services.AddScoped<IDanhSachDiaChiServices, DanhSachDiaChiServices>();
             builder.Services.AddScoped<ICommetServices, CommetServices>();
+            builder.Services.AddScoped<IVoucherServices, VoucherServices>();
 
             builder.Services.AddScoped<IJwtTokenServices, JwtTokenGenerator>();
             builder.Services.AddSingleton<ITokenBlacklistService, TokenBlacklistService>();

@@ -33,6 +33,7 @@ namespace UltraStrore.Data
         public virtual DbSet<ThuongHieu> ThuongHieus { get; set; } = null!;
         public virtual DbSet<Video> Videos { get; set; } = null!;
         public virtual DbSet<Voucher> Vouchers { get; set; } = null!;
+        public virtual DbSet<Coupon> Coupons { get; set; } = null!;
         public virtual DbSet<YeuThich> YeuThiches { get; set; } = null!;
         public virtual DbSet<LienHe> LienHes { get; set; } = null!;
         public virtual DbSet<TinNhan> TinNhans { get; set; } = null!;
@@ -416,7 +417,7 @@ namespace UltraStrore.Data
                 entity.Property(e => e.DieuKien)
                     .HasMaxLength(255)
                     .HasColumnName("dieu_kien");
-                entity.Property(e => e.GiamGia).HasColumnName("giam_gia");
+                entity.Property(e => e.GiaTri).HasColumnName("giam_gia");
                 entity.Property(e => e.MoTa)
                     .HasMaxLength(255)
                     .HasColumnName("mo_ta");
@@ -901,7 +902,7 @@ namespace UltraStrore.Data
                     .HasColumnType("decimal(18, 0)")
                     .HasColumnName("dieu_kien");
 
-                entity.Property(e => e.GiamGia).HasColumnName("giam_gia");
+                entity.Property(e => e.GiaTri).HasColumnName("giam_gia");
 
                 entity.Property(e => e.MoTa)
                     .HasMaxLength(255)
