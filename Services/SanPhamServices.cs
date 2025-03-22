@@ -47,7 +47,8 @@ namespace UltraStrore.Services
                     ThuongHieu = ThuongHieu,
                     NgayTao = sanPhamDauTien.NgayTao,
                     TrangThai = sanPhamDauTien.TrangThai,         
-                    ChatLieu = sanPhamDauTien.ChatLieu
+                    ChatLieu = sanPhamDauTien.ChatLieu,
+                    MoTa = sanPhamDauTien.MoTa,
                 });
             }
             if (string.IsNullOrEmpty(id))

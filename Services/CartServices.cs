@@ -1,7 +1,10 @@
-﻿using UltraStrore.Data;
+﻿using Azure;
+using Microsoft.EntityFrameworkCore;
+using UltraStrore.Data;
 using UltraStrore.Data.Temp;
 using UltraStrore.Helper;
 using UltraStrore.Models.CreateModels;
+using UltraStrore.Models.EditModels;
 using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
 
@@ -27,6 +30,7 @@ namespace UltraStrore.Services
                 {
                     var sp = _context.SanPhams.Where(g => g.MaSanPham == item.MaSanPham).FirstOrDefault();
                     ChiTietGioHangSanPhamView spview = new ChiTietGioHangSanPhamView();
+                    spview.ChiTietGioHangSanPham = item.MaCtgh;
                     spview.IDSanPham = item.MaSanPham;
                     spview.TenSanPham = sp.TenSanPham;
                     spview.TienSanPham = sp.Gia * item.SoLuong ?? 0;
@@ -47,11 +51,14 @@ namespace UltraStrore.Services
                     for(int i = 0; i < sanpham.Count; i++)
                     {
                         SanPhamInGioHangCombo newsp = new SanPhamInGioHangCombo();
+                        newsp.HinhAnh = _context.HinhAnhs.Where(g=> sanpham[i].MaSanPham.Contains(g.MaSanPham)).Select(g=>g.Data).AsNoTracking().FirstOrDefault();
                         newsp.MaSanPham = sanpham[i].MaSanPham;
+                        newsp.TenSanPham = _context.SanPhams.Where(g=>g.MaSanPham.Trim() == sanpham[i].MaSanPham.Trim()).Select(g=>g.TenSanPham).FirstOrDefault();
                         newsp.SoLuong = sanpham[i].SoLuong;
                         newsp.Version = sanpham[i].Version;
                         splist.Add(newsp);
                     }
+                    cbview.ChiTietGioHangCombo = item.MaCtgh;
                     cbview.SanPhamList = splist;
                     cbview.IDCombo = item.MaCombo??0;
                     var ComboName = _context.ComBoSanPhams.Where(g => g.MaComBo == item.MaCombo).FirstOrDefault();
@@ -156,17 +163,16 @@ namespace UltraStrore.Services
                 }
 
                 var GioHang = _context.GioHangs.Where(g => g.MaNguoiDung == info.IDKhachHang).FirstOrDefault();
-                if (GioHang == null) // Chưa có giỏ hàng
+                if (GioHang == null) 
                 {
                     GioHang newGH = new GioHang
                     {
                         MaNguoiDung = info.IDKhachHang
                     };
                     _context.GioHangs.Add(newGH);
-                    await _context.SaveChangesAsync(); // Save to get MaGioHang
+                    await _context.SaveChangesAsync(); 
                 }
 
-                // Reload GioHang to ensure we have the latest data
                 GioHang = _context.GioHangs.Where(g => g.MaNguoiDung == info.IDKhachHang).FirstOrDefault();
                 if (GioHang == null)
                 {
@@ -179,7 +185,7 @@ namespace UltraStrore.Services
 
                 if (ChiTietGioHangs != null) // Đã có combo trong giỏ hàng
                 {
-                    int support = _context.GioHangSupports.Where(g => g.ChiTietGioHang == ChiTietGioHangs.MaCtgh).OrderByDescending(g=>g.Version).Select(g=>g.ID).FirstOrDefault();
+                    int support = _context.GioHangSupports.Where(g => g.ChiTietGioHang == ChiTietGioHangs.MaCtgh).OrderByDescending(g=>g.Version).Select(g=>g.ID).FirstOrDefault() +1;
                     var CTComboList = _context.ChiTietComBos.Where(g => g.MaComBo == info.IDCombo).ToList();
                     foreach (var item in info.Detail)
                     {
@@ -239,6 +245,124 @@ namespace UltraStrore.Services
                     }
                 }
 
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                response.ResponseCode = 200;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                response.ResponseCode = 500;
+                response.Result = $"Lỗi: {ex.Message}";
+            }
+            return response;
+        }
+
+        public async Task<APIResponse> GiamSoLuongSanPham(TangGiamSoLuongGioHang info)
+        {
+            APIResponse response = new APIResponse();
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var GioHang = _context.GioHangs.Where(g => g.MaNguoiDung.Trim() == info.MaKhachHang).FirstOrDefault();
+                var ChiTietGiohang = _context.ChiTietGioHangs.Where(g => g.MaGioHang == GioHang.MaGioHang && g.MaSanPham == info.IDSanPham).FirstOrDefault();
+                ChiTietGiohang.SoLuong--;
+                _context.ChiTietGioHangs.Update(ChiTietGiohang);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                response.ResponseCode = 200;
+            }
+            catch (Exception ex) 
+            {
+                await transaction.RollbackAsync();
+                response.ResponseCode = 500;
+                response.Result = $"Lỗi: {ex.Message}";
+            }
+            return response;
+        }
+
+        public async Task<APIResponse> TangSoLuongSanPham(TangGiamSoLuongGioHang info)
+        {
+            APIResponse response = new APIResponse();
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var GioHang = _context.GioHangs.Where(g => g.MaNguoiDung.Trim() == info.MaKhachHang).FirstOrDefault();
+                var ChiTietGiohang = _context.ChiTietGioHangs.Where(g => g.MaGioHang == GioHang.MaGioHang && g.MaSanPham == info.IDSanPham).FirstOrDefault();
+                ChiTietGiohang.SoLuong++;
+                _context.ChiTietGioHangs.Update(ChiTietGiohang);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                response.ResponseCode = 200;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                response.ResponseCode = 500;
+                response.Result = $"Lỗi: {ex.Message}";
+            }
+            return response;
+        }
+        public async Task<APIResponse> XoaChiTietGioHang(TangGiamSoLuongGioHang info)
+        {
+            APIResponse response = new APIResponse();
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var GioHang = _context.GioHangs.Where(g => g.MaNguoiDung.Trim() == info.MaKhachHang).FirstOrDefault();
+                var ChiTietGiohang = _context.ChiTietGioHangs.Where(g => g.MaGioHang == GioHang.MaGioHang && g.MaSanPham == info.IDSanPham).FirstOrDefault();
+                _context.ChiTietGioHangs.Remove(ChiTietGiohang);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                response.ResponseCode = 200;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                response.ResponseCode = 500;
+                response.Result = $"Lỗi: {ex.Message}";
+            }
+            return response;
+        }
+        public async Task<APIResponse> XoaVersionComboGioHang(GioHangComboVersion info)
+        {
+            APIResponse response = new APIResponse();
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var ctgh = _context.ChiTietGioHangs.Where(g => g.MaCtgh == info.ChiTietGioHang).FirstOrDefault();
+                var ghSupport = _context.GioHangSupports.Where(g => g.ChiTietGioHang == info.ChiTietGioHang && g.Version == info.Version).ToList();
+                var ctCombo = _context.ChiTietComBos.Where(g => g.MaChiTietComBo == ghSupport[0].MaChiTietCombo).FirstOrDefault();
+                ctgh.SoLuong = ctgh.SoLuong - ghSupport[0].SoLuong/ctCombo.SoLuong;
+                _context.GioHangSupports.RemoveRange(ghSupport);
+                if (ctgh.SoLuong == 0)
+                    _context.ChiTietGioHangs.Remove(ctgh);
+                else
+                    _context.ChiTietGioHangs.Update(ctgh);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                response.ResponseCode = 200;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                response.ResponseCode = 500;
+                response.Result = $"Lỗi: {ex.Message}";
+            }
+            return response;
+        }
+
+        public async Task<APIResponse> XoaChiTietGiohangCombo(TangGiamSoLuongGioHang info)
+        {
+            APIResponse response = new APIResponse();
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var GioHang = _context.GioHangs.Where(g => g.MaNguoiDung.Trim() == info.MaKhachHang).FirstOrDefault();
+                var ChiTietGiohang = _context.ChiTietGioHangs.Where(g => g.MaGioHang == GioHang.MaGioHang && g.MaCombo == info.IDCombo).FirstOrDefault();
+                var ChiTietComboSupportGioHang = _context.GioHangSupports.Where(g => g.MaChiTietCombo == ChiTietGiohang.MaGioHang).ToList();
+                _context.GioHangSupports.RemoveRange(ChiTietComboSupportGioHang);
+                _context.ChiTietGioHangs.Remove(ChiTietGiohang);
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 response.ResponseCode = 200;

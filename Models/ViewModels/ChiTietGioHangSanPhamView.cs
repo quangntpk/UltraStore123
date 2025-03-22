@@ -2,6 +2,7 @@
 {
     public class ChiTietGioHangSanPhamView
     {
+        public int? ChiTietGioHangSanPham { get; set; }
         public string? IDSanPham { get; set; }
         public string? TenSanPham { get; set; }
         public string? MauSac {  get; set; }

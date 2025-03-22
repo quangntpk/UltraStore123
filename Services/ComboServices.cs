@@ -130,9 +130,75 @@ namespace UltraStrore.Services
             return response;
         }
 
-        public Task<APIResponse> AddCombo(ComboCreate info)
+        public async Task<APIResponse> AddCombo(ComboCreate info)
         {
-            throw new NotImplementedException();
+            APIResponse response = new APIResponse();
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                ComBoSanPham newCB = new ComBoSanPham
+                {
+                    TenComBo = info.TenCombo.Trim(),
+                    MoTa = info.MoTa.Trim(),
+                    SoLuong = info.SoLuong,
+                    HinhAnh = info.HinhAnh,
+                    TongGia = info.Gia,
+                    TrangThai = true
+                };
+
+                _context.ComBoSanPhams.Add(newCB);
+                await _context.SaveChangesAsync(); 
+                int MaComBo = newCB.MaComBo;
+
+                foreach (var item in info.SanPham)
+                {
+                    ChiTietComBo newCTCB = new ChiTietComBo
+                    {
+                        MaSanPham = item.MaSanPham,
+                        SoLuong = item.SoLuong,
+                        MaComBo = MaComBo 
+                    };
+                    _context.ChiTietComBos.Add(newCTCB);
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                response.ResponseCode = 200;
+            }
+            catch (Exception ex)
+            {
+                response.ErrorMessage = ex.Message;
+                response.ResponseCode = 400;
+                await transaction.RollbackAsync();
+            }
+            return response;
+        }
+
+        public async Task<APIResponse> XoaCombo(int id)
+        {
+            APIResponse response = new APIResponse();
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var combo = _context.ComBoSanPhams.Where(g => g.MaComBo == id).FirstOrDefault();
+                if(combo.TrangThai==true)
+                    combo.TrangThai = false;
+                else
+                    combo.TrangThai = true;
+                _context.ComBoSanPhams.Update(combo);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                response.ResponseCode = 200;
+            }
+            catch (Exception ex)
+            {
+                response.ErrorMessage = ex.Message;
+                response.ResponseCode = 400;
+                await transaction.RollbackAsync();
+            }
+            return response;
+
         }
     }
 }

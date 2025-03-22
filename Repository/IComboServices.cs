@@ -10,5 +10,6 @@ namespace UltraStrore.Repository
         Task<List<ComboAdminView>> ComboViews(int? id);
         Task<APIResponse> AddCombo(ComboCreate? info);
         Task<APIResponse> EditCombo(ComboEdit? info);
+        Task<APIResponse> XoaCombo(int id);
     }
 }
