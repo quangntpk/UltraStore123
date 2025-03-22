@@ -34,5 +34,11 @@ namespace UltraStrore.Controllers
             var data = await services.EditCombo(info);
             return Ok(data);
         }
+        [HttpGet("DeleteCombo")]
+        public async Task<IActionResult> DeleteCombo(int id)
+        {
+            var data = await services.XoaCombo(id);
+            return Ok(data);
+        }
     }
 }
