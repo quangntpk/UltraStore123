@@ -9,8 +9,8 @@ namespace UltraStrore.Data
         public string? MaNguoiDung { get; set; }
         public string? MaNhanVien { get; set; }
         public DateTime? NgayDat { get; set; }
-        public string? TrangThaiDonHang { get; set; }
-        public string? TrangThaiHang { get; set; }
+        public TrangThaiDonHang TrangThaiDonHang { get; set; }
+        public TrangThaiThanhToan TrangThaiHang { get; set; }
         public string? LyDoHuy { get; set; }
         public string? TenNguoiNhan { get; set; }
         public string? Sdt { get; set; }
@@ -18,5 +18,6 @@ namespace UltraStrore.Data
 
         public virtual NguoiDung? MaNguoiDungNavigation { get; set; }
        
+        public virtual List<ChiTietDonHang> ChiTietDonHangs { get; set; } = new List<ChiTietDonHang>(); // Thêm thuộc tính
     }
 }
