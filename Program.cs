@@ -36,7 +36,7 @@ namespace UltraStrore
             builder.Services.AddTransient<EmailService>();
             builder.Services.AddScoped<IYeuThichServices, YeuThichServices>();
             builder.Services.AddScoped<IComboServices, ComboServices>();
-
+            builder.Services.AddScoped<IGiaoDienServices, GiaoDienServices>();
 
             /*builder.Services.AddScoped<INguoiDungServices, NguoiDungServices>();*/
 
@@ -78,6 +78,12 @@ namespace UltraStrore
                     ValidAudience = builder.Configuration["Jwt:Audience"],
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
                 };
+            })
+            .AddGoogle(options =>
+            {
+                options.ClientId = builder.Configuration["Google:ClientId"];
+                options.ClientSecret = builder.Configuration["Google:ClientSecret"];
+                options.CallbackPath = "/api/auth/google-callback"; // Đường dẫn callback tùy chỉnh
             });
 
             builder.Services.AddSwaggerGen(options =>
