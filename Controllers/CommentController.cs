@@ -5,6 +5,8 @@ using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using UltraStrore.Models.CreateModels;
+using UltraStrore.Models.EditModels;
 
 namespace UltraStrore.Controllers
 {
@@ -33,7 +35,7 @@ namespace UltraStrore.Controllers
 
         // Thêm bình luận mới
         [HttpPost("add")]
-        public async Task<ActionResult<BinhLuan>> AddBinhLuan([FromBody] BinhLuan binhLuan)
+        public async Task<ActionResult<BinhLuanView>> AddBinhLuan([FromBody] BinhLuanCreate binhLuan)
         {
             if (binhLuan == null)
             {
@@ -46,7 +48,7 @@ namespace UltraStrore.Controllers
 
         // Sửa bình luận
         [HttpPut("update/{maBinhLuan}")]
-        public async Task<ActionResult<BinhLuan>> UpdateBinhLuan(int maBinhLuan, [FromBody] BinhLuan binhLuan)
+        public async Task<ActionResult<BinhLuanView>> UpdateBinhLuan(int maBinhLuan, [FromBody] BinhLuanEdit binhLuan)
         {
             if (binhLuan == null || maBinhLuan != binhLuan.MaBinhLuan)
             {

@@ -34,7 +34,7 @@ namespace UltraStrore
             builder.Services.AddScoped<ILienHeServices, LienHeServices>();
             builder.Services.AddScoped<ITinNhanServices, TinNhanServices>();
             builder.Services.AddTransient<EmailService>();
-
+            builder.Services.AddScoped<IYeuThichServices, YeuThichServices>();
             builder.Services.AddScoped<IComboServices, ComboServices>();
 
 

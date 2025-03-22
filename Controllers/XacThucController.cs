@@ -56,8 +56,8 @@ namespace UltraStrore.Controllers
                 var (user, token) = await _nguoiDungServices.DangNhap(model);
 
                 string redirectUrl = user.VaiTro == 0
-                    ? "http://localhost:8081"
-                    : "http://localhost:8080";
+                    ? "http://localhost:8080"
+                    : "http://localhost:8081";
                 return Ok(new
                 {
                     message = "Đăng nhập thành công",

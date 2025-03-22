@@ -247,7 +247,7 @@ namespace UltraStrore.Services
                 TaiKhoan = model.TaiKhoan,
                 MatKhau = hashedPassword,
                 NgayTao = DateTime.Now,
-                TrangThai = 1, // Active
+                TrangThai = 0, // Active
                 VaiTro = 0 // User thường
             };
 
@@ -275,7 +275,7 @@ namespace UltraStrore.Services
             if (user == null)
                 throw new Exception("Tài khoản không tồn tại.");
 
-            if (user.TrangThai != 1)
+            if (user.TrangThai == 1)
                 throw new Exception("Tài khoản đã bị khóa hoặc chưa được kích hoạt.");
 
             if (!PasswordHasher.VerifyPassword(model.MatKhau, user.MatKhau))

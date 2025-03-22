@@ -7,12 +7,10 @@ namespace UltraStrore.Data
     {
         public int MaYeuThich { get; set; }
         public string? MaSanPham { get; set; }
+        public string? TenSanPham { get; set; }
         public string? MaNguoiDung { get; set; }
-        public int? SoLuongYeuThich { get; set; }
+        public string? HoTen { get; set; }
         public DateTime? NgayYeuThich { get; set; }
-
-        public virtual SanPham? MaSanPhamNavigation { get; set; }
-        public virtual NguoiDung? MaNguoiDungNavigation { get; set; }
 
     }
 }

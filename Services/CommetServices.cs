@@ -5,15 +5,16 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using UltraStrore.Models.CreateModels;
+using UltraStrore.Models.EditModels;
 
 namespace UltraStrore.Services
 {
     public class CommetServices : ICommetServices
     {
-        private readonly ApplicationDbContext _context; // Khai báo DbContext
+        private readonly ApplicationDbContext _context;
 
-        // Constructor để inject DbContext
-        public CommetServices(ApplicationDbContext context) // Sửa lỗi cú pháp: bỏ dấu ; và đổi tên tham số
+        public CommetServices(ApplicationDbContext context)
         {
             _context = context;
         }
@@ -25,7 +26,9 @@ namespace UltraStrore.Services
                 {
                     MaBinhLuan = bl.MaBinhLuan,
                     MaSanPham = bl.MaSanPham,
+                    TenSanPham = bl .TenSanPham,
                     MaNguoiDung = bl.MaNguoiDung,
+                    HoTen = bl.HoTen,
                     NoiDungBinhLuan = bl.NoiDungBinhLuan,
                     SoTimBinhLuan = bl.SoTimBinhLuan,
                     DanhGia = bl.DanhGia,
@@ -37,20 +40,52 @@ namespace UltraStrore.Services
             return result;
         }
 
-        public async Task<BinhLuan> AddBinhLuan(BinhLuan binhLuan)
+        public async Task<BinhLuanView> AddBinhLuan(BinhLuanCreate binhLuan)
         {
-            _context.BinhLuans.Add(binhLuan);
-            await _context.SaveChangesAsync(); // Lưu thay đổi vào cơ sở dữ liệu
-            return binhLuan;
+            // Tạo một đối tượng BinhLuan từ BinhLuanCreate
+            var newBinhLuan = new BinhLuan
+            {
+                MaSanPham = binhLuan.MaSanPham,
+                TenSanPham = binhLuan.TenSanPham,
+                MaNguoiDung = binhLuan.MaNguoiDung,
+                HoTen = binhLuan.HoTen,
+                NoiDungBinhLuan = binhLuan.NoiDungBinhLuan,
+                SoTimBinhLuan = binhLuan.SoTimBinhLuan ?? 0, // Giá trị mặc định nếu null
+                DanhGia = binhLuan.DanhGia,
+                TrangThai =  0, // Giá trị mặc định nếu null
+                NgayBinhLuan = binhLuan.NgayBinhLuan ?? DateTime.Now // Gán ngày hiện tại nếu null
+            };
+
+            _context.BinhLuans.Add(newBinhLuan);
+            await _context.SaveChangesAsync();
+
+            // Trả về một BinhLuanView từ dữ liệu vừa thêm
+            return new BinhLuanView
+            {
+                MaBinhLuan = newBinhLuan.MaBinhLuan,
+                MaSanPham = newBinhLuan.MaSanPham,
+                TenSanPham = newBinhLuan.TenSanPham,
+                MaNguoiDung = newBinhLuan.MaNguoiDung,
+                HoTen = newBinhLuan.HoTen,
+                NoiDungBinhLuan = newBinhLuan.NoiDungBinhLuan,
+                SoTimBinhLuan = newBinhLuan.SoTimBinhLuan,
+                DanhGia = newBinhLuan.DanhGia,
+                TrangThai = 0,
+                NgayBinhLuan = newBinhLuan.NgayBinhLuan
+            };
         }
 
-        public async Task<BinhLuan> UpdateBinhLuan(int maBinhLuan, BinhLuan binhLuan)
+        public async Task<BinhLuanView> UpdateBinhLuan(int maBinhLuan, BinhLuanEdit binhLuan)
         {
             var existingBinhLuan = await _context.BinhLuans
                 .FirstOrDefaultAsync(bl => bl.MaBinhLuan == maBinhLuan);
 
-          
+            if (existingBinhLuan == null)
+            {
+                return null; // Hoặc throw exception tùy yêu cầu
+            }
 
+            // Cập nhật các thuộc tính
             existingBinhLuan.MaSanPham = binhLuan.MaSanPham;
             existingBinhLuan.MaNguoiDung = binhLuan.MaNguoiDung;
             existingBinhLuan.NoiDungBinhLuan = binhLuan.NoiDungBinhLuan;
@@ -58,8 +93,20 @@ namespace UltraStrore.Services
             existingBinhLuan.DanhGia = binhLuan.DanhGia;
             existingBinhLuan.NgayBinhLuan = binhLuan.NgayBinhLuan;
 
-            await _context.SaveChangesAsync(); // Lưu thay đổi
-            return existingBinhLuan;
+            await _context.SaveChangesAsync();
+
+            // Trả về một BinhLuanView từ dữ liệu vừa cập nhật
+            return new BinhLuanView
+            {
+                MaBinhLuan = existingBinhLuan.MaBinhLuan,
+                MaSanPham = existingBinhLuan.MaSanPham,
+                MaNguoiDung = existingBinhLuan.MaNguoiDung,
+                NoiDungBinhLuan = existingBinhLuan.NoiDungBinhLuan,
+                SoTimBinhLuan = existingBinhLuan.SoTimBinhLuan,
+                DanhGia = existingBinhLuan.DanhGia,
+                TrangThai = existingBinhLuan.TrangThai,
+                NgayBinhLuan = existingBinhLuan.NgayBinhLuan
+            };
         }
 
         public async Task<bool> DeleteBinhLuan(int maBinhLuan)
@@ -73,10 +120,9 @@ namespace UltraStrore.Services
             }
 
             _context.BinhLuans.Remove(binhLuanToRemove);
-            await _context.SaveChangesAsync(); // Lưu thay đổi
+            await _context.SaveChangesAsync();
             return true;
         }
-
 
         public async Task<bool> ApproveBinhLuan(int maBinhLuan)
         {
@@ -92,7 +138,6 @@ namespace UltraStrore.Services
             await _context.SaveChangesAsync();
             return true;
         }
-
 
         public async Task<bool> UnapproveBinhLuan(int maBinhLuan)
         {
