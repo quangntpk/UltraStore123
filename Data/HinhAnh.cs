@@ -13,5 +13,6 @@ namespace UltraStrore.Data
         public byte[]? Data { get; set; }
         public virtual BinhLuan? MaBinhLuanNavigation { get; set; }
         public virtual SanPham? MaSanPhamNavigation { get; set; }
+
     }
 }

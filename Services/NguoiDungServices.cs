@@ -358,5 +358,135 @@ namespace UltraStrore.Services
             return true;
         }
 
+        public async Task<(NguoiDungView User, string Token)> DangNhapAdmin(LoginAdmin model)
+        {
+            var user = await _context.NguoiDungs
+                .FirstOrDefaultAsync(u => u.TaiKhoan == model.TaiKhoan && u.VaiTro == 1); // Chỉ lấy Admin (VaiTro = 1)
+
+            if (user == null)
+                throw new Exception("Tài khoản Admin không tồn tại.");
+
+            if (user.TrangThai != 1)
+                throw new Exception("Tài khoản Admin đã bị khóa hoặc chưa được kích hoạt.");
+
+            if (!PasswordHasher.VerifyPassword(model.MatKhau, user.MatKhau))
+                throw new Exception("Mật khẩu không đúng.");
+
+            var userView = new NguoiDungView
+            {
+                MaNguoiDung = user.MaNguoiDung,
+                HoTen = user.HoTen,
+                Email = user.Email,
+                TaiKhoan = user.TaiKhoan,
+                VaiTro = user.VaiTro,
+                TrangThai = user.TrangThai,
+                NgayTao = user.NgayTao
+            };
+
+            var token = _jwtTokenGenerator.GenerateToken(userView);
+            return (userView, token);
+        }
+        public async Task<bool> IsAdminAsync(string email)
+        {
+            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Email == email);
+            return user != null && user.VaiTro == 1; // VaiTro = 1 là admin
+        }
+
+        public async Task<(NguoiDungView User, string Token)> DangNhapGoogleAdmin(string email)
+        {
+            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Email == email);
+            if (user == null)
+            {
+                // Tạo mới người dùng với vai trò admin nếu chưa tồn tại
+                user = new NguoiDung
+                {
+                    Email = email,
+                    VaiTro = 1, // Admin
+                    MaNguoiDung = GenerateMaNguoiDung(1),
+                    NgayTao = DateTime.Now,
+                    TrangThai = 1 // Active
+                };
+                _context.NguoiDungs.Add(user);
+                await _context.SaveChangesAsync();
+            }
+            else if (user.VaiTro != 1)
+            {
+                throw new Exception("Không phải admin.");
+            }
+
+            var userView = new NguoiDungView
+            {
+                MaNguoiDung = user.MaNguoiDung,
+                HoTen = user.HoTen,
+                Email = user.Email,
+                TaiKhoan = user.TaiKhoan,
+                VaiTro = user.VaiTro,
+                TrangThai = user.TrangThai,
+                NgayTao = user.NgayTao
+            };
+
+            var token = _jwtTokenGenerator.GenerateToken(userView);
+            return (userView, token);
+        }
+        public async Task<NguoiDungView> UpdateChiTietUser(ChiTietUser model)
+        {
+            // Lấy người dùng từ database dựa trên MaNguoiDung
+            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.MaNguoiDung == model.MaNguoiDung);
+
+            // Kiểm tra xem người dùng có tồn tại không
+            if (user == null)
+            {
+                throw new Exception("Người dùng không tồn tại.");
+            }
+
+            // Cập nhật các thuộc tính của người dùng (chỉ cập nhật nếu giá trị không null)
+            user.HoTen = model.HoTen ?? user.HoTen;
+            user.NgaySinh = model.NgaySinh ?? user.NgaySinh;
+            user.Sdt = model.Sdt ?? user.Sdt;
+            user.Cccd = model.Cccd ?? user.Cccd;
+            user.Email = model.Email ?? user.Email;
+            user.TaiKhoan = model.TaiKhoan ?? user.TaiKhoan;
+            user.DiaChi = model.DiaChi ?? user.DiaChi;
+            user.VaiTro = model.VaiTro ?? user.VaiTro;
+            user.TrangThai = model.TrangThai ?? user.TrangThai;
+
+            // Xử lý hình ảnh nếu có file được upload
+            if (model.HinhAnhFile != null && model.HinhAnhFile.Length > 0)
+            {
+                using (var memoryStream = new MemoryStream())
+                {
+                    await model.HinhAnhFile.CopyToAsync(memoryStream);
+                    user.HinhAnh = memoryStream.ToArray(); // Chuyển file thành byte[]
+                }
+            }
+            else
+            {
+                user.HinhAnh = model.HinhAnh ?? user.HinhAnh; // Giữ nguyên nếu không có file mới
+            }
+
+            user.NgayTao = model.NgayTao ?? user.NgayTao;
+            user.MoTa = model.MoTa ?? user.MoTa;
+
+            // Lưu thay đổi vào database
+            await _context.SaveChangesAsync();
+
+            // Trả về NguoiDungView của người dùng đã cập nhật
+            return new NguoiDungView
+            {
+                MaNguoiDung = user.MaNguoiDung,
+                HoTen = user.HoTen,
+                NgaySinh = user.NgaySinh,
+                Sdt = user.Sdt,
+                Cccd = user.Cccd,
+                Email = user.Email,
+                TaiKhoan = user.TaiKhoan,
+                DiaChi = user.DiaChi,
+                VaiTro = user.VaiTro,
+                TrangThai = user.TrangThai,
+                HinhAnh = user.HinhAnh,
+                NgayTao = user.NgayTao,
+                MoTa = user.MoTa
+            };
+        }
     }
 }

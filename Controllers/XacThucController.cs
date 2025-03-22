@@ -1,9 +1,14 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
+using UltraStrore.Models.EditModels;
 
 namespace UltraStrore.Controllers
 {
@@ -125,6 +130,88 @@ namespace UltraStrore.Controllers
             }
 
             return Ok(new { message = "Mật khẩu đã được đặt lại thành công" });
+        }
+
+        [HttpPost("DangNhapAdmin")]
+        public async Task<IActionResult> DangNhapAdmin([FromBody] LoginAdmin model)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var (user, token) = await _nguoiDungServices.DangNhapAdmin(model);
+
+                return Ok(new
+                {
+                    message = "Đăng nhập Admin thành công",
+                    user,
+                    token
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("google-login")]
+        public IActionResult GoogleLogin()
+        {
+            var properties = new AuthenticationProperties { RedirectUri = "http://localhost:5261/api/XacThuc/google-callback" };
+            return Challenge(properties, GoogleDefaults.AuthenticationScheme);
+        }
+
+        [HttpGet("google-callback")]
+        public async Task<IActionResult> GoogleCallback()
+        {
+            var authenticateResult = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+            if (!authenticateResult.Succeeded)
+            {
+                return Redirect("http://localhost:3000/login?error=auth_failed");
+            }
+
+            var claims = authenticateResult.Principal.Claims;
+            var email = claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+
+            var isAdmin = await _nguoiDungServices.IsAdminAsync(email);
+            if (!isAdmin)
+            {
+                return Redirect("http://localhost:3000/login?error=unauthorized");
+            }
+
+            var (user, token) = await _nguoiDungServices.DangNhapGoogleAdmin(email);
+
+            return Redirect($"http://localhost:3000/login?token={token}&user={user.MaNguoiDung}");
+        }
+
+        // PUT: api/XacThuc/chitiet/{id}
+        [HttpPut("chitiet/{id}")]
+        public async Task<IActionResult> UpdateChiTietUser(string id, [FromForm] ChiTietUser model)
+        {
+            // Kiểm tra xem id có khớp với MaNguoiDung trong model không
+            if (id != model.MaNguoiDung)
+            {
+                return BadRequest(new { message = "Mã người dùng không khớp" });
+            }
+
+            try
+            {
+                // Gọi service để cập nhật thông tin chi tiết người dùng
+                var updatedUser = await _nguoiDungServices.UpdateChiTietUser(model);
+                return Ok(new
+                {
+                    message = "Cập nhật thông tin thành công",
+                    user = updatedUser
+                });
+            }
+            catch (Exception ex)
+            {
+                // Trả về NotFound nếu người dùng không tồn tại hoặc có lỗi khác
+                return NotFound(new { message = ex.Message });
+            }
         }
     }
 }

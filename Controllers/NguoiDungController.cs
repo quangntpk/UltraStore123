@@ -90,5 +90,28 @@ namespace UltraStrore.Controllers
                 return NotFound();
             return NoContent();
         }
+
+        // PUT: api/NguoiDung/chitiet/{id}
+        [HttpPut("chitiet/{id}")]
+        public async Task<IActionResult> UpdateChiTietUser(string id, [FromForm] ChiTietUser model)
+        {
+            if (id != model.MaNguoiDung)
+                return BadRequest(new { message = "Mã người dùng không khớp" });
+
+            try
+            {
+                // Cập nhật thông tin chi tiết người dùng
+                var updatedUser = await _services.UpdateChiTietUser(model);
+                return Ok(new
+                {
+                    message = "Cập nhật thông tin thành công",
+                    user = updatedUser
+                });
+            }
+            catch (Exception ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
     }
 }
