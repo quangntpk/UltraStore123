@@ -215,11 +215,9 @@ namespace UltraStrore.Data
                 entity.Property(e => e.TenNguoiNhan)
                     .HasMaxLength(100)
                     .HasColumnName("ten_nguoi_nhan");
-                entity.Property(e => e.TrangThaiDonHang)
-                    .HasMaxLength(50)
+                entity.Property(e => e.TrangThaiDonHang) // Thay đổi thành int
                     .HasColumnName("trang_thai_don_hang");
-                entity.Property(e => e.TrangThaiHang)
-                    .HasMaxLength(50)
+                entity.Property(e => e.TrangThaiHang) // Thay đổi thành int
                     .HasColumnName("trang_thai_hang");
 
                 entity.HasOne(d => d.MaNguoiDungNavigation).WithMany(p => p.DonHangMaNguoiDungNavigations)
@@ -519,39 +517,36 @@ namespace UltraStrore.Data
 
             modelBuilder.Entity<ChiTietDonHang>(entity =>
             {
-                entity.HasKey(e => e.MaCtdh)
-                    .HasName("PK__CHI_TIET__5AE49D8E95395895");
+                entity.HasKey(e => e.MaCtdh).HasName("PK__CHI_TIET__5AE49D8E95395895");
 
                 entity.ToTable("CHI_TIET_DON_HANG");
 
-                entity.HasIndex(e => e.MaCombo, "IX_CHI_TIET_DON_HANG_ma_combo");
-
-                entity.Property(e => e.MaCtdh)
-                    .ValueGeneratedOnAdd()
-                    .HasColumnName("ma_ctdh");
-
-                entity.Property(e => e.Gia).HasColumnName("gia");
-
-                entity.Property(e => e.MaCombo).HasColumnName("ma_combo");
-
-                entity.Property(e => e.MaDonHang)
-                    .HasMaxLength(10)
-                    .IsUnicode(false)
-                    .HasColumnName("ma_don_hang");
-
-                entity.Property(e => e.MaSanPham)
-                    .HasMaxLength(10)
-                    .IsUnicode(false)
-                    .HasColumnName("ma_san_pham");
-
+                entity.Property(e => e.MaCtdh).HasColumnName("ma_ctdh");
+                entity.Property(e => e.MaDonHang).HasColumnName("ma_don_hang").HasColumnType("int"); // Đảm bảo là int
+                entity.Property(e => e.MaSanPham).HasColumnName("ma_san_pham");
                 entity.Property(e => e.SoLuong).HasColumnName("so_luong");
-
+                entity.Property(e => e.Gia).HasColumnName("gia");
                 entity.Property(e => e.ThanhTien).HasColumnName("thanh_tien");
+                entity.Property(e => e.MaCombo).HasColumnName("ma_combo");
+                entity.Property(e => e.SanPhamMaSanPham).HasColumnName("SanPhamMaSanPham");
 
+                // Cấu hình mối quan hệ với DonHang
+                entity.HasOne(d => d.MaDonHangNavigation)
+                      .WithMany(p => p.ChiTietDonHangs)
+                      .HasForeignKey(d => d.MaDonHang)
+                      .HasConstraintName("FK_CHI_TIET_DON_HANG_DON_HANG");
+
+                // Cấu hình mối quan hệ với SanPham
+                entity.HasOne(d => d.MaSanPhamNavigation)
+                      .WithMany()
+                      .HasForeignKey(d => d.MaSanPham)
+                      .HasConstraintName("FK_CHI_TIET_DON_HANG_SAN_PHAM");
+
+                // Cấu hình mối quan hệ với ComBoSanPham
                 entity.HasOne(d => d.MaComboNavigation)
-                    .WithMany(p => p.ChiTietDonHangs)
-                    .HasForeignKey(d => d.MaCombo)
-                    .HasConstraintName("FK_CHI_TIET_DON_HANG_COM_BO_SAN_PHAM");
+                      .WithMany()
+                      .HasForeignKey(d => d.MaCombo)
+                      .HasConstraintName("FK_CHI_TIET_DON_HANG_COM_BO_SAN_PHAM");
             });
 
             modelBuilder.Entity<ChiTietGioHang>(entity =>
@@ -1697,6 +1692,307 @@ namespace UltraStrore.Data
                 MaSanPham = "A00001",
                 SoLuong = 1,
             });
+
+            modelBuilder.Entity<DonHang>().HasData(
+                new DonHang
+                {
+                    MaDonHang = 1,
+                    MaNguoiDung = "ND00001", // Nguyễn Văn An
+                    MaNhanVien = null, // Chưa có nhân viên xử lý
+                    NgayDat = DateTime.Now,
+                    TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan,
+                    TrangThaiHang = TrangThaiThanhToan.ThanhToanKhiNhanHang,
+                    LyDoHuy = null,
+                    TenNguoiNhan = "Nguyen Van An",
+                    Sdt = "0123456789",
+                    DiaChi = "123 Main Street"
+                },
+                new DonHang
+                {
+                    MaDonHang = 2,
+                    MaNguoiDung = "ND00002", // Trần Thị Bình
+                    MaNhanVien = "NV00006", // Nguyễn Thị Fan (nhân viên)
+                    NgayDat = DateTime.Now.AddDays(-1),
+                    TrangThaiDonHang = TrangThaiDonHang.DangXuLy,
+                    TrangThaiHang = TrangThaiThanhToan.ThanhToanKhiNhanHang,
+                    LyDoHuy = null,
+                    TenNguoiNhan = "Tran Thi Binh",
+                    Sdt = "0987654321",
+                    DiaChi = "456 Market Street"
+                },
+                new DonHang
+                {
+                    MaDonHang = 3,
+                    MaNguoiDung = "ND00003", // Lê Văn Chính
+                    MaNhanVien = "NV00007", // Trần Văn Gin (nhân viên)
+                    NgayDat = DateTime.Now.AddDays(-2),
+                    TrangThaiDonHang = TrangThaiDonHang.DangGiaoHang,
+                    TrangThaiHang = TrangThaiThanhToan.ThanhToanKhiNhanHang,
+                    LyDoHuy = null,
+                    TenNguoiNhan = "Le Van Chinh",
+                    Sdt = "0912345678",
+                    DiaChi = "789 Broadway"
+                },
+                new DonHang
+                {
+                    MaDonHang = 4,
+                    MaNguoiDung = "ND00004", // Phạm Thị Dung
+                    MaNhanVien = "NV00008", // Lê Thị Hải (nhân viên)
+                    NgayDat = DateTime.Now.AddDays(-3),
+                    TrangThaiDonHang = TrangThaiDonHang.DaGiaoHang,
+                    TrangThaiHang = TrangThaiThanhToan.ThanhToanVNPay,
+                    LyDoHuy = null,
+                    TenNguoiNhan = "Pham Thi Dung",
+                    Sdt = "0901234567",
+                    DiaChi = "101 Center Ave"
+                },
+                new DonHang
+                {
+                    MaDonHang = 5,
+                    MaNguoiDung = "ND00005", // Đỗ Văn Em
+                    MaNhanVien = null, // Chưa có nhân viên xử lý
+                    NgayDat = DateTime.Now.AddDays(-4),
+                    TrangThaiDonHang = TrangThaiDonHang.DaHuy,
+                    TrangThaiHang = TrangThaiThanhToan.ThanhToanKhiNhanHang,
+                    LyDoHuy = "Khách hủy đơn",
+                    TenNguoiNhan = "Do Van Em",
+                    Sdt = "0934567890",
+                    DiaChi = "202 Park Lane"
+                },
+                new DonHang
+                {
+                    MaDonHang = 9,
+                    MaNguoiDung = "ND00001", // Nguyễn Văn An
+                    MaNhanVien = null,
+                    NgayDat = DateTime.Now,
+                    TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan,
+                    TrangThaiHang = TrangThaiThanhToan.ThanhToanKhiNhanHang,
+                    LyDoHuy = null,
+                    TenNguoiNhan = "Nguyen Van An",
+                    Sdt = "0123456789",
+                    DiaChi = "123 Main Street"
+                },
+                new DonHang
+                {
+                    MaDonHang = 10,
+                    MaNguoiDung = "ND00002", // Trần Thị Bình
+                    MaNhanVien = null,
+                    NgayDat = DateTime.Now,
+                    TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan,
+                    TrangThaiHang = TrangThaiThanhToan.ThanhToanKhiNhanHang,
+                    LyDoHuy = null,
+                    TenNguoiNhan = "Tran Thi Binh",
+                    Sdt = "0987654321",
+                    DiaChi = "456 Market Street"
+                },
+                new DonHang
+                {
+                    MaDonHang = 11,
+                    MaNguoiDung = "ND00003", // Lê Văn Chính
+                    MaNhanVien = null,
+                    NgayDat = DateTime.Now,
+                    TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan,
+                    TrangThaiHang = TrangThaiThanhToan.ThanhToanKhiNhanHang,
+                    LyDoHuy = null,
+                    TenNguoiNhan = "Le Van Chinh",
+                    Sdt = "0912345678",
+                    DiaChi = "789 Broadway"
+                },
+                new DonHang
+                {
+                    MaDonHang = 12,
+                    MaNguoiDung = "ND00004", // Phạm Thị Dung
+                    MaNhanVien = null,
+                    NgayDat = DateTime.Now,
+                    TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan,
+                    TrangThaiHang = TrangThaiThanhToan.ThanhToanKhiNhanHang,
+                    LyDoHuy = null,
+                    TenNguoiNhan = "Pham Thi Dung",
+                    Sdt = "0901234567",
+                    DiaChi = "101 Center Ave"
+                },
+                new DonHang
+                {
+                    MaDonHang = 13,
+                    MaNguoiDung = "ND00005", // Đỗ Văn Em
+                    MaNhanVien = null,
+                    NgayDat = DateTime.Now,
+                    TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan,
+                    TrangThaiHang = TrangThaiThanhToan.ThanhToanKhiNhanHang,
+                    LyDoHuy = null,
+                    TenNguoiNhan = "Do Van Em",
+                    Sdt = "0934567890",
+                    DiaChi = "202 Park Lane"
+                }
+
+
+            );
+
+
+            modelBuilder.Entity<ChiTietDonHang>().HasData(
+                new ChiTietDonHang
+                {
+                    MaCtdh = 1,
+                    MaDonHang = 1, // Đơn hàng của Nguyễn Văn An
+                    MaSanPham = "Q00001_000000_XL", // Áo thun nam, kích thước S
+                    SoLuong = 2,
+                    Gia = 150000,
+                    ThanhTien = 300000,
+                    MaCombo = null
+                },
+                new ChiTietDonHang
+                {
+                    MaCtdh = 2,
+                    MaDonHang = 2, // Đơn hàng của Trần Thị Bình
+                    MaSanPham = "A00001_ff0000_XL", // Áo thun nam, kích thước XL
+                    SoLuong = 1,
+                    Gia = 150000,
+                    ThanhTien = 150000,
+                    MaCombo = null
+                },
+                new ChiTietDonHang
+                {
+                    MaCtdh = 3,
+                    MaDonHang = 2, // Đơn hàng của Trần Thị Bình (mua thêm sản phẩm)
+                    MaSanPham = "A00002_ff00ff_M", // Áo thun nam, kích thước XXL
+                    SoLuong = 1,
+                    Gia = 150000,
+                    ThanhTien = 150000,
+                    MaCombo = null
+                },
+                new ChiTietDonHang
+                {
+                    MaCtdh = 4,
+                    MaDonHang = 3, // Đơn hàng của Lê Văn Chính
+                    MaSanPham = "Q00001_#0C06F5_XXL", // Áo thun nam, kích thước M
+                    SoLuong = 3,
+                    Gia = 150000,
+                    ThanhTien = 450000,
+                    MaCombo = null
+                },
+                new ChiTietDonHang
+                {
+                    MaCtdh = 5,
+                    MaDonHang = 4, // Đơn hàng của Phạm Thị Dung
+                    MaSanPham = "A00001_ff00ff_XL", // Áo thun nam, kích thước M
+                    SoLuong = 2,
+                    Gia = 150000,
+                    ThanhTien = 300000,
+                    MaCombo = null
+                },
+                new ChiTietDonHang
+                {
+                    MaCtdh = 6,
+                    MaDonHang = 5, // Đơn hàng của Đỗ Văn Em
+                    MaSanPham = "A00002_ff0000_XXL", // Áo thun nam, kích thước XL
+                    SoLuong = 1,
+                    Gia = 150000,
+                    ThanhTien = 150000,
+                    MaCombo = null
+                },
+                new ChiTietDonHang
+                {
+                    MaCtdh = 7,
+                    MaDonHang = 9,
+                    MaSanPham = "Q00001_000000_XL",
+                    SoLuong = 2,
+                    Gia = 150000,
+                    ThanhTien = 300000,
+                    MaCombo = null
+                },
+                new ChiTietDonHang
+                {
+                    MaCtdh = 8,
+                    MaDonHang = 9,
+                    MaSanPham = "A00001_ff0000_XL",
+                    SoLuong = 1,
+                    Gia = 150000,
+                    ThanhTien = 150000,
+                    MaCombo = null
+                },
+                new ChiTietDonHang
+                {
+                    MaCtdh = 9,
+                    MaDonHang = 10,
+                    MaSanPham = "Q00001_#0C06F5_XXL",
+                    SoLuong = 1,
+                    Gia = 150000,
+                    ThanhTien = 150000,
+                    MaCombo = null
+                },
+                new ChiTietDonHang
+                {
+                    MaCtdh = 10,
+                    MaDonHang = 10,
+                    MaSanPham = "A00002_ff00ff_M",
+                    SoLuong = 2,
+                    Gia = 150000,
+                    ThanhTien = 300000,
+                    MaCombo = null
+                },
+                new ChiTietDonHang
+                {
+                    MaCtdh = 11,
+                    MaDonHang = 11,
+                    MaSanPham = "A00001_ff00ff_XL",
+                    SoLuong = 3,
+                    Gia = 150000,
+                    ThanhTien = 450000,
+                    MaCombo = null
+                },
+                new ChiTietDonHang
+                {
+                    MaCtdh = 12,
+                    MaDonHang = 12,
+                    MaSanPham = "A00002_ff0000_XL",
+                    SoLuong = 1,
+                    Gia = 150000,
+                    ThanhTien = 150000,
+                    MaCombo = null
+                },
+                new ChiTietDonHang
+                {
+                    MaCtdh = 13,
+                    MaDonHang = 12,
+                    MaSanPham = "A00002_ff00ff_XL",
+                    SoLuong = 2,
+                    Gia = 150000,
+                    ThanhTien = 300000,
+                    MaCombo = null
+                },
+                new ChiTietDonHang
+                {
+                    MaCtdh = 14,
+                    MaDonHang = 13,
+                    MaSanPham = "A00001_ff0000_XXL",
+                    SoLuong = 1,
+                    Gia = 150000,
+                    ThanhTien = 150000,
+                    MaCombo = null
+                },
+                new ChiTietDonHang
+                {
+                    MaCtdh = 15,
+                    MaDonHang = 13,
+                    MaSanPham = "A00001_ff00ff_M",
+                    SoLuong = 1,
+                    Gia = 150000,
+                    ThanhTien = 150000,
+                    MaCombo = null
+                },
+                new ChiTietDonHang
+                {
+                    MaCtdh = 16,
+                    MaDonHang = 13,
+                    MaSanPham = "A00002_ff0000_XXL",
+                    SoLuong = 1,
+                    Gia = 150000,
+                    ThanhTien = 150000,
+                    MaCombo = null
+                }
+            );
+
+
 
             OnModelCreatingPartial(modelBuilder);
         }
