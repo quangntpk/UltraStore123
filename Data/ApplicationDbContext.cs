@@ -1218,7 +1218,7 @@ namespace UltraStrore.Data
                 },
                  new SanPham
                  {
-                     MaSanPham = "A00001_ff0000_M",
+                     MaSanPham = "A00001_ff0000_S",
                      TenSanPham = "Áo thun nam",
                      MaThuongHieu = 1,
                      MaLoaiSanPham = 1,

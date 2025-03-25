@@ -112,7 +112,7 @@ namespace UltraStrore.Services
                         {
                             foreach (var check in Checked)
                             {
-                                if (check.MaSanPham.Trim() == MaSanPham)
+                                if (check.MaSanPham!=null && check.MaSanPham.Trim() == MaSanPham.Trim())
                                 {
                                     check.SoLuong += info.SoLuong;
                                     response.ResponseCode = 201;
