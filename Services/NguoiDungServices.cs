@@ -8,6 +8,8 @@ using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
 using UltraStrore.Utils;
 using BCrypt.Net;
+using System.Security.Claims;
+using System.Text;
 namespace UltraStrore.Services
 {
     public class NguoiDungServices : INguoiDungServices
@@ -15,12 +17,14 @@ namespace UltraStrore.Services
         private readonly ApplicationDbContext _context;
         private readonly IJwtTokenServices _jwtTokenGenerator;
         private readonly IEmailServices _emailService;
+        private readonly IWebHostEnvironment _environment;
 
-        public NguoiDungServices(ApplicationDbContext context, IJwtTokenServices jwtTokenGenerator, IEmailServices emailService)
+        public NguoiDungServices(ApplicationDbContext context, IJwtTokenServices jwtTokenGenerator, IEmailServices emailService, IWebHostEnvironment environment)
         {
             _context = context;
             _jwtTokenGenerator = jwtTokenGenerator;
             _emailService = emailService;
+            _environment = environment;
         }
 
         private string GenerateMaNguoiDung(int? vaiTro)
@@ -174,8 +178,6 @@ namespace UltraStrore.Services
             };
         }
 
-
-
         public async Task<NguoiDungView> UpdateNguoiDung(NguoiDungEdit model)
         {
             var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.MaNguoiDung == model.MaNguoiDung);
@@ -296,6 +298,33 @@ namespace UltraStrore.Services
             return (userView, token);
         }
 
+        public async Task<NguoiDung> CreateUserFromGoogleAsync(ClaimsPrincipal principal)
+        {
+            var email = principal.FindFirst(ClaimTypes.Email)?.Value;
+            var name = principal.FindFirst(ClaimTypes.Name)?.Value;
+
+            var exitsingUser = await GetNguoiDungByEmailAsync(email);
+            if(exitsingUser != null)
+            {
+                return exitsingUser;
+            }
+
+            var newUser = new NguoiDung
+            {
+                MaNguoiDung = GenerateMaNguoiDung(0),
+                Email = email,
+                HoTen = name,
+                NgayTao = DateTime.Now,
+                TrangThai = 1,
+                VaiTro = 0
+            };
+
+            _context.NguoiDungs.Add(newUser);   
+            await _context.SaveChangesAsync();
+            return newUser;
+
+        }
+
         public async Task<bool> GenerateAndSendOtpAsync(string email)
         {
             var user = await GetNguoiDungByEmailAsync(email);
@@ -356,6 +385,88 @@ namespace UltraStrore.Services
             await _context.SaveChangesAsync();
 
             return true;
+        }
+
+        public async Task<bool> UpdateUserProfileAsync(string maNguoiDung, UpdateProfileView model)
+        {
+            try
+            {
+                var user = await _context.NguoiDungs
+                    .FirstOrDefaultAsync(u => u.MaNguoiDung == maNguoiDung);
+
+                if (user == null)
+                    return false;
+
+                user.HoTen = model.HoTen ?? user.HoTen;
+                user.Email = model.Email ?? user.Email;
+                user.Sdt = model.Sdt ?? user.Sdt;
+                user.NgaySinh = model.NgaySinh ?? user.NgaySinh;
+                user.Cccd = model.CCCD ?? user.Cccd;
+                user.DiaChi = model.DiaChi ?? user.DiaChi;
+
+                if(model.HinhAnh != null)
+                {
+                    if (model.HinhAnh.Length > 5 * 1024 * 1024)
+                        throw new Exception("Kích thước ảnh không vượt quá 5MB");
+
+                    var allowedExtensions = new[] { ".jpg", "jpeg", ".png" };
+                    var extension = Path.GetExtension(model.HinhAnh.FileName).ToLower();
+                    if (!allowedExtensions.Contains(extension))
+                    {
+                        throw new Exception("Chỉ chấp nhận file ảnh .jpg, .jpeg, .png");
+                    }
+
+                    using (var memoryStream = new MemoryStream())
+                    {
+                        await model.HinhAnh.CopyToAsync(memoryStream);
+                        var imageBytes = memoryStream.ToArray();
+                        if (imageBytes.Length == 0)
+                            throw new Exception("Ảnh không hợp lệ hoặc rỗng.");
+
+                        user.HinhAnh = imageBytes;
+                    }
+                }          
+
+                _context.NguoiDungs.Update(user);   
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex) 
+            {
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdateUserPassword(string maNguoiDung, UpdateProfileView model)
+        {
+            try
+            {
+                var user = await _context.NguoiDungs
+                    .FirstOrDefaultAsync(u => u.MaNguoiDung == maNguoiDung);
+
+                if (user == null)
+                    return false;
+
+                if (!string.IsNullOrEmpty(model.MatKhauMoi) && !string.IsNullOrEmpty(model.MatKhauCu))
+                {
+                    if (PasswordHasher.VerifyPassword(model.MatKhauCu, user.MatKhau))
+                    {
+                        user.MatKhau = PasswordHasher.HashPassword(model.MatKhauMoi);
+                    }
+                    else
+                    {
+                        throw new Exception("Mật khẩu cũ không đúng");
+                    }
+                }
+
+                _context.NguoiDungs.Update(user);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw;
+            }
         }
 
     }

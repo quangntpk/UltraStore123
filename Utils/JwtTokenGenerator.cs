@@ -22,7 +22,7 @@ namespace UltraStrore.Utils
                 new Claim(JwtRegisteredClaimNames.Sub, user.TaiKhoan),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(ClaimTypes.NameIdentifier, user.MaNguoiDung),
-                new Claim(ClaimTypes.Role, user.VaiTro.ToString()) // VaiTro: 0=Admin, 1=Nhân viên, 2=User
+                new Claim(ClaimTypes.Role, user.VaiTro.ToString()) 
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));

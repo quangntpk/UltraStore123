@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -30,9 +31,16 @@ namespace UltraStrore
             builder.Services.AddSingleton<ITokenBlacklistService, TokenBlacklistService>();
             builder.Services.AddScoped<IEmailServices, EmailServices>();
 
-            /*builder.Services.AddScoped<INguoiDungServices, NguoiDungServices>();*/
-
             builder.Services.AddMemoryCache();
+
+            builder.Services.AddDistributedMemoryCache();
+
+            builder.Services.AddSession(options =>
+            {
+                options.IdleTimeout = TimeSpan.FromMinutes(30);
+                options.Cookie.HttpOnly = true;
+                options.Cookie.IsEssential = true;
+            });
 
             builder.Services.AddSingleton(resolver =>
                 resolver.GetRequiredService<IOptions<GeminiSettings>>().Value);
@@ -108,6 +116,7 @@ namespace UltraStrore
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+            app.UseRouting();
 
             app.UseHttpsRedirection();
 
@@ -115,6 +124,8 @@ namespace UltraStrore
             app.UseCors("AllowAll");
 
             app.UseTokenBlacklist();
+
+            app.UseSession();
 
             app.UseAuthentication();
 

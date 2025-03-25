@@ -5,6 +5,7 @@ using UltraStrore.Helper;
 
 using UltraStrore.Models.EditModels;
 using UltraStrore.Models.ViewModels;
+using System.Security.Claims;
 
 namespace UltraStrore.Repository
 {
@@ -17,9 +18,12 @@ namespace UltraStrore.Repository
         Task<bool> DeleteNguoiDung(string id);
         Task<NguoiDungView> DangKy(DangKyView model);
         Task<(NguoiDungView User, string Token)> DangNhap(DangNhapView model);
+        Task<NguoiDung> CreateUserFromGoogleAsync(ClaimsPrincipal principal);
         Task<NguoiDung> GetNguoiDungByEmailAsync(string email);
         Task<bool> GenerateAndSendOtpAsync(string email);
         Task<bool> VerifyOtpAsync(string email, string otp);
         Task<bool> ResetPasswordAsync(string email, string otp, string newPassword);
+        Task<bool> UpdateUserProfileAsync(string maNguoiDung, UpdateProfileView dto);
+        Task<bool> UpdateUserPassword(string maNguoiDung, UpdateProfileView dto);
     }
 }
