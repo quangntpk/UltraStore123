@@ -130,5 +130,52 @@ namespace UltraStrore.Services
             }
             return response1;
         }
+
+        public async Task<APIResponse> PhanLoaiGopY(string noiDung)
+        {
+            APIResponse response = new APIResponse();
+            try
+            {
+                var GoogleAPIKey = _authSettings.Google.GoogleAPIKey;
+                var prompt = $"Phân loại nội dung sau thành 'tích cực', 'tiêu cực' hoặc 'bình thường': {noiDung}";
+
+                var requestBody = new
+                {
+                    contents = new[]
+                    {
+                        new
+                        {
+                            parts = new[]
+                            {
+                                new { text = prompt }
+                            }
+                        }
+                    }
+                };
+
+                var jsonRequestBody = JsonConvert.SerializeObject(requestBody);
+                var content = new StringContent(jsonRequestBody, Encoding.UTF8, "application/json");
+
+                using (var client = new HttpClient())
+                {
+                    var apiResponse = await client.PostAsync(
+                        $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={GoogleAPIKey}",
+                        content
+                    );
+                    var responseString = await apiResponse.Content.ReadAsStringAsync();
+                    var responseObject = JsonConvert.DeserializeObject<dynamic>(responseString);
+
+                    string result = responseObject?.candidates[0].content?.parts[0]?.text ?? "bình thường";
+                    response.ResponseCode = 201;
+                    response.Result = result.Trim().ToLower();
+                }
+            }
+            catch (Exception ex)
+            {
+                response.ResponseCode = 400;
+                response.ErrorMessage = ex.Message;
+            }
+            return response;
+        }
     }
 }

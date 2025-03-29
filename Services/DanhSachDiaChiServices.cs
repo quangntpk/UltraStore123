@@ -39,6 +39,9 @@ namespace UltraStrore.Services
                 Sdt = d.Sdt,
                 MoTa = d.MoTa,
                 DiaChi = d.DiaChi,
+                PhuongXa = d.PhuongXa,
+                QuanHuyen = d.QuanHuyen,
+                Tinh = d.Tinh,
                 TrangThai = d.TrangThai
             }).ToList();
         }
@@ -56,6 +59,9 @@ namespace UltraStrore.Services
                 Sdt = d.Sdt,
                 MoTa = d.MoTa,
                 DiaChi = d.DiaChi,
+                PhuongXa = d.PhuongXa,
+                QuanHuyen = d.QuanHuyen,
+                Tinh = d.Tinh,
                 TrangThai = d.TrangThai
             }).ToList();
         }
@@ -73,24 +79,46 @@ namespace UltraStrore.Services
                 Sdt = address.Sdt,
                 MoTa = address.MoTa,
                 DiaChi = address.DiaChi,
+                PhuongXa = address.PhuongXa,
+                QuanHuyen = address.QuanHuyen,
+                Tinh = address.Tinh,
                 TrangThai = address.TrangThai
             };
         }
 
         public async Task<DanhSachDiaChiView> CreateDanhSachDiaChi(DanhSachDiaChiCreate model)
         {
+
+            int isActive = model.TrangThai ?? 0;
+
+            if (isActive == 1)
+            {
+                var existingAddresses = await _context.DanhSachDiaChis
+                    .Where(d => d.MaNguoiDung == model.MaNguoiDung)
+                    .ToListAsync();
+                foreach (var addr in existingAddresses)
+                {
+                    addr.TrangThai = 0;
+                }
+            }
+
             var newAddress = new DanhSachDiaChi
             {
-                MaDiaChi = model.MaDiaChi, // Assuming the client may supply this, otherwise use auto-generation if needed
+                MaDiaChi = model.MaDiaChi,
                 MaNguoiDung = model.MaNguoiDung,
                 HoTen = model.HoTen,
                 Sdt = model.Sdt,
                 MoTa = model.MoTa,
                 DiaChi = model.DiaChi,
-                TrangThai = model.TrangThai
+                PhuongXa = model.PhuongXa,
+                QuanHuyen = model.QuanHuyen,
+                Tinh = model.Tinh,
+                TrangThai = isActive
             };
+
             _context.DanhSachDiaChis.Add(newAddress);
             await _context.SaveChangesAsync();
+
             return new DanhSachDiaChiView
             {
                 MaDiaChi = newAddress.MaDiaChi,
@@ -99,6 +127,9 @@ namespace UltraStrore.Services
                 Sdt = newAddress.Sdt,
                 MoTa = newAddress.MoTa,
                 DiaChi = newAddress.DiaChi,
+                PhuongXa = newAddress.PhuongXa,
+                QuanHuyen = newAddress.QuanHuyen,
+                Tinh = newAddress.Tinh,
                 TrangThai = newAddress.TrangThai
             };
         }
@@ -109,13 +140,28 @@ namespace UltraStrore.Services
             if (address == null)
                 throw new Exception("Địa chỉ không tồn tại.");
 
-            // Update fields that can be changed
+            int isActive = model.TrangThai ?? 0;
+
+            if (isActive == 1)
+            {
+                var otherAddresses = await _context.DanhSachDiaChis
+                    .Where(d => d.MaNguoiDung == model.MaNguoiDung && d.MaDiaChi != model.MaDiaChi)
+                    .ToListAsync();
+                foreach (var addr in otherAddresses)
+                {
+                    addr.TrangThai = 0;
+                }
+            }
+
             address.MaNguoiDung = model.MaNguoiDung;
             address.HoTen = model.HoTen;
             address.Sdt = model.Sdt;
             address.MoTa = model.MoTa;
             address.DiaChi = model.DiaChi;
-            address.TrangThai = model.TrangThai;
+            address.PhuongXa = model.PhuongXa;
+            address.QuanHuyen = model.QuanHuyen;
+            address.Tinh = model.Tinh;
+            address.TrangThai = isActive;
 
             await _context.SaveChangesAsync();
 
@@ -127,6 +173,9 @@ namespace UltraStrore.Services
                 Sdt = address.Sdt,
                 MoTa = address.MoTa,
                 DiaChi = address.DiaChi,
+                PhuongXa = address.PhuongXa,
+                QuanHuyen = address.QuanHuyen,
+                Tinh = address.Tinh,
                 TrangThai = address.TrangThai
             };
         }
@@ -136,6 +185,7 @@ namespace UltraStrore.Services
             var address = await _context.DanhSachDiaChis.FirstOrDefaultAsync(d => d.MaDiaChi == id);
             if (address == null)
                 return false;
+
             _context.DanhSachDiaChis.Remove(address);
             await _context.SaveChangesAsync();
             return true;

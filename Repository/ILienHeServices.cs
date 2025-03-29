@@ -11,5 +11,7 @@ namespace UltraStrore.Repository
         Task<LienHeView> CreateLienHe(LienHeCreate model);
         Task<LienHeView> UpdateLienHe(LienHeEdit model);
         Task<bool> DeleteLienHe(int id);
+        Task<LienHeView> AddLienHe(LienHeCreate model);
+        Task<bool> DeleteMultipleLienHe(List<int> ids);
     }
 }

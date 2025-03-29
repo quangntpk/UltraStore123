@@ -9,5 +9,6 @@ namespace UltraStrore.Models.CreateModels
         public string? NoiDung { get; set; }
         public string? Email { get; set; }
         public int? TrangThai { get; set; }
+        public DateTime? NgayTao { get; set; }
     }
 }

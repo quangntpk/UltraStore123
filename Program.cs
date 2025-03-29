@@ -21,6 +21,9 @@ namespace UltraStrore
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                     throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
             builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
+            builder.Services.AddScoped<IGHNService, GHNService>();
+            builder.Services.AddHttpClient();
+
             builder.Services.AddScoped<IGeminiServices, GeminiServices>();
             builder.Services.AddScoped<ICartServices, CartServices>();
             builder.Services.AddScoped<ISanPhamServices, SanPhamServices>();

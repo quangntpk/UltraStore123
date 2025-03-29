@@ -7,6 +7,9 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
+using System;
+using System.Threading.Tasks;
+
 namespace UltraStrore.Controllers
 {
     [Route("api/[controller]")]
@@ -83,6 +86,7 @@ namespace UltraStrore.Controllers
                 NoiDung = model.NoiDung,
                 Email = model.Email,
                 TrangThai = int.TryParse(model.TrangThai, out int trangThai) ? trangThai : 0
+
             };
 
             try
@@ -119,6 +123,7 @@ namespace UltraStrore.Controllers
                           <p><strong>Email:</strong> {newLienHe.Email ?? "N/A"}</p>
                           <p><strong>Số điện thoại:</strong> {(string.IsNullOrWhiteSpace(newLienHe.Sdt) ? "N/A" : newLienHe.Sdt)}</p>
                           <p><strong>Nội dung:</strong><br/>{newLienHe.NoiDung ?? "N/A"}</p>
+                          <p><strong>Ngày tạo:</strong> {newLienHe.NgayTao?.ToString("dd/MM/yyyy HH:mm:ss") ?? "N/A"}</p>
                         </div>
                         <div class='footer'>
                           <p>UltraStore © {DateTime.Now.Year}. Mọi quyền được bảo lưu.</p>
@@ -141,6 +146,25 @@ namespace UltraStrore.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi tạo liên hệ mới.");
+                return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpPost("Add")]
+        public async Task<IActionResult> Add([FromBody] LienHeCreate model)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var newLienHe = await _services.AddLienHe(model);
+                _logger.LogInformation("Thêm liên hệ mới thành công với ID: {Id}", newLienHe.MaLienHe);
+                return CreatedAtAction(nameof(GetById), new { id = newLienHe.MaLienHe }, newLienHe);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi thêm liên hệ mới.");
                 return BadRequest(ex.Message);
             }
         }
@@ -256,6 +280,23 @@ namespace UltraStrore.Controllers
             }
             return false;
         }
+
+        [HttpDelete("DeleteMultiple")]
+        public async Task<IActionResult> DeleteMultiple([FromBody] List<int> ids)
+        {
+            try
+            {
+                var result = await _services.DeleteMultipleLienHe(ids);
+                if (!result)
+                    return NotFound("Không tìm thấy liên hệ để xóa.");
+
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi server: {ex.Message}");
+            }
+        }
     }
 
     public class RecaptchaResponse
@@ -264,5 +305,11 @@ namespace UltraStrore.Controllers
         public DateTime challenge_ts { get; set; }
         public string hostname { get; set; }
         public List<string> error_codes { get; set; }
+    }
+
+    public class SupportEmailRequest
+    {
+        public string ToEmail { get; set; }
+        public string Message { get; set; }
     }
 }

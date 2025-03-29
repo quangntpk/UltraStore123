@@ -10,5 +10,6 @@
         public string Email { get; set; }
         public string TrangThai { get; set; }
         public string ReCaptchaToken { get; set; }
+        public DateTime NgayTao { get; set; }
     }
 }

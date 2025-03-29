@@ -11,12 +11,12 @@ namespace UltraStrore.Controllers
     public class DanhSachDiaChiController : ControllerBase
     {
         private readonly IDanhSachDiaChiServices _services;
+
         public DanhSachDiaChiController(IDanhSachDiaChiServices services)
         {
             _services = services;
         }
 
-        // GET: api/DanhSachDiaChi?searchTerm=xxx
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] string? searchTerm)
         {
@@ -24,7 +24,6 @@ namespace UltraStrore.Controllers
             return Ok(list);
         }
 
-        // GET: api/DanhSachDiaChi/maNguoiDung/{maNguoiDung}
         [HttpGet("maNguoiDung/{maNguoiDung}")]
         public async Task<IActionResult> GetByMaNguoiDung(string maNguoiDung)
         {
@@ -32,7 +31,6 @@ namespace UltraStrore.Controllers
             return Ok(list);
         }
 
-        // GET: api/DanhSachDiaChi/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -47,7 +45,6 @@ namespace UltraStrore.Controllers
             }
         }
 
-        // POST: api/DanhSachDiaChi
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] DanhSachDiaChiCreate model)
         {
@@ -62,7 +59,6 @@ namespace UltraStrore.Controllers
             }
         }
 
-        // PUT: api/DanhSachDiaChi/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] DanhSachDiaChiEdit model)
         {
@@ -80,7 +76,6 @@ namespace UltraStrore.Controllers
             }
         }
 
-        // DELETE: api/DanhSachDiaChi/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {

@@ -4,6 +4,7 @@ using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.EditModels;
 using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
+using System;
 
 namespace UltraStrore.Services
 {
@@ -18,7 +19,7 @@ namespace UltraStrore.Services
 
         public async Task<List<LienHeView>> GetLienHeList(string? searchTerm)
         {
-            var query = _context.LienHes.AsNoTracking(); // Tối ưu hiệu suất bằng cách không theo dõi thực thể
+            var query = _context.LienHes.AsNoTracking();
 
             if (!string.IsNullOrEmpty(searchTerm))
             {
@@ -40,7 +41,8 @@ namespace UltraStrore.Services
                     Sdt = l.Sdt,
                     NoiDung = l.NoiDung,
                     Email = l.Email,
-                    TrangThai = l.TrangThai
+                    TrangThai = l.TrangThai,
+                    NgayTao = l.NgayTao
                 })
                 .ToListAsync();
         }
@@ -61,7 +63,8 @@ namespace UltraStrore.Services
                 Sdt = lienHe.Sdt,
                 NoiDung = lienHe.NoiDung,
                 Email = lienHe.Email,
-                TrangThai = lienHe.TrangThai
+                TrangThai = lienHe.TrangThai,
+                NgayTao = lienHe.NgayTao
             };
         }
 
@@ -71,12 +74,13 @@ namespace UltraStrore.Services
 
             var newLienHe = new LienHe
             {
-                MaLienHe = model.MaLienHe, // Giả sử MaLienHe được tự động sinh nếu là identity
+                MaLienHe = model.MaLienHe,
                 HoTen = model.HoTen,
                 Sdt = model.Sdt,
                 NoiDung = model.NoiDung,
                 Email = model.Email,
-                TrangThai = model.TrangThai
+                TrangThai = model.TrangThai,
+                NgayTao = DateTime.Now
             };
 
             _context.LienHes.Add(newLienHe);
@@ -89,7 +93,38 @@ namespace UltraStrore.Services
                 Sdt = newLienHe.Sdt,
                 NoiDung = newLienHe.NoiDung,
                 Email = newLienHe.Email,
-                TrangThai = newLienHe.TrangThai
+                TrangThai = newLienHe.TrangThai,
+                NgayTao = newLienHe.NgayTao
+            };
+        }
+
+        public async Task<LienHeView> AddLienHe(LienHeCreate model)
+        {
+            if (model == null) throw new ArgumentNullException(nameof(model));
+
+            var newLienHe = new LienHe
+            {
+                MaLienHe = model.MaLienHe,
+                HoTen = model.HoTen,
+                Sdt = model.Sdt,
+                NoiDung = model.NoiDung,
+                Email = model.Email,
+                TrangThai = model.TrangThai,
+                NgayTao = DateTime.Now
+            };
+
+            _context.LienHes.Add(newLienHe);
+            await _context.SaveChangesAsync();
+
+            return new LienHeView
+            {
+                MaLienHe = newLienHe.MaLienHe,
+                HoTen = newLienHe.HoTen,
+                Sdt = newLienHe.Sdt,
+                NoiDung = newLienHe.NoiDung,
+                Email = newLienHe.Email,
+                TrangThai = newLienHe.TrangThai,
+                NgayTao = newLienHe.NgayTao
             };
         }
 
@@ -116,7 +151,8 @@ namespace UltraStrore.Services
                 Sdt = lienHe.Sdt,
                 NoiDung = lienHe.NoiDung,
                 Email = lienHe.Email,
-                TrangThai = lienHe.TrangThai
+                TrangThai = lienHe.TrangThai,
+                NgayTao = lienHe.NgayTao
             };
         }
 
@@ -127,6 +163,23 @@ namespace UltraStrore.Services
                 return false;
 
             _context.LienHes.Remove(lienHe);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> DeleteMultipleLienHe(List<int> ids)
+        {
+            if (ids == null || ids.Count == 0)
+                return false;
+
+            var lienHesToDelete = await _context.LienHes
+                .Where(l => ids.Contains(l.MaLienHe))
+                .ToListAsync();
+
+            if (lienHesToDelete.Count == 0)
+                return false;
+
+            _context.LienHes.RemoveRange(lienHesToDelete);
             await _context.SaveChangesAsync();
             return true;
         }
