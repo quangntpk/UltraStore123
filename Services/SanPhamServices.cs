@@ -163,7 +163,8 @@ namespace UltraStrore.Services
                     }
                     if (!Found) 
                     {
-                        _context.SanPhams.Remove(item);
+                        item.SoLuong = 0;
+                        _context.SanPhams.Update(item);
                     }                                             
                 }
                 var HinhDelete = _context.HinhAnhs.Where(g => g.MaSanPham.Contains(data[0].ID.Trim())).ToList();
