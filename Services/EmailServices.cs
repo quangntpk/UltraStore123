@@ -221,7 +221,7 @@ namespace UltraStrore.Services
             bodyBuilder.TextBody = $"Mã OTP của bạn là: {otp}. Mã này sẽ hết hạn sau 10 phút.";
             message.Body = bodyBuilder.ToMessageBody();
 
-            using (var client = new SmtpClient())
+            using (var client = new MailKit.Net.Smtp.SmtpClient())
             {
                 await client.ConnectAsync(emailSettings["SmtpServer"], int.Parse(emailSettings["SmtpPort"]), MailKit.Security.SecureSocketOptions.StartTls);
                 await client.AuthenticateAsync(emailSettings["SenderEmail"], emailSettings["SenderPassword"]);
