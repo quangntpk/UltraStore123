@@ -265,7 +265,7 @@ namespace UltraStrore.Services
                 VaiTro = newUser.VaiTro,
                 TrangThai = newUser.TrangThai,
                 NgayTao = newUser.NgayTao,
-                Isveryfied = false
+                Isveryfied = false,
                 GioiTinh = newUser.GioiTinh
             };
         }
