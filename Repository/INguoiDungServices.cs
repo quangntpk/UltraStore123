@@ -20,7 +20,9 @@ namespace UltraStrore.Repository
         Task<NguoiDung> CreateUserFromGoogleAsync(ClaimsPrincipal principal);
         Task<NguoiDung> GetNguoiDungByEmailAsync(string email);
         Task<bool> GenerateAndSendOtpAsync(string email);
+        Task<bool> GenerateAndSendOtpAccountAsync(string email);
         Task<bool> VerifyOtpAsync(string email, string otp);
+        Task<bool> ActivateAccountAsync(string email, string otp);
         Task<bool> ResetPasswordAsync(string email, string otp, string newPassword);
         Task<(NguoiDungView User, string Token)> DangNhapAdmin(LoginAdmin model);
         Task<bool> IsAdminAsync(string email);
