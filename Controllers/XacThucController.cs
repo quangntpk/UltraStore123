@@ -55,6 +55,26 @@ namespace UltraStrore.Controllers
             }
         }
 
+
+        [HttpPost("VerifyOtpActivate")]
+        public async Task<IActionResult> ActivateAccountlAsync([FromBody] XacMinhOtpView request)
+        {
+            try
+            {
+                var success = await _nguoiDungServices.ActivateAccountAsync(request.Email, request.Otp);
+                if (!success)
+                {
+                    return BadRequest("Mã OTP không hợp lệ hoặc đã hết hạn");
+                }
+
+                return Ok(new { message = "Tài khoản của bạn đã được kích hoạt thành công!" });             
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPost("DangNhap")]
         public async Task<IActionResult> DangNhap([FromBody] DangNhapView model)
         {

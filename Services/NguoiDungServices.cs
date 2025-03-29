@@ -240,6 +240,7 @@ namespace UltraStrore.Services
             if (await _context.NguoiDungs.AnyAsync(u => u.TaiKhoan == model.TaiKhoan))
                 throw new Exception("Tài khoản đã tồn tại.");
 
+
             string hashedPassword = PasswordHasher.HashPassword(model.MatKhau);
             var newUser = new NguoiDung
             {
@@ -250,11 +251,14 @@ namespace UltraStrore.Services
                 MatKhau = hashedPassword,
                 NgayTao = DateTime.Now,
                 TrangThai = 1, // Active
-                VaiTro = 0 // User thường
+                VaiTro = 0, // User thường
+                Isveryfied = false
             };
 
             _context.NguoiDungs.Add(newUser);
-            await _context.SaveChangesAsync();  
+            await _context.SaveChangesAsync();
+
+            await GenerateAndSendOtpAccountAsync(model.Email);
 
             return new NguoiDungView
             {
@@ -265,14 +269,15 @@ namespace UltraStrore.Services
                 MatKhau = newUser.MatKhau,
                 VaiTro = newUser.VaiTro,
                 TrangThai = newUser.TrangThai,
-                NgayTao = newUser.NgayTao
+                NgayTao = newUser.NgayTao,
+                Isveryfied = false
             };
         }
 
-        public async Task<(NguoiDungView User,string Token)> DangNhap (DangNhapView model)
+        public async Task<(NguoiDungView User, string Token)> DangNhap(DangNhapView model)
         {
             var user = await _context.NguoiDungs
-                .FirstOrDefaultAsync ( u => u.TaiKhoan == model.TaiKhoan );
+                .FirstOrDefaultAsync(u => u.TaiKhoan == model.TaiKhoan);
 
             if (user == null)
                 throw new Exception("Tài khoản không tồn tại.");
@@ -304,7 +309,7 @@ namespace UltraStrore.Services
             var name = principal.FindFirst(ClaimTypes.Name)?.Value;
 
             var exitsingUser = await GetNguoiDungByEmailAsync(email);
-            if(exitsingUser != null)
+            if (exitsingUser != null)
             {
                 return exitsingUser;
             }
@@ -319,7 +324,7 @@ namespace UltraStrore.Services
                 VaiTro = 0
             };
 
-            _context.NguoiDungs.Add(newUser);   
+            _context.NguoiDungs.Add(newUser);
             await _context.SaveChangesAsync();
             return newUser;
 
@@ -330,11 +335,11 @@ namespace UltraStrore.Services
             var user = await GetNguoiDungByEmailAsync(email);
             if (user == null)
             {
-                return false; 
+                return false;
             }
 
-            var otp = new Random().Next(100000, 999999).ToString(); 
-            var otpExpiry = DateTime.UtcNow.AddMinutes(10); 
+            var otp = new Random().Next(100000, 999999).ToString();
+            var otpExpiry = DateTime.UtcNow.AddMinutes(10);
 
             user.Otp = otp;
             user.OtpExpiry = otpExpiry;
@@ -342,6 +347,47 @@ namespace UltraStrore.Services
 
             // Gửi email chứa OTP
             await _emailService.SendOtpEmailAsync(user.Email, otp);
+            return true;
+        }
+
+        public async Task<bool> GenerateAndSendOtpAccountAsync(string email)
+        {
+            var user = await GetNguoiDungByEmailAsync(email);
+            if (user == null)
+            {
+                return false;
+            }
+
+            var otp = new Random().Next(100000, 999999).ToString();
+            var otpExpiry = DateTime.UtcNow.AddMinutes(10);
+
+            user.Otp = otp;
+            user.OtpExpiry = otpExpiry;
+            await _context.SaveChangesAsync();
+
+            // Gửi email chứa OTP
+            await _emailService.SendOtpEmailAccountAsync(user.Email, otp);
+            return true;
+        }
+
+        public async Task<bool> ActivateAccountAsync(string email, string otp)
+        {
+            var isValidOtp = await VerifyOtpAsync(email, otp);
+            if (!isValidOtp)
+            {
+                return false;
+            }
+
+            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Email == email);
+
+            if (user == null)
+            {
+                return false;
+            }
+
+            user.Isveryfied = true;
+            await _context.SaveChangesAsync();  
+
             return true;
         }
 

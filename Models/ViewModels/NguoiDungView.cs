@@ -16,8 +16,8 @@
         public byte[]? HinhAnh { get; set; }
         public DateTime? NgayTao { get; set; }
         public string? MoTa { get; set; }
-
         public int? CancelConunt { get; set; }
+        public bool? Isveryfied { get; set; }
         public DateTime? LockoutEndDate { get; set; }
 
     }
