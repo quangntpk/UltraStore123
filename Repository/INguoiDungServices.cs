@@ -25,5 +25,6 @@ namespace UltraStrore.Repository
         Task<bool> IsAdminAsync(string email);
         Task<(NguoiDungView User, string Token)> DangNhapGoogleAdmin(string email);
         Task<NguoiDungView> UpdateChiTietUser (ChiTietUser model);
+        Task UpdatePassword(string maNguoiDung, string hashedPassword);
     }
 }

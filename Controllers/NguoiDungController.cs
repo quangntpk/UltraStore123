@@ -12,6 +12,7 @@ namespace UltraStrore.Controllers
     public class NguoiDungController : ControllerBase
     {
         private readonly INguoiDungServices _services;
+
         public NguoiDungController(INguoiDungServices services)
         {
             _services = services;
@@ -48,12 +49,17 @@ namespace UltraStrore.Controllers
         {
             try
             {
-                // Nếu mật khẩu được cung cấp, mã hóa mật khẩu trước khi tạo người dùng
+                // Tạo người dùng mà không mã hóa mật khẩu trước
+                var createdUser = await _services.CreateNguoiDung(model);
+
+                // Nếu mật khẩu được cung cấp, mã hóa và cập nhật lại người dùng
                 if (!string.IsNullOrEmpty(model.MatKhau))
                 {
-                    model.MatKhau = PasswordHasher.HashPassword(model.MatKhau);
+                    string hashedPassword = PasswordHasher.HashPassword(model.MatKhau);
+                    // Cập nhật mật khẩu đã mã hóa cho người dùng vừa tạo
+                    await _services.UpdatePassword(createdUser.MaNguoiDung, hashedPassword);
                 }
-                var createdUser = await _services.CreateNguoiDung(model);
+
                 return CreatedAtAction(nameof(GetById), new { id = createdUser.MaNguoiDung }, createdUser);
             }
             catch (Exception ex)

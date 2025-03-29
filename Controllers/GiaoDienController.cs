@@ -54,6 +54,7 @@ namespace UltraStrore.Controllers
         {
             try
             {
+                model.TenGiaoDien = HttpContext.Request.Form["TenGiaoDien"];
                 model.Logo = await ConvertToByteArray(HttpContext.Request.Form.Files["Logo"]);
                 model.Slider1 = await ConvertToByteArray(HttpContext.Request.Form.Files["Slider1"]);
                 model.Slider2 = await ConvertToByteArray(HttpContext.Request.Form.Files["Slider2"]);
@@ -79,12 +80,25 @@ namespace UltraStrore.Controllers
 
             try
             {
-                model.Logo = await ConvertToByteArray(HttpContext.Request.Form.Files["Logo"]);
-                model.Slider1 = await ConvertToByteArray(HttpContext.Request.Form.Files["Slider1"]);
-                model.Slider2 = await ConvertToByteArray(HttpContext.Request.Form.Files["Slider2"]);
-                model.Slider3 = await ConvertToByteArray(HttpContext.Request.Form.Files["Slider3"]);
-                model.Slider4 = await ConvertToByteArray(HttpContext.Request.Form.Files["Slider4"]);
-                model.Avt = await ConvertToByteArray(HttpContext.Request.Form.Files["Avt"]);
+                model.TenGiaoDien = HttpContext.Request.Form["TenGiaoDien"];
+                model.Logo = HttpContext.Request.Form.Files["Logo"] != null
+                    ? await ConvertToByteArray(HttpContext.Request.Form.Files["Logo"])
+                    : null;
+                model.Slider1 = HttpContext.Request.Form.Files["Slider1"] != null
+                    ? await ConvertToByteArray(HttpContext.Request.Form.Files["Slider1"])
+                    : null;
+                model.Slider2 = HttpContext.Request.Form.Files["Slider2"] != null
+                    ? await ConvertToByteArray(HttpContext.Request.Form.Files["Slider2"])
+                    : null;
+                model.Slider3 = HttpContext.Request.Form.Files["Slider3"] != null
+                    ? await ConvertToByteArray(HttpContext.Request.Form.Files["Slider3"])
+                    : null;
+                model.Slider4 = HttpContext.Request.Form.Files["Slider4"] != null
+                    ? await ConvertToByteArray(HttpContext.Request.Form.Files["Slider4"])
+                    : null;
+                model.Avt = HttpContext.Request.Form.Files["Avt"] != null
+                    ? await ConvertToByteArray(HttpContext.Request.Form.Files["Avt"])
+                    : null;
 
                 var updatedGiaoDien = await _services.UpdateGiaoDienAsync(model);
                 return Ok(updatedGiaoDien);
@@ -105,6 +119,40 @@ namespace UltraStrore.Controllers
                 if (!result)
                     return NotFound("Giao diện không tồn tại.");
                 return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        // PUT: api/GiaoDien/SetActive/{maGiaoDien}
+        [HttpPut("SetActive/{maGiaoDien}")]
+        public async Task<IActionResult> SetActiveGiaoDien(int maGiaoDien)
+        {
+            try
+            {
+                await _services.SetActiveGiaoDienAsync(maGiaoDien);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        // GET: api/GiaoDien/Search
+        [HttpGet("Search")]
+        public async Task<IActionResult> SearchGiaoDien(
+            [FromQuery] string? tenGiaoDien,
+            [FromQuery] int? maGiaoDien,
+            [FromQuery] int? trangThai,
+            [FromQuery] DateTime? ngayTao)
+        {
+            try
+            {
+                var result = await _services.SearchGiaoDienAsync(tenGiaoDien, maGiaoDien, trangThai, ngayTao);
+                return Ok(result);
             }
             catch (Exception ex)
             {

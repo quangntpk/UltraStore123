@@ -1,6 +1,4 @@
-
 using Microsoft.EntityFrameworkCore;
-using Org.BouncyCastle.Crypto.Generators;
 using UltraStrore.Data;
 using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.EditModels;
@@ -8,6 +6,7 @@ using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
 using UltraStrore.Utils;
 using BCrypt.Net;
+
 namespace UltraStrore.Services
 {
     public class NguoiDungServices : INguoiDungServices
@@ -36,7 +35,6 @@ namespace UltraStrore.Services
                     prefix = "ND";
             }
 
-            // Lấy người dùng có mã lớn nhất với tiền tố tương ứng
             var lastUser = _context.NguoiDungs
                 .Where(u => u.MaNguoiDung != null && u.MaNguoiDung.StartsWith(prefix))
                 .OrderByDescending(u => u.MaNguoiDung)
@@ -86,7 +84,8 @@ namespace UltraStrore.Services
                 NgayTao = u.NgayTao,
                 MoTa = u.MoTa,
                 CancelConunt = u.CancelConunt,
-                LockoutEndDate = u.LockoutEndDate
+                LockoutEndDate = u.LockoutEndDate,
+                GioiTinh = u.GioiTinh
             }).ToList();
         }
 
@@ -113,7 +112,8 @@ namespace UltraStrore.Services
                 NgayTao = user.NgayTao,
                 MoTa = user.MoTa,
                 CancelConunt = user.CancelConunt,
-                LockoutEndDate = user.LockoutEndDate
+                LockoutEndDate = user.LockoutEndDate,
+                GioiTinh = user.GioiTinh
             };
         }
 
@@ -124,13 +124,11 @@ namespace UltraStrore.Services
 
         public async Task<NguoiDungView> CreateNguoiDung(NguoiDungCreate model)
         {
-            // Nếu MaNguoiDung chưa được cung cấp, tự sinh mã dựa trên vai trò
             if (string.IsNullOrEmpty(model.MaNguoiDung))
             {
                 model.MaNguoiDung = GenerateMaNguoiDung(model.VaiTro);
             }
 
-            // Nếu mật khẩu được cung cấp, băm mật khẩu bằng PasswordHasher
             string hashedPassword = string.Empty;
             if (!string.IsNullOrEmpty(model.MatKhau))
             {
@@ -143,11 +141,10 @@ namespace UltraStrore.Services
                 HoTen = model.HoTen,
                 Email = model.Email,
                 TaiKhoan = model.TaiKhoan,
-                MatKhau = hashedPassword, // Lưu mật khẩu đã băm
+                MatKhau = hashedPassword,
                 TrangThai = model.TrangThai,
                 NgayTao = model.NgayTao ?? DateTime.Now,
                 VaiTro = model.VaiTro
-                // Các thuộc tính khác có thể được cập nhật thêm nếu cần (như Sdt, DiaChi, …)
             };
 
             _context.NguoiDungs.Add(newUser);
@@ -170,11 +167,10 @@ namespace UltraStrore.Services
                 NgayTao = newUser.NgayTao,
                 MoTa = newUser.MoTa,
                 CancelConunt = newUser.CancelConunt,
-                LockoutEndDate = newUser.LockoutEndDate
+                LockoutEndDate = newUser.LockoutEndDate,
+                GioiTinh = newUser.GioiTinh
             };
         }
-
-
 
         public async Task<NguoiDungView> UpdateNguoiDung(NguoiDungEdit model)
         {
@@ -182,7 +178,6 @@ namespace UltraStrore.Services
             if (user == null)
                 throw new Exception("Người dùng không tồn tại.");
 
-            // Cập nhật các trường có thể thay đổi
             user.HoTen = model.HoTen;
             user.Sdt = model.Sdt;
             user.Cccd = model.Cccd;
@@ -213,7 +208,8 @@ namespace UltraStrore.Services
                 NgayTao = user.NgayTao,
                 MoTa = user.MoTa,
                 CancelConunt = user.CancelConunt,
-                LockoutEndDate = user.LockoutEndDate
+                LockoutEndDate = user.LockoutEndDate,
+                GioiTinh = user.GioiTinh
             };
         }
 
@@ -227,13 +223,10 @@ namespace UltraStrore.Services
             return true;
         }
 
-
         public async Task<NguoiDungView> DangKy(DangKyView model)
         {
-
             if (await _context.NguoiDungs.AnyAsync(u => u.Email == model.Email))
                 throw new Exception("Email đã được sử dụng.");
-
 
             if (await _context.NguoiDungs.AnyAsync(u => u.TaiKhoan == model.TaiKhoan))
                 throw new Exception("Tài khoản đã tồn tại.");
@@ -247,8 +240,8 @@ namespace UltraStrore.Services
                 TaiKhoan = model.TaiKhoan,
                 MatKhau = hashedPassword,
                 NgayTao = DateTime.Now,
-                TrangThai = 0, // Active
-                VaiTro = 0 // User thường
+                TrangThai = 1,
+                VaiTro = 0
             };
 
             _context.NguoiDungs.Add(newUser);
@@ -257,13 +250,14 @@ namespace UltraStrore.Services
             return new NguoiDungView
             {
                 MaNguoiDung = newUser.MaNguoiDung,
-                HoTen = model.HoTen,
+                HoTen = newUser.HoTen,
                 Email = newUser.Email,
                 TaiKhoan = newUser.TaiKhoan,
                 MatKhau = newUser.MatKhau,
                 VaiTro = newUser.VaiTro,
                 TrangThai = newUser.TrangThai,
-                NgayTao = newUser.NgayTao
+                NgayTao = newUser.NgayTao,
+                GioiTinh = newUser.GioiTinh
             };
         }
 
@@ -289,7 +283,8 @@ namespace UltraStrore.Services
                 TaiKhoan = user.TaiKhoan,
                 VaiTro = user.VaiTro,
                 TrangThai = user.TrangThai,
-                NgayTao = user.NgayTao
+                NgayTao = user.NgayTao,
+                GioiTinh = user.GioiTinh
             };
 
             var token = _jwtTokenGenerator.GenerateToken(userView);
@@ -311,7 +306,6 @@ namespace UltraStrore.Services
             user.OtpExpiry = otpExpiry;
             await _context.SaveChangesAsync();
 
-            // Gửi email chứa OTP
             await _emailService.SendOtpEmailAsync(user.Email, otp);
             return true;
         }
@@ -324,7 +318,6 @@ namespace UltraStrore.Services
                 return false;
             }
 
-            // Kiểm tra OTP có hết hạn không
             if (DateTime.UtcNow > user.OtpExpiry)
             {
                 return false;
@@ -335,10 +328,9 @@ namespace UltraStrore.Services
 
         public async Task<bool> ResetPasswordAsync(string email, string otp, string newPassword)
         {
-            // Xác minh OTP trước
             if (!await VerifyOtpAsync(email, otp))
             {
-                return false; // OTP không hợp lệ hoặc hết hạn
+                return false;
             }
 
             var user = await GetNguoiDungByEmailAsync(email);
@@ -348,10 +340,8 @@ namespace UltraStrore.Services
             }
 
             string hashedPassword = PasswordHasher.HashPassword(newPassword);
-
-            // Cập nhật mật khẩu mới
             user.MatKhau = hashedPassword;
-            user.Otp = null; // Xóa OTP sau khi sử dụng
+            user.Otp = null;
             user.OtpExpiry = null;
             await _context.SaveChangesAsync();
 
@@ -361,7 +351,7 @@ namespace UltraStrore.Services
         public async Task<(NguoiDungView User, string Token)> DangNhapAdmin(LoginAdmin model)
         {
             var user = await _context.NguoiDungs
-                .FirstOrDefaultAsync(u => u.TaiKhoan == model.TaiKhoan && u.VaiTro == 1); // Chỉ lấy Admin (VaiTro = 1)
+                .FirstOrDefaultAsync(u => u.TaiKhoan == model.TaiKhoan && u.VaiTro == 1);
 
             if (user == null)
                 throw new Exception("Tài khoản Admin không tồn tại.");
@@ -380,16 +370,18 @@ namespace UltraStrore.Services
                 TaiKhoan = user.TaiKhoan,
                 VaiTro = user.VaiTro,
                 TrangThai = user.TrangThai,
-                NgayTao = user.NgayTao
+                NgayTao = user.NgayTao,
+                GioiTinh = user.GioiTinh
             };
 
             var token = _jwtTokenGenerator.GenerateToken(userView);
             return (userView, token);
         }
+
         public async Task<bool> IsAdminAsync(string email)
         {
             var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Email == email);
-            return user != null && user.VaiTro == 1; // VaiTro = 1 là admin
+            return user != null && user.VaiTro == 1;
         }
 
         public async Task<(NguoiDungView User, string Token)> DangNhapGoogleAdmin(string email)
@@ -397,14 +389,13 @@ namespace UltraStrore.Services
             var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Email == email);
             if (user == null)
             {
-                // Tạo mới người dùng với vai trò admin nếu chưa tồn tại
                 user = new NguoiDung
                 {
                     Email = email,
-                    VaiTro = 1, // Admin
+                    VaiTro = 1,
                     MaNguoiDung = GenerateMaNguoiDung(1),
                     NgayTao = DateTime.Now,
-                    TrangThai = 1 // Active
+                    TrangThai = 1
                 };
                 _context.NguoiDungs.Add(user);
                 await _context.SaveChangesAsync();
@@ -422,24 +413,22 @@ namespace UltraStrore.Services
                 TaiKhoan = user.TaiKhoan,
                 VaiTro = user.VaiTro,
                 TrangThai = user.TrangThai,
-                NgayTao = user.NgayTao
+                NgayTao = user.NgayTao,
+                GioiTinh = user.GioiTinh
             };
 
             var token = _jwtTokenGenerator.GenerateToken(userView);
             return (userView, token);
         }
+
         public async Task<NguoiDungView> UpdateChiTietUser(ChiTietUser model)
         {
-            // Lấy người dùng từ database dựa trên MaNguoiDung
             var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.MaNguoiDung == model.MaNguoiDung);
-
-            // Kiểm tra xem người dùng có tồn tại không
             if (user == null)
             {
                 throw new Exception("Người dùng không tồn tại.");
             }
 
-            // Cập nhật các thuộc tính của người dùng (chỉ cập nhật nếu giá trị không null)
             user.HoTen = model.HoTen ?? user.HoTen;
             user.NgaySinh = model.NgaySinh ?? user.NgaySinh;
             user.Sdt = model.Sdt ?? user.Sdt;
@@ -449,28 +438,27 @@ namespace UltraStrore.Services
             user.DiaChi = model.DiaChi ?? user.DiaChi;
             user.VaiTro = model.VaiTro ?? user.VaiTro;
             user.TrangThai = model.TrangThai ?? user.TrangThai;
+            user.GioiTinh = model.GioiTinh ?? user.GioiTinh;
+            user.LockoutEndDate = model.LockoutEndDate ?? user.LockoutEndDate;
 
-            // Xử lý hình ảnh nếu có file được upload
             if (model.HinhAnhFile != null && model.HinhAnhFile.Length > 0)
             {
                 using (var memoryStream = new MemoryStream())
                 {
                     await model.HinhAnhFile.CopyToAsync(memoryStream);
-                    user.HinhAnh = memoryStream.ToArray(); // Chuyển file thành byte[]
+                    user.HinhAnh = memoryStream.ToArray();
                 }
             }
             else
             {
-                user.HinhAnh = model.HinhAnh ?? user.HinhAnh; // Giữ nguyên nếu không có file mới
+                user.HinhAnh = model.HinhAnh ?? user.HinhAnh;
             }
 
             user.NgayTao = model.NgayTao ?? user.NgayTao;
             user.MoTa = model.MoTa ?? user.MoTa;
 
-            // Lưu thay đổi vào database
             await _context.SaveChangesAsync();
 
-            // Trả về NguoiDungView của người dùng đã cập nhật
             return new NguoiDungView
             {
                 MaNguoiDung = user.MaNguoiDung,
@@ -485,8 +473,19 @@ namespace UltraStrore.Services
                 TrangThai = user.TrangThai,
                 HinhAnh = user.HinhAnh,
                 NgayTao = user.NgayTao,
-                MoTa = user.MoTa
+                MoTa = user.MoTa,
+                GioiTinh = user.GioiTinh,
+                LockoutEndDate = user.LockoutEndDate
             };
+        }
+        public async Task UpdatePassword(string maNguoiDung, string hashedPassword)
+        {
+            var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.MaNguoiDung == maNguoiDung);
+            if (user == null)
+                throw new Exception("Người dùng không tồn tại.");
+
+            user.MatKhau = hashedPassword;
+            await _context.SaveChangesAsync();
         }
     }
 }

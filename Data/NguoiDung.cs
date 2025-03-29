@@ -24,6 +24,7 @@ namespace UltraStrore.Data
         public DateTime? OtpExpiry { get; set; }
         public int? CancelConunt { get; set; }
         public DateTime? LockoutEndDate { get; set; }
+        public int? GioiTinh { get; set; }
 
         public virtual ICollection<DanhSachDiaChi> DanhSachDiaChis { get; set; }
         public virtual ICollection<DonHang> DonHangMaNguoiDungNavigations { get; set; }

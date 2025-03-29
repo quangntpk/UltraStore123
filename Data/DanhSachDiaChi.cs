@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace UltraStrore.Data
 {
@@ -11,7 +12,10 @@ namespace UltraStrore.Data
         public string? Sdt { get; set; }
         public string? MoTa { get; set; }
         public string? DiaChi { get; set; }
-        public bool? TrangThai { get; set; }
+        public string? PhuongXa { get; set; }
+        public string? QuanHuyen { get; set; }
+        public string? Tinh { get; set; }
+        public int? TrangThai { get; set; }
 
         public virtual NguoiDung? MaNguoiDungNavigation { get; set; }
     }

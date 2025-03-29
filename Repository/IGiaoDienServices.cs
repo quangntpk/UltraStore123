@@ -11,5 +11,7 @@ namespace UltraStrore.Repository
         Task<GiaoDienView> GetGiaoDienAsync(int maGiaoDien);
         Task<GiaoDienView> UpdateGiaoDienAsync(GiaoDienEdit model);
         Task<bool> DeleteGiaoDienAsync(int maGiaoDien);
+        Task SetActiveGiaoDienAsync(int maGiaoDien);
+        Task<List<GiaoDienView>> SearchGiaoDienAsync(string? tenGiaoDien, int? maGiaoDien, int? trangThai, DateTime? ngayTao);
     }
 }

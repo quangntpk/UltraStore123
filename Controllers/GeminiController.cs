@@ -27,5 +27,11 @@ namespace UltraStrore.Controllers
             var data = await this.service.Response(info);
             return Ok(data);
         }
+        [HttpGet("PhanLoaiGopY")]
+        public async Task<IActionResult> PhanLoaiGopY(string noiDung)
+        {
+            var data = await this.service.PhanLoaiGopY(noiDung);
+            return Ok(data);
+        }
     }
 }
