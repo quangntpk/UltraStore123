@@ -102,6 +102,7 @@ namespace UltraStrore.Services
                             MaNguoiDung = info.IDNguoiDung
                         };
                         _context.GioHangs.Add(gioHang);
+                        await _context.SaveChangesAsync();
                         IDGioHang = gioHang.MaGioHang;
                     }
                     else
