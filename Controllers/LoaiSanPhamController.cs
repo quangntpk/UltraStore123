@@ -1,85 +1,123 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using UltraStrore.Data;
-using System.Linq;
-using System.Threading.Tasks;
+using UltraStrore.Repository;
 using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.EditModels;
 using UltraStrore.Models.ViewModels;
 
-[Route("api/[controller]")]
-[ApiController]
-public class LoaiSanPhamController : ControllerBase
+namespace UltraStrore.Controllers
 {
-    private readonly ApplicationDbContext _context;
-
-    public LoaiSanPhamController(ApplicationDbContext context)
+    [Route("api/[controller]")]
+    [ApiController]
+    public class LoaiSanPhamController : ControllerBase
     {
-        _context = context;
-    }
+        private readonly ILoaiSanPhamServices _loaiSanPhamServices;
 
-    // GET: api/LoaiSanPham?keyword={keyword}
-    [HttpGet]
-    public async Task<IActionResult> GetLoaiSanPham(string keyword = "")
-    {
-        var loaiSanPham = await _context.LoaiSanPhams
-            .Where(l => string.IsNullOrEmpty(keyword) || l.TenLoaiSanPham.Contains(keyword))
-            .Select(l => new LoaiSanPhamView
+        public LoaiSanPhamController(ILoaiSanPhamServices loaiSanPhamServices)
+        {
+            _loaiSanPhamServices = loaiSanPhamServices;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAllLoaiSanPham()
+        {
+            try
             {
-                MaLoaiSanPham = l.MaLoaiSanPham,
-                TenLoaiSanPham = l.TenLoaiSanPham
-            })
-            .ToListAsync();
+                var list = await _loaiSanPhamServices.GetAllLoaiSanPhamAsync();
+                return Ok(list);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
-        return Ok(loaiSanPham);
-    }
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetLoaiSanPham(int id)
+        {
+            try
+            {
+                var loaiSanPham = await _loaiSanPhamServices.GetLoaiSanPhamAsync(id);
+                return Ok(loaiSanPham);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
-    // POST: api/LoaiSanPham
-    [HttpPost]
-    public async Task<IActionResult> PostLoaiSanPham([FromBody] LoaiSanPhamCreate model)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+        [HttpPost]
+        public async Task<IActionResult> CreateLoaiSanPham([FromBody] LoaiSanPhamCreate model)
+        {
+            try
+            {
+                var createdLoaiSanPham = await _loaiSanPhamServices.CreateLoaiSanPhamAsync(model);
+                return CreatedAtAction(nameof(GetLoaiSanPham), new { id = createdLoaiSanPham.MaLoaiSanPham }, createdLoaiSanPham);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
-        var loaiSanPham = new LoaiSanPham { TenLoaiSanPham = model.TenLoaiSanPham };
-        _context.LoaiSanPhams.Add(loaiSanPham);
-        await _context.SaveChangesAsync();
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateLoaiSanPham(int id, [FromBody] LoaiSanPhamEdit model)
+        {
+            if (id != model.MaLoaiSanPham)
+                return BadRequest("Mã loại sản phẩm không hợp lệ.");
 
-        return CreatedAtAction(nameof(GetLoaiSanPham), new { id = loaiSanPham.MaLoaiSanPham }, loaiSanPham);
-    }
+            try
+            {
+                var updatedLoaiSanPham = await _loaiSanPhamServices.UpdateLoaiSanPhamAsync(model);
+                return Ok(updatedLoaiSanPham);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
-    // PUT: api/LoaiSanPham/5
-    [HttpPut("{id}")]
-    public async Task<IActionResult> PutLoaiSanPham(int id, [FromBody] LoaiSanPhamEdit model)
-    {
-        if (!ModelState.IsValid || id != model.MaLoaiSanPham)
-            return BadRequest(ModelState);
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteLoaiSanPham(int id)
+        {
+            try
+            {
+                var result = await _loaiSanPhamServices.DeleteLoaiSanPhamAsync(id);
+                if (!result)
+                    return NotFound("Loại sản phẩm không tồn tại.");
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
-        var loaiSanPham = await _context.LoaiSanPhams.FindAsync(id);
-        if (loaiSanPham == null)
-            return NotFound();
+        [HttpGet("{id}/SanPham")]
+        public async Task<IActionResult> GetSanPhamByLoai(int id)
+        {
+            try
+            {
+                var sanPhams = await _loaiSanPhamServices.GetSanPhamByLoaiAsync(id);
+                return Ok(sanPhams);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
-        loaiSanPham.TenLoaiSanPham = model.TenLoaiSanPham;
-        await _context.SaveChangesAsync();
-
-        return NoContent();
-    }
-
-    // DELETE: api/LoaiSanPham/5
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteLoaiSanPham(int id)
-    {
-        var loaiSanPham = await _context.LoaiSanPhams.FindAsync(id);
-        if (loaiSanPham == null)
-            return NotFound();
-
-        // Kiểm tra khóa ngoại (nếu có sản phẩm liên quan)
-        if (await _context.SanPhams.AnyAsync(s => s.MaLoaiSanPham == id))
-            return BadRequest("Không thể xóa loại sản phẩm vì có sản phẩm liên quan.");
-
-        _context.LoaiSanPhams.Remove(loaiSanPham);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+        [HttpGet("Search")]
+        public async Task<IActionResult> SearchLoaiSanPham([FromQuery] string? tenLoai, [FromQuery] string? kiHieu)
+        {
+            try
+            {
+                var result = await _loaiSanPhamServices.SearchLoaiSanPhamAsync(tenLoai, kiHieu);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }

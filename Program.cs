@@ -41,7 +41,9 @@ namespace UltraStrore
             builder.Services.AddScoped<IYeuThichServices, YeuThichServices>();
             builder.Services.AddScoped<IComboServices, ComboServices>();
             builder.Services.AddScoped<IGiaoDienServices, GiaoDienServices>();
-
+            builder.Services.AddScoped<ILoaiSanPhamServices, LoaiSanPhamServices>();
+            builder.Services.AddScoped<IThuongHieuServices, ThuongHieuServices>();
+            builder.Services.AddScoped<IKichThuocServices, KichThuocServices>();
             builder.Services.AddMemoryCache();
 
             builder.Services.AddDistributedMemoryCache();

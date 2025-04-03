@@ -1,85 +1,108 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using UltraStrore.Data;
-using System.Linq;
-using System.Threading.Tasks;
 using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.EditModels;
 using UltraStrore.Models.ViewModels;
+using UltraStrore.Repository;
+using System;
+using System.Threading.Tasks;
 
-[Route("api/[controller]")]
-[ApiController]
-public class ThuongHieuController : ControllerBase
+namespace UltraStrore.Controllers
 {
-    private readonly ApplicationDbContext _context;
-
-    public ThuongHieuController(ApplicationDbContext context)
+    [Route("api/[controller]")]
+    [ApiController]
+    public class ThuongHieuController : ControllerBase
     {
-        _context = context;
-    }
+        private readonly IThuongHieuServices _thuongHieuServices;
 
-    // GET: api/ThuongHieu?keyword={keyword}
-    [HttpGet]
-    public async Task<IActionResult> GetThuongHieu(string keyword = "")
-    {
-        var thuongHieu = await _context.ThuongHieus
-            .Where(t => string.IsNullOrEmpty(keyword) || t.TenThuongHieu.Contains(keyword))
-            .Select(t => new ThuongHieuView
+        public ThuongHieuController(IThuongHieuServices thuongHieuServices)
+        {
+            _thuongHieuServices = thuongHieuServices ?? throw new ArgumentNullException(nameof(thuongHieuServices));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetAllThuongHieu()
+        {
+            var list = await _thuongHieuServices.GetAllThuongHieuAsync();
+            return Ok(list);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetThuongHieu(int id)
+        {
+            try
             {
-                MaThuongHieu = t.MaThuongHieu,
-                TenThuongHieu = t.TenThuongHieu
-            })
-            .ToListAsync();
+                var thuongHieu = await _thuongHieuServices.GetThuongHieuAsync(id);
+                return Ok(thuongHieu);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound("Thương hiệu không tồn tại.");
+            }
+        }
 
-        return Ok(thuongHieu);
-    }
+        [HttpPost]
+        public async Task<IActionResult> CreateThuongHieu([FromBody] ThuongHieuCreate model)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-    // POST: api/ThuongHieu
-    [HttpPost]
-    public async Task<IActionResult> PostThuongHieu([FromBody] ThuongHieuCreate model)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(ModelState);
+            try
+            {
+                var createdThuongHieu = await _thuongHieuServices.CreateThuongHieuAsync(model);
+                return CreatedAtAction(nameof(GetThuongHieu), new { id = createdThuongHieu.MaThuongHieu }, createdThuongHieu);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
 
-        var thuongHieu = new ThuongHieu { TenThuongHieu = model.TenThuongHieu };
-        _context.ThuongHieus.Add(thuongHieu);
-        await _context.SaveChangesAsync();
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateThuongHieu(int id, [FromBody] ThuongHieuEdit model)
+        {
+            if (id != model.MaThuongHieu)
+                return BadRequest("Mã thương hiệu không khớp.");
 
-        return CreatedAtAction(nameof(GetThuongHieu), new { id = thuongHieu.MaThuongHieu }, thuongHieu);
-    }
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-    // PUT: api/ThuongHieu/5
-    [HttpPut("{id}")]
-    public async Task<IActionResult> PutThuongHieu(int id, [FromBody] ThuongHieuEdit model)
-    {
-        if (!ModelState.IsValid || id != model.MaThuongHieu)
-            return BadRequest(ModelState);
+            try
+            {
+                var updatedThuongHieu = await _thuongHieuServices.UpdateThuongHieuAsync(model);
+                return Ok(updatedThuongHieu);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound("Thương hiệu không tồn tại.");
+            }
+        }
 
-        var thuongHieu = await _context.ThuongHieus.FindAsync(id);
-        if (thuongHieu == null)
-            return NotFound();
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteThuongHieu(int id)
+        {
+            var result = await _thuongHieuServices.DeleteThuongHieuAsync(id);
+            return result ? NoContent() : NotFound("Thương hiệu không tồn tại.");
+        }
 
-        thuongHieu.TenThuongHieu = model.TenThuongHieu;
-        await _context.SaveChangesAsync();
+        [HttpGet("Search")]
+        public async Task<IActionResult> SearchThuongHieu([FromQuery] string tenThuongHieu)
+        {
+            var result = await _thuongHieuServices.SearchThuongHieuAsync(tenThuongHieu);
+            return Ok(result);
+        }
 
-        return NoContent();
-    }
-
-    // DELETE: api/ThuongHieu/5
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteThuongHieu(int id)
-    {
-        var thuongHieu = await _context.ThuongHieus.FindAsync(id);
-        if (thuongHieu == null)
-            return NotFound();
-
-        // Kiểm tra khóa ngoại (nếu có sản phẩm liên quan)
-        if (await _context.SanPhams.AnyAsync(s => s.MaThuongHieu == id))
-            return BadRequest("Không thể xóa thương hiệu vì có sản phẩm liên quan.");
-
-        _context.ThuongHieus.Remove(thuongHieu);
-        await _context.SaveChangesAsync();
-
-        return NoContent();
+        [HttpGet("{id}/SanPham")]
+        public async Task<IActionResult> GetSanPhamByThuongHieu(int id)
+        {
+            try
+            {
+                var sanPhams = await _thuongHieuServices.GetSanPhamByThuongHieuAsync(id);
+                return Ok(sanPhams);
+            }
+            catch (KeyNotFoundException)
+            {
+                return NotFound("Thương hiệu không tồn tại.");
+            }
+        }
     }
 }
