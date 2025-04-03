@@ -39,8 +39,7 @@ namespace UltraStrore.Data
         public virtual DbSet<TinNhan> TinNhans { get; set; } = null!;
         public virtual DbSet<ChiTietGioHangSupport> GioHangSupports {get;set;}
         public virtual DbSet<GiaoDien> GiaoDiens { get; set; } = null!;
-
-
+        public virtual DbSet<KichThuoc> KichThuocs { get; set; } = null!;
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
@@ -386,6 +385,9 @@ namespace UltraStrore.Data
                 entity.Property(e => e.TenThuongHieu)
                     .HasMaxLength(100)
                     .HasColumnName("ten_thuong_hieu");
+
+                entity.Property(e => e.HinhAnh)
+                    .HasColumnName("hinh_anh");
             });
 
             modelBuilder.Entity<Video>(entity =>
@@ -786,6 +788,9 @@ namespace UltraStrore.Data
                 entity.Property(e => e.TenLoaiSanPham)
                     .HasMaxLength(100)
                     .HasColumnName("ten_loai_san_pham");
+
+                entity.Property(e => e.HinhAnh)
+                    .HasColumnName("hinh_anh");
             });
 
             modelBuilder.Entity<NguoiDung>(entity =>
@@ -854,6 +859,26 @@ namespace UltraStrore.Data
                 entity.Property(e => e.TenThuongHieu)
                     .HasMaxLength(100)
                     .HasColumnName("ten_thuong_hieu");
+
+                entity.Property(e => e.HinhAnh)
+                    .HasColumnName("hinh_anh");
+            });
+
+            modelBuilder.Entity<KichThuoc>(entity =>
+            {
+                entity.HasKey(e => e.MaKichThuoc)
+                    .HasName("PK_KICH_THUOC");
+
+                entity.ToTable("KICH_THUOC");
+
+                entity.Property(e => e.MaKichThuoc)
+                    .ValueGeneratedOnAdd()
+                    .HasColumnName("ma_kich_thuoc");
+
+                entity.Property(e => e.TenKichThuoc)
+                    .HasMaxLength(100)
+                    .HasColumnName("ten_kich_thuoc");
+
             });
 
             modelBuilder.Entity<Video>(entity =>

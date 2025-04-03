@@ -6,9 +6,7 @@ namespace UltraStrore.Models.EditModels
     {
         [Required]
         public int MaThuongHieu { get; set; }
-
-        [Required(ErrorMessage = "Tên thương hiệu không được để trống")]
-        [StringLength(40, ErrorMessage = "Tên thương hiệu tối đa 40 ký tự")]
         public string TenThuongHieu { get; set; }
+        public byte[]? HinhAnh { get; set; }
     }
 }
