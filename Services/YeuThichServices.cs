@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Security.Cryptography;
 
 public class YeuThichServices : IYeuThichServices
 {
@@ -34,13 +35,36 @@ public class YeuThichServices : IYeuThichServices
 
     public async Task<YeuThichView> CreateYeuThich(YeuThichCreate yeuThichCreate)
     {
+        // Take the first 6 characters of MaSanPham from yeuThichCreate
+        string maSanPhamPrefix = yeuThichCreate.MaSanPham.Length >= 6
+            ? yeuThichCreate.MaSanPham.Substring(0, 6)
+            : yeuThichCreate.MaSanPham;
+
+        // Fetch TenSanPham by matching the first 6 characters of MaSanPham
+        var sanPham = await _context.SanPhams
+            .Where(sp => EF.Functions.Like(sp.MaSanPham, $"{maSanPhamPrefix}%"))
+            .Select(sp => sp.TenSanPham)
+            .FirstOrDefaultAsync();
+
+        // Fetch HoTen from NguoiDung table
+        var nguoiDung = await _context.NguoiDungs
+            .Where(nd => nd.MaNguoiDung == yeuThichCreate.MaNguoiDung)
+            .Select(nd => nd.HoTen)
+            .FirstOrDefaultAsync();
+
+        // Check if the product or user exists
+        if (sanPham == null || nguoiDung == null)
+        {
+            throw new Exception("Product or User not found.");
+        }
+
         var yeuThich = new YeuThich
         {
             MaYeuThich = yeuThichCreate.MaYeuThich,
             MaSanPham = yeuThichCreate.MaSanPham,
-            TenSanPham = yeuThichCreate.TenSanPham,
+            TenSanPham = sanPham, // Assign fetched product name
             MaNguoiDung = yeuThichCreate.MaNguoiDung,
-            HoTen = yeuThichCreate.HoTen,
+            HoTen = nguoiDung, // Assign fetched full name
             NgayYeuThich = yeuThichCreate.NgayYeuThich
         };
 

@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.EditModels;
+using UltraStrore.Services;
 
 namespace UltraStrore.Controllers
 {
@@ -98,6 +99,29 @@ namespace UltraStrore.Controllers
                 return NotFound("Không tìm thấy bình luận để hủy duyệt.");
             }
             return Ok("Hủy duyệt bình luận thành công.");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetComments(string productId)
+        {
+            var comments = await _commetServices.ListBinhLuan();
+            return Ok(comments.Where(c => c.MaSanPham.StartsWith(productId.Substring(0, 6))));
+        }
+
+        [HttpPost("Like/{maBinhLuan}")]
+        public async Task<IActionResult> LikeComment(int maBinhLuan)
+        {
+            var result = await _commetServices.LikeBinhLuan(maBinhLuan);
+            if (!result) return NotFound();
+            return Ok();
+        }
+
+        [HttpPost("Unlike/{maBinhLuan}")]
+        public async Task<IActionResult> UnlikeComment(int maBinhLuan)
+        {
+            var result = await _commetServices.UnlikeBinhLuan(maBinhLuan);
+            if (!result) return NotFound();
+            return Ok();
         }
     }
 }

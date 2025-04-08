@@ -16,5 +16,7 @@ namespace UltraStrore.Models.ViewModels
         public int? TrangThai { get; set; }
         public DateTime? NgayBinhLuan { get; set; }
 
+        public string? HinhAnh { get; set; }
+
     }
 }

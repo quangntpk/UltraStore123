@@ -38,12 +38,14 @@ namespace UltraStrore
             builder.Services.AddScoped<ILienHeServices, LienHeServices>();
             builder.Services.AddScoped<ITinNhanServices, TinNhanServices>();
             builder.Services.AddTransient<EmailService>();
+
             builder.Services.AddScoped<IYeuThichServices, YeuThichServices>();
             builder.Services.AddScoped<IComboServices, ComboServices>();
             builder.Services.AddScoped<IGiaoDienServices, GiaoDienServices>();
             builder.Services.AddScoped<ILoaiSanPhamServices, LoaiSanPhamServices>();
             builder.Services.AddScoped<IThuongHieuServices, ThuongHieuServices>();
             builder.Services.AddScoped<IKichThuocServices, KichThuocServices>();
+            builder.Services.AddScoped<IThongKeServices, ThongKeServices>();
             builder.Services.AddMemoryCache();
 
             builder.Services.AddDistributedMemoryCache();

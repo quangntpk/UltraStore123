@@ -5,6 +5,8 @@ namespace UltraStrore.Data
 {
     public partial class YeuThich
     {
+      
+
         public int MaYeuThich { get; set; }
         public string? MaSanPham { get; set; }
         public string? TenSanPham { get; set; }

@@ -13,6 +13,7 @@ namespace UltraStrore.Repository
         Task<bool> DeleteBinhLuan(int maBinhLuan);
         Task<bool> ApproveBinhLuan(int maBinhLuan);
         Task<bool> UnapproveBinhLuan(int maBinhLuan);
-       
+        Task<bool> LikeBinhLuan(int maBinhLuan); // Thêm phương thức Like
+        Task<bool> UnlikeBinhLuan(int maBinhLuan); // Thêm phương thức Unlike
     }
 }
