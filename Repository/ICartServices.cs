@@ -16,5 +16,6 @@ namespace UltraStrore.Repository
         Task<APIResponse> XoaChiTietGioHang(TangGiamSoLuongGioHang info);
         Task<APIResponse> XoaChiTietGiohangCombo(TangGiamSoLuongGioHang info);
         Task<APIResponse> XoaVersionComboGioHang(GioHangComboVersion info);
+        Task<APIResponse> CopyGioHang(CopyGHModel info);
     }
 }
