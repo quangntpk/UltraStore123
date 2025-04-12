@@ -245,7 +245,7 @@ namespace UltraStrore.Services
                 TaiKhoan = model.TaiKhoan,
                 MatKhau = hashedPassword,
                 NgayTao = DateTime.Now,
-                TrangThai = 1, // Active
+                TrangThai = 0, // Active
                 VaiTro = 0, // User thường
                 Isveryfied = false
             };
@@ -317,7 +317,7 @@ namespace UltraStrore.Services
                 Email = email,
                 HoTen = name,
                 NgayTao = DateTime.Now,
-                TrangThai = 1,
+                TrangThai = 0,
                 VaiTro = 0
             };
 

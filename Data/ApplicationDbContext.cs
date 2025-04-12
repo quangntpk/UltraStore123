@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Metadata;
 using UltraStrore.Data;
+using UltraStrore.Data.Temp;
 
 namespace UltraStrore.Data
 {
@@ -40,13 +41,24 @@ namespace UltraStrore.Data
         public virtual DbSet<ChiTietGioHangSupport> GioHangSupports { get; set; }
         public virtual DbSet<GiaoDien> GiaoDiens { get; set; } = null!;
         public virtual DbSet<KichThuoc> KichThuocs { get; set; } = null!;
+        public DbSet<PendingOder> PendingOrders { get; set; }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
             optionsBuilder.ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
         }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            modelBuilder.Entity<PendingOder>(entity =>
+            {
+                modelBuilder.Entity<PendingOder>()
+                    .HasKey(p => p.TempOrderId);
+
+                modelBuilder.Entity<PendingOder>()
+                    .HasIndex(p => p.TempOrderId)
+                    .IsUnique();
+            });
             modelBuilder.Entity<ChiTietGioHangSupport>(entity =>
             {
                 entity.HasKey(e => e.ID).HasName("PK__SupportGioHang");
@@ -2280,6 +2292,17 @@ namespace UltraStrore.Data
                     TrangThai = 1
                 }
             );
+            modelBuilder.Entity<Voucher>()
+        .ToTable("VOUCHER");
+
+            modelBuilder.Entity<Coupon>()
+        .ToTable("Coupons");
+
+            // Thiết lập quan hệ
+            modelBuilder.Entity<Coupon>()
+                .HasOne(c => c.MaVoucherNavigation)
+                .WithMany(v => v.Coupons)
+                .HasForeignKey(c => c.MaVoucher);
 
             modelBuilder.Entity<Voucher>().HasData(
                            new Voucher

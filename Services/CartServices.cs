@@ -33,7 +33,7 @@ namespace UltraStrore.Services
                     spview.ChiTietGioHangSanPham = item.MaCtgh;
                     spview.IDSanPham = item.MaSanPham;
                     spview.TenSanPham = sp.TenSanPham;
-                    spview.TienSanPham = sp.Gia * item.SoLuong ?? 0;
+                    spview.TienSanPham = sp.Gia;
                     spview.MauSac = sp.MaSanPham.Split('_')[1];
                     spview.KickThuoc = sp.MaSanPham.Split('_')[2];
                     spview.SoLuong = item.SoLuong ?? 0;
