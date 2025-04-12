@@ -4,6 +4,7 @@
     {
         public int MaYeuThich { get; set; }
         public string? MaSanPham { get; set; }
+        public int? MaCombo { get; set; }
         public string? TenSanPham { get; set; }
         public string? MaNguoiDung { get; set; }
         public string? HoTen { get; set; } 
