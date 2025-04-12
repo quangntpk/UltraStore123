@@ -1,0 +1,13 @@
+﻿namespace UltraStrore.Data.Temp
+{
+    public class PendingVnPayOrder
+    {
+        public string TempOrderId { get; set; }
+        public DonHang Order { get; set; }
+        public decimal OriginalAmount { get; set; }
+        public decimal DiscountAmount { get; set; }
+        public decimal FinalAmount { get; set; }
+        public string CouponCode { get; set; }
+        public int CartId { get; set; }
+    }
+}
