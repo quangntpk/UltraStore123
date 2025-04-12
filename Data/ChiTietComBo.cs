@@ -11,5 +11,7 @@ namespace UltraStrore.Data
         public int? SoLuong { get; set; }
 
         public virtual ComBoSanPham? MaComBoNavigation { get; set; }
+
+        public virtual SanPham? MaSanPhamNavigation { get; set; } //thêm cho duyệt combo
     }
 }
