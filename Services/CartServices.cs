@@ -33,7 +33,7 @@ namespace UltraStrore.Services
                     spview.ChiTietGioHangSanPham = item.MaCtgh;
                     spview.IDSanPham = item.MaSanPham;
                     spview.TenSanPham = sp.TenSanPham;
-                    spview.TienSanPham = sp.Gia * item.SoLuong ?? 0;
+                    spview.TienSanPham = sp.Gia;
                     spview.MauSac = sp.MaSanPham.Split('_')[1];
                     spview.KickThuoc = sp.MaSanPham.Split('_')[2];
                     spview.SoLuong = item.SoLuong ?? 0;
@@ -102,6 +102,7 @@ namespace UltraStrore.Services
                             MaNguoiDung = info.IDNguoiDung
                         };
                         _context.GioHangs.Add(gioHang);
+                        await _context.SaveChangesAsync(); 
                         IDGioHang = gioHang.MaGioHang;
                     }
                     else
@@ -211,7 +212,7 @@ namespace UltraStrore.Services
                     ChiTietGioHangs.ThanhTien = ChiTietGioHangs.Gia * ChiTietGioHangs.SoLuong;
                     _context.ChiTietGioHangs.Update(ChiTietGioHangs);
                 }
-                else // Chưa có Combo trong giỏ hàng
+                else 
                 {
                     ChiTietGioHang newCTGH = new ChiTietGioHang
                     {
@@ -235,7 +236,7 @@ namespace UltraStrore.Services
 
                         ChiTietGioHangSupport support = new ChiTietGioHangSupport
                         {
-                            ChiTietGioHang = newCTGH.MaCtgh, // Use the newly generated MaCtgh
+                            ChiTietGioHang = newCTGH.MaCtgh,
                             MaSanPham = MaSanPhamEndPoint,
                             MaChiTietCombo = CTCombo.MaChiTietComBo,
                             SoLuong = newCTGH.SoLuong * CTCombo.SoLuong ?? 0,
@@ -368,6 +369,213 @@ namespace UltraStrore.Services
                 response.ResponseCode = 200;
             }
             catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                response.ResponseCode = 500;
+                response.Result = $"Lỗi: {ex.Message}";
+            }
+            return response;
+        }
+        public async Task<APIResponse> CopyGioHang(CopyGHModel info)
+        {
+            APIResponse response = new APIResponse();
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                int MaGH = -1;
+                var GioHangUser = _context.GioHangs.Where(g => g.MaNguoiDung.Trim() == info.UserID.Trim()).FirstOrDefault();
+                var CopyUser = _context.GioHangs.Where(g => g.MaNguoiDung.Trim() == info.CopyID.Trim()).FirstOrDefault();
+                if (GioHangUser == null)
+                {
+                    int MaxGH = _context.GioHangs.OrderByDescending(g => g.MaGioHang).Select(g => g.MaGioHang).FirstOrDefault();
+                    MaxGH++;
+                    GioHang newGH = new GioHang
+                    {
+                        MaGioHang = MaxGH,
+                        MaNguoiDung = info.UserID
+                    };
+                    _context.GioHangs.Add(newGH);
+                    MaGH = newGH.MaGioHang;
+                }
+                else
+                    MaGH = GioHangUser.MaGioHang;
+                var ChiTietGH1List = _context.ChiTietGioHangs.Where(g => g.MaGioHang == MaGH).ToList();
+                var ChiTietGH2List = _context.ChiTietGioHangs.Where(g => g.MaGioHang == CopyUser.MaGioHang).ToList();
+                if (ChiTietGH1List.Count > 0)
+                {
+                    for (int n = 0; n < ChiTietGH2List.Count(); n++)
+                    {
+                        if (ChiTietGH2List[n].MaSanPham != null || !string.IsNullOrEmpty(ChiTietGH2List[n].MaSanPham))
+                        {
+                            bool Found = false;
+                            for (int i = 0; i < ChiTietGH1List.Count(); i++)
+                            {
+                                if (ChiTietGH1List[i].MaSanPham != null)
+                                {
+                                    if (ChiTietGH1List[i].MaSanPham == ChiTietGH2List[n].MaSanPham)
+                                    {
+                                        Found = true;
+                                        ChiTietGH1List[i].SoLuong += ChiTietGH2List[n].SoLuong;
+                                        var Test = ChiTietGH1List[i];
+                                        _context.ChiTietGioHangs.Update(Test);
+                                        await _context.SaveChangesAsync();
+                                        break;
+                                    }                                                                
+                                }                                  
+                            }
+                            if (!Found)
+                            {
+                                ChiTietGioHang newCTGH = new ChiTietGioHang();
+                                newCTGH.MaSanPham = ChiTietGH2List[n].MaSanPham;
+                                newCTGH.SoLuong = ChiTietGH2List[n].SoLuong;
+                                newCTGH.Gia = ChiTietGH2List[n].Gia;
+                                newCTGH.ThanhTien = ChiTietGH2List[n].ThanhTien;
+                                newCTGH.MaGioHang = MaGH;
+                                _context.ChiTietGioHangs.Add(newCTGH);
+                                await _context.SaveChangesAsync();
+                            }
+                        }
+                        else
+                        {
+                                if (ChiTietGH2List[n].MaCombo!=null)
+                                {
+                                    bool Found = false;
+                                    for (int m = 0; m < ChiTietGH1List.Count(); m++)
+                                    {
+                                        if (ChiTietGH1List[m].MaCombo!=null)
+                                        {
+                                            if (ChiTietGH1List[m].MaCombo == ChiTietGH2List[n].MaCombo)
+                                            {
+                                                Found = true;
+                                                ChiTietGH1List[m].SoLuong += ChiTietGH2List[n].SoLuong;
+                                                var Test = ChiTietGH1List[m];               
+                                                var CTCB = _context.ChiTietComBos.Where(g => g.MaComBo == ChiTietGH2List[n].MaCombo).ToList();
+                                                var CTCBUser = _context.ChiTietComBos.Where(g => g.MaComBo == ChiTietGH1List[m].MaCombo).OrderByDescending(g => g.MaChiTietComBo).FirstOrDefault();
+                                                int GioHangSupportUser = _context.GioHangSupports.Where(g => g.ChiTietGioHang == ChiTietGH1List[m].MaCtgh && g.MaChiTietCombo == CTCBUser.MaChiTietComBo).OrderByDescending(g => g.Version).Select(g => g.Version).FirstOrDefault() + 1;
+
+                                                for (int k = 0; k < CTCB.Count(); k++)
+                                                {
+                                                    int Variant = GioHangSupportUser;
+                                                    var GioHangSupportCopy = _context.GioHangSupports.Where(g => g.ChiTietGioHang == ChiTietGH2List[n].MaCtgh && g.MaChiTietCombo == CTCB[k].MaChiTietComBo).ToList();
+                                                    int Temp = -1;
+                                                    for (int l = 0; l < GioHangSupportCopy.Count(); l++)
+                                                    {
+                                                        if (l == 0)
+                                                        {
+                                                            Temp = GioHangSupportCopy[l].Version;
+                                                            ChiTietGioHangSupport newCTGHSP = new ChiTietGioHangSupport();
+                                                            newCTGHSP.ChiTietGioHang = ChiTietGH1List[m].MaCtgh;
+                                                            newCTGHSP.MaSanPham = GioHangSupportCopy[l].MaSanPham;
+                                                            newCTGHSP.SoLuong = GioHangSupportCopy[l].SoLuong;
+                                                            newCTGHSP.MaChiTietCombo = CTCB[k].MaChiTietComBo;
+                                                            newCTGHSP.Version = Variant;
+                                                            _context.GioHangSupports.Add(newCTGHSP);
+                                                        }
+                                                        else
+                                                        {
+                                                            if (Temp == GioHangSupportCopy[l].Version)
+                                                            {
+                                                                ChiTietGioHangSupport newCTGHSP = new ChiTietGioHangSupport();
+                                                                newCTGHSP.ChiTietGioHang = ChiTietGH1List[m].MaCtgh;
+                                                                newCTGHSP.MaSanPham = GioHangSupportCopy[l].MaSanPham;
+                                                                newCTGHSP.SoLuong = GioHangSupportCopy[l].SoLuong;
+                                                                newCTGHSP.MaChiTietCombo = CTCB[k].MaChiTietComBo;
+                                                                newCTGHSP.Version = Variant;
+                                                                _context.GioHangSupports.Add(newCTGHSP);
+                                                            }
+                                                            else
+                                                            {
+                                                                Variant++;
+                                                                Temp = GioHangSupportCopy[l].Version;
+                                                                ChiTietGioHangSupport newCTGHSP = new ChiTietGioHangSupport();
+                                                                newCTGHSP.ChiTietGioHang = ChiTietGH1List[m].MaCtgh;
+                                                                newCTGHSP.MaSanPham = GioHangSupportCopy[l].MaSanPham;
+                                                                newCTGHSP.SoLuong = GioHangSupportCopy[l].SoLuong;
+                                                                newCTGHSP.MaChiTietCombo = CTCB[k].MaChiTietComBo;
+                                                                newCTGHSP.Version = Variant;
+                                                                _context.GioHangSupports.Add(newCTGHSP);
+
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                                break;
+                                            }
+                                        }    
+                                    }
+                                    if (!Found)
+                                    {
+                                        ChiTietGioHang newCTGH = new ChiTietGioHang();
+                                        newCTGH.MaCombo = ChiTietGH2List[n].MaCombo;
+                                        newCTGH.SoLuong = ChiTietGH2List[n].SoLuong;
+                                        newCTGH.Gia = ChiTietGH2List[n].Gia;
+                                        newCTGH.ThanhTien = ChiTietGH2List[n].ThanhTien;
+                                        newCTGH.MaGioHang = MaGH;
+                                        _context.ChiTietGioHangs.Add(newCTGH);
+                                        await _context.SaveChangesAsync();
+                                        int MaChiTietGioHangCombo = newCTGH.MaCtgh;
+                                        var GioHangSupport = _context.GioHangSupports.Where(g => g.ChiTietGioHang == ChiTietGH2List[n].MaCtgh).ToList();
+                                        foreach (var item in GioHangSupport)
+                                        {
+                                            ChiTietGioHangSupport CTGHSp = new ChiTietGioHangSupport();
+                                            CTGHSp.MaChiTietCombo = item.MaChiTietCombo;
+                                            CTGHSp.ChiTietGioHang = MaChiTietGioHangCombo;
+                                            CTGHSp.SoLuong = item.SoLuong;
+                                            CTGHSp.Version = item.Version;
+                                            CTGHSp.MaSanPham = item.MaSanPham;
+                                            _context.GioHangSupports.Add(CTGHSp);
+                                            await _context.SaveChangesAsync();
+                                        }
+                                    }
+                                }                       
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                }
+                else
+                {
+                    for (int j = 0; j < ChiTietGH2List.Count(); j++)
+                    {
+                     
+                        ChiTietGioHang newCTGH = new ChiTietGioHang();
+
+                        newCTGH.SoLuong = ChiTietGH2List[j].SoLuong;
+                        newCTGH.Gia = ChiTietGH2List[j].Gia;
+                        newCTGH.ThanhTien = ChiTietGH2List[j].ThanhTien;
+                        newCTGH.MaGioHang = MaGH;
+                        _context.ChiTietGioHangs.Add(newCTGH);
+                        await _context.SaveChangesAsync();
+                        int MaChiTietGioHangCombo = newCTGH.MaCtgh;
+                        if (ChiTietGH2List[j].MaCombo != null)
+                        {
+                            newCTGH.MaCombo = ChiTietGH2List[j].MaCombo;
+                            _context.ChiTietGioHangs.Update(newCTGH);
+                            var GioHangSupport = _context.GioHangSupports.Where(g => g.ChiTietGioHang == ChiTietGH2List[j].MaCtgh).ToList();
+                            foreach (var item in GioHangSupport)
+                            {
+                                ChiTietGioHangSupport CTGHSp = new ChiTietGioHangSupport();
+                                CTGHSp.MaChiTietCombo = item.MaChiTietCombo;
+                                CTGHSp.ChiTietGioHang = MaChiTietGioHangCombo;
+                                CTGHSp.SoLuong = item.SoLuong;
+                                CTGHSp.Version = item.Version;
+                                CTGHSp.MaSanPham = item.MaSanPham;
+                                _context.GioHangSupports.Add(CTGHSp);
+                                await _context.SaveChangesAsync();
+                            }
+                        }  
+                        else
+                        {
+                            newCTGH.MaSanPham = ChiTietGH2List[j].MaSanPham;
+                            _context.ChiTietGioHangs.Update(newCTGH);
+                            await _context.SaveChangesAsync();
+                        }    
+                    }
+                }
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                response.ResponseCode = 200;
+            }
+            catch(Exception ex)
             {
                 await transaction.RollbackAsync();
                 response.ResponseCode = 500;

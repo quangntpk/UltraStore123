@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Net.WebSockets;
 using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.EditModels;
 using UltraStrore.Repository;
@@ -62,6 +63,12 @@ namespace UltraStrore.Controllers
         public async Task<IActionResult> XoaComboVersion(GioHangComboVersion info)
         {
             var data = await this.services.XoaVersionComboGioHang(info);
+            return Ok(data);
+        }
+        [HttpPost("CopyGioHang")]
+        public async Task<IActionResult> CopyGioHang(CopyGHModel info)
+        {
+            var data = await this.services.CopyGioHang(info);
             return Ok(data);
         }
     }

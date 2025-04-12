@@ -23,17 +23,26 @@ namespace UltraStrore.Services
             List<SanPhamView> listsp = new List<SanPhamView>();
             var nhomSanPham = _context.SanPhams.GroupBy(s => s.MaSanPham.Substring(0, 6)).ToList();
 
-
-
             foreach (var nhom in nhomSanPham)
             {
                 var sanPhamDauTien = nhom.First();
-                var HinhAnhSanPhamList = _context.HinhAnhs.Where(g => g.MaSanPham.Substring(0, 6) == sanPhamDauTien.MaSanPham.Substring(0, 6)).Select(g => g.Data).ToList();
+                var HinhAnhSanPhamList = _context.HinhAnhs
+                    .Where(g => g.MaSanPham.Substring(0, 6) == sanPhamDauTien.MaSanPham.Substring(0, 6))
+                    .Select(g => g.Data)
+                    .ToList();
                 var listMauSac = nhom.Select(sp => sp.MaSanPham.Split('_')[1]).Distinct().ToList();
                 var listKichThuoc = nhom.Select(sp => sp.MaSanPham.Split('_')[2]).Distinct().ToList();
-                var tongSoLuong = nhom.Sum(sp => sp.SoLuong);
-                var TenLoai = _context.LoaiSanPhams.Where(g => g.MaLoaiSanPham == sanPhamDauTien.MaLoaiSanPham).Select(g => g.TenLoaiSanPham).FirstOrDefault();
-                var ThuongHieu = _context.ThuongHieus.Where(g => g.MaThuongHieu == sanPhamDauTien.MaThuongHieu).Select(g => g.TenThuongHieu).FirstOrDefault();
+                var SoLuongDaBan = nhom.Sum(sp => sp.SoLuongDaBan);
+                var tongSoLuong = nhom.Sum(sp => sp.SoLuong) - nhom.Sum(sp => sp.SoLuongDaBan);
+                var TenLoai = _context.LoaiSanPhams
+                    .Where(g => g.MaLoaiSanPham == sanPhamDauTien.MaLoaiSanPham)
+                    .Select(g => g.TenLoaiSanPham)
+                    .FirstOrDefault();
+                var ThuongHieu = _context.ThuongHieus
+                    .Where(g => g.MaThuongHieu == sanPhamDauTien.MaThuongHieu)
+                    .Select(g => g.TenThuongHieu)
+                    .FirstOrDefault();
+
                 listsp.Add(new SanPhamView
                 {
                     ID = sanPhamDauTien.MaSanPham.Substring(0, 6),
@@ -43,20 +52,31 @@ namespace UltraStrore.Services
                     Hinh = HinhAnhSanPhamList,
                     SoLuong = tongSoLuong ?? 0,
                     DonGia = sanPhamDauTien.Gia ?? 0,
-                    LoaiSanPham = TenLoai,                  
+                    LoaiSanPham = TenLoai,
                     ThuongHieu = ThuongHieu,
                     NgayTao = sanPhamDauTien.NgayTao,
-                    TrangThai = sanPhamDauTien.TrangThai,         
+                    TrangThai = sanPhamDauTien.TrangThai,
                     ChatLieu = sanPhamDauTien.ChatLieu,
                     MoTa = sanPhamDauTien.MoTa,
+                    SoLuongDaBan = SoLuongDaBan,
+                    GioiTinh = sanPhamDauTien.GioiTinh == 0 ? "Nam" : "Nữ",
+                    Hot = false
                 });
             }
+
             if (string.IsNullOrEmpty(id))
             {
-                return listsp.OrderByDescending(g => g.NgayTao).ToList();
+                var topList = listsp.OrderByDescending(g => g.SoLuongDaBan).ToList();
+                foreach (var sp in topList.Take(10))
+                {
+                    sp.Hot = true;
+                }
+                return topList;
             }
+
             return listsp.Where(g => g.ID.Trim() == id.Trim()).ToList();
         }
+
         public async Task<List<SanPham>> SanPhamByID(string? id)
         {
            
@@ -78,13 +98,13 @@ namespace UltraStrore.Services
                 {
                     SanPhamEditDetail ed = new SanPhamEditDetail();
                     ed.KichThuoc = item.KichThuoc;
-                    ed.SoLuong = item.SoLuong??0;
+                    ed.SoLuong = item.SoLuong-item.SoLuongDaBan??0;
                     ed.Gia = item.Gia?? 0;
                     detailedit.Add(ed);
                 }    
                 var tongSoLuong = nhom.Sum(sp => sp.SoLuong);
-                var MaLoai = sanPhamDauTien.MaLoaiSanPham;
-                var ThuongHieu = sanPhamDauTien.MaThuongHieu;
+                var MaLoai = _context.LoaiSanPhams.Where(g=>g.MaLoaiSanPham==sanPhamDauTien.MaLoaiSanPham).Select(g=>g.TenLoaiSanPham).FirstOrDefault();
+                var ThuongHieu = _context.ThuongHieus.Where(g=>g.MaThuongHieu==sanPhamDauTien.MaThuongHieu).Select(g=>g.TenThuongHieu).FirstOrDefault();
                 var HinhAnh = _context.HinhAnhs.Where(g => g.MaSanPham.Trim() == sanPhamDauTien.MaSanPham.Substring(0, 6).Trim()).Select(g=>g.Data).ToList();
                 listsp.Add(new SanPhamByIDSorted
                 {
@@ -116,7 +136,7 @@ namespace UltraStrore.Services
                         SanPham edit = new SanPham();
                         edit.MaSanPham = data[i].ID.Trim() + "_" + data[i].MauSac.Trim() + "_" + data[i].Details[j].KichThuoc.Trim();
                         edit.TenSanPham = data[i].TenSanPham.Trim();
-                        edit.SoLuong = data[i].Details[j].SoLuong;
+                        edit.SoLuong = data[i].Details[j].SoLuong + edit.SoLuongDaBan;
                         edit.Gia = data[i].Details[j].Gia;
                         edit.MaThuongHieu = data[i].MaThuongHieu;
                         edit.MaLoaiSanPham = data[i].LoaiSanPham;
@@ -163,7 +183,7 @@ namespace UltraStrore.Services
                     }
                     if (!Found) 
                     {
-                        item.SoLuong = 0;
+                        item.SoLuong = item.SoLuongDaBan;
                         _context.SanPhams.Update(item);
                     }                                             
                 }
