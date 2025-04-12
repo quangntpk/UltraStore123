@@ -45,16 +45,14 @@ namespace UltraStrore.Controllers
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
-
-            try
+            var response = await _kichThuocServices.CreateKichThuocAsync(model);
+            if(response.IsSuccess)
             {
-                var createdKichThuoc = await _kichThuocServices.CreateKichThuocAsync(model);
-                return CreatedAtAction(nameof(GetKichThuoc), new { id = createdKichThuoc.MaKichThuoc }, createdKichThuoc);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+                return Ok(response);
+            }    
+            else
+                return BadRequest();
+            
         }
 
         [HttpPut("{id}")]

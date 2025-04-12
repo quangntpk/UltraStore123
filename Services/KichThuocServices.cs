@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using UltraStrore.Helper;
 
 namespace UltraStrore.Services
 {
@@ -23,11 +24,19 @@ namespace UltraStrore.Services
         public async Task<List<KichThuocView>> GetAllKichThuocAsync()
         {
             var list = await _context.KichThuocs.AsNoTracking().ToListAsync();
-            return list.Select(k => new KichThuocView
+            List<KichThuocView> List = new List<KichThuocView>();
+            foreach(var item in list)
             {
-                MaKichThuoc = k.MaKichThuoc,
-                TenKichThuoc = k.TenKichThuoc
-            }).ToList();
+                var TenLoai = _context.LoaiSanPhams.Where(g => g.MaLoaiSanPham == item.MaLoai).Select(g => g.TenLoaiSanPham).FirstOrDefault();
+                KichThuocView newKT = new KichThuocView
+                {
+                    MaKichThuoc = item.MaKichThuoc,
+                    TenLoai = TenLoai,
+                    TenKichThuoc = item.TenKichThuoc
+                };
+                List.Add(newKT);
+            } 
+            return List;
         }
 
         public async Task<KichThuocView> GetKichThuocAsync(int maKichThuoc)
@@ -35,35 +44,39 @@ namespace UltraStrore.Services
             var kichThuoc = await _context.KichThuocs.AsNoTracking()
                 .FirstOrDefaultAsync(k => k.MaKichThuoc == maKichThuoc)
                 ?? throw new KeyNotFoundException("Kích thước không tồn tại.");
-
+            var TenLoai =  _context.LoaiSanPhams.Where(g => g.MaLoaiSanPham == kichThuoc.MaLoai).Select(g => g.TenLoaiSanPham).FirstOrDefault();
             return new KichThuocView
             {
                 MaKichThuoc = kichThuoc.MaKichThuoc,
+                TenLoai = TenLoai,
                 TenKichThuoc = kichThuoc.TenKichThuoc
             };
         }
 
-        public async Task<KichThuocView> CreateKichThuocAsync(KichThuocCreate model)
+        public async Task<APIResponse> CreateKichThuocAsync(KichThuocCreate model)
         {
-            if (model == null)
-                throw new ArgumentNullException(nameof(model));
-
-            if (string.IsNullOrWhiteSpace(model.TenKichThuoc))
-                throw new ArgumentException("Tên kích thước không được để trống.", nameof(model.TenKichThuoc));
-
-            var newKichThuoc = new KichThuoc
+            APIResponse response = new APIResponse();
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
             {
-                TenKichThuoc = model.TenKichThuoc
-            };
-
-            _context.KichThuocs.Add(newKichThuoc);
-            await _context.SaveChangesAsync();
-
-            return new KichThuocView
+                foreach (var item in model.TenKichThuoc)
+                {
+                    KichThuoc newKT = new KichThuoc();
+                    newKT.TenKichThuoc = item;
+                    newKT.MaLoai = model.MaLoai;
+                    _context.KichThuocs.Add(newKT);
+                }
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+                response.ResponseCode = 201;
+            }
+            catch (Exception ex)
             {
-                MaKichThuoc = newKichThuoc.MaKichThuoc,
-                TenKichThuoc = newKichThuoc.TenKichThuoc
-            };
+                await transaction.RollbackAsync();
+                response.ResponseCode = 500;
+                response.Result = $"Lỗi: {ex.Message}";
+            }
+            return response;
         }
 
         public async Task<KichThuocView> UpdateKichThuocAsync(KichThuocEdit model)
