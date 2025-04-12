@@ -1814,14 +1814,14 @@ namespace UltraStrore.Data
                     {
                         MaChiTietComBo = 3,
                         MaComBo = 2,
-                        MaSanPham = "A00002_ff00ff_M", 
+                        MaSanPham = "A00002_ff00ff_M",
                         SoLuong = 1
                     },
                     new ChiTietComBo
                     {
                         MaChiTietComBo = 4,
                         MaComBo = 3,
-                        MaSanPham = "A00001_ff0000_XXL", 
+                        MaSanPham = "A00001_ff0000_XXL",
                         SoLuong = 2
                     },
                     new ChiTietComBo
@@ -1837,7 +1837,7 @@ namespace UltraStrore.Data
                         MaComBo = 4,
                         MaSanPham = "Q00003_000000_M",
                         SoLuong = 1
-                    },
+                    });
 
             modelBuilder.Entity<BinhLuan>().HasData(
             new BinhLuan
