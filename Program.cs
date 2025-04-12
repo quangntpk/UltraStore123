@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using UltraStrore.Data;
+using UltraStrore.Helper;
 using UltraStrore.Middleware;
 using UltraStrore.Repository;
 using UltraStrore.Services;
@@ -45,7 +46,12 @@ namespace UltraStrore
             builder.Services.AddScoped<ILoaiSanPhamServices, LoaiSanPhamServices>();
             builder.Services.AddScoped<IThuongHieuServices, ThuongHieuServices>();
             builder.Services.AddScoped<IKichThuocServices, KichThuocServices>();
-            builder.Services.AddScoped<IThongKeServices, ThongKeServices>();
+            builder.Services.AddScoped<ICheckOutServices, CheckOutService>();
+            builder.Services.AddScoped<IVnPayServies, VnPayService>();
+            builder.Services.Configure<VnPayConfig>(builder.Configuration.GetSection("VnPay"));
+            builder.Services.AddSingleton(sp =>
+                sp.GetRequiredService<IOptions<VnPayConfig>>().Value);
+
             builder.Services.AddMemoryCache();
 
             builder.Services.AddDistributedMemoryCache();

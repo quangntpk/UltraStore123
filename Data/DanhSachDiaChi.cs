@@ -16,7 +16,6 @@ namespace UltraStrore.Data
         public string? QuanHuyen { get; set; }
         public string? Tinh { get; set; }
         public int? TrangThai { get; set; }
-
         public virtual NguoiDung? MaNguoiDungNavigation { get; set; }
     }
 }
