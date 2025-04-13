@@ -53,9 +53,17 @@
               "target": "Package",
               "version": "[4.11.0, )"
             },
+            "Microsoft.AspNetCore.Authentication.Google": {
+              "target": "Package",
+              "version": "[8.0.10, )"
+            },
             "Microsoft.AspNetCore.Authentication.JwtBearer": {
               "target": "Package",
               "version": "[8.0.10, )"
+            },
+            "Microsoft.AspNetCore.Http.Abstractions": {
+              "target": "Package",
+              "version": "[2.3.0, )"
             },
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",
