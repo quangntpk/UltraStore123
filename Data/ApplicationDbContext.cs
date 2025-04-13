@@ -1812,44 +1812,73 @@ namespace UltraStrore.Data
                      {
                          MaChiTietComBo = 1,
                          MaComBo = 1,
-                         MaSanPham = "Q00001_000000_XL",
+                         MaSanPham = "Q00001",
                          SoLuong = 1,
                      },
                     new ChiTietComBo
                     {
                         MaChiTietComBo = 2,
                         MaComBo = 1,
-                        MaSanPham = "A00001_ff0000_XL",
+                        MaSanPham = "A00001",
                         SoLuong = 1,
                     },
                     new ChiTietComBo
                     {
                         MaChiTietComBo = 3,
                         MaComBo = 2,
-                        MaSanPham = "A00002_ff00ff_M",
+                        MaSanPham = "A00002",
                         SoLuong = 1
                     },
                     new ChiTietComBo
                     {
                         MaChiTietComBo = 4,
+                        MaComBo = 2,
+                        MaSanPham = "A00001",
+                        SoLuong = 1
+                    },
+                    new ChiTietComBo
+                    {
+                        MaChiTietComBo = 5,
                         MaComBo = 3,
-                        MaSanPham = "A00001_ff0000_XXL",
+                        MaSanPham = "A00001",
+                        SoLuong = 2
+                    },
+                    new ChiTietComBo
+                    {
+                        MaChiTietComBo = 6,
+                        MaComBo = 3,
+                        MaSanPham = "A00002",
                         SoLuong = 2
                     },
                     new ChiTietComBo
                     {
                         MaChiTietComBo = 7,
                         MaComBo = 4,
-                        MaSanPham = "A00001_ff00ff_M",
-                        SoLuong = 1
+                        MaSanPham = "A00001",
+                        SoLuong = 2
                     },
                     new ChiTietComBo
                     {
                         MaChiTietComBo = 8,
                         MaComBo = 4,
-                        MaSanPham = "Q00003_000000_M",
+                        MaSanPham = "A00002",
+                        SoLuong = 2
+                    },
+                    new ChiTietComBo
+                    {
+                        MaChiTietComBo = 9,
+                        MaComBo = 5,
+                        MaSanPham = "A00001",
                         SoLuong = 1
-                    });
+                    },
+                    new ChiTietComBo
+                    {
+                        MaChiTietComBo = 10,
+                        MaComBo = 5,
+                        MaSanPham = "A00002",
+                        SoLuong = 2
+                    }
+                    );
 
             modelBuilder.Entity<BinhLuan>().HasData(
             new BinhLuan
@@ -2124,7 +2153,7 @@ namespace UltraStrore.Data
                 new DonHang
                 {
                     MaDonHang = 16,
-                    MaNguoiDung = "ND00013",
+                    MaNguoiDung = "ND00002",
                     MaNhanVien = null,
                     NgayDat = DateTime.Now,
                     TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan,
@@ -2137,7 +2166,7 @@ namespace UltraStrore.Data
                 new DonHang
                 {
                     MaDonHang = 17,
-                    MaNguoiDung = "ND00014",
+                    MaNguoiDung = "ND00002",
                     MaNhanVien = "NV00007",
                     NgayDat = DateTime.Now.AddDays(-1),
                     TrangThaiDonHang = TrangThaiDonHang.DangXuLy,
@@ -2150,7 +2179,7 @@ namespace UltraStrore.Data
                 new DonHang
                 {
                     MaDonHang = 18,
-                    MaNguoiDung = "ND00013",
+                    MaNguoiDung = "ND00002",
                     MaNhanVien = "NV00008",
                     NgayDat = DateTime.Now.AddDays(-2),
                     TrangThaiDonHang = TrangThaiDonHang.DaGiaoHang,
@@ -2369,16 +2398,6 @@ namespace UltraStrore.Data
                 },
                 new ChiTietDonHang
                 {
-                    MaCtdh = 21,
-                    MaDonHang = 16,
-                    MaSanPham = "Q00003_000000_M",
-                    SoLuong = 2,
-                    Gia = 120000,
-                    ThanhTien = 240000,
-                    MaCombo = null
-                },
-                new ChiTietDonHang
-                {
                     MaCtdh = 22,
                     MaDonHang = 16,
                     MaSanPham = null,
@@ -2386,16 +2405,6 @@ namespace UltraStrore.Data
                     Gia = 220000,
                     ThanhTien = 220000,
                     MaCombo = 4
-                },
-                new ChiTietDonHang
-                {
-                    MaCtdh = 23,
-                    MaDonHang = 17,
-                    MaSanPham = "PK00001_000000_ONE",
-                    SoLuong = 1,
-                    Gia = 80000,
-                    ThanhTien = 80000,
-                    MaCombo = null
                 },
                 new ChiTietDonHang
                 {

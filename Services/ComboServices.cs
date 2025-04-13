@@ -12,7 +12,7 @@ namespace UltraStrore.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly ISanPhamServices _sanphamServices;
-        public ComboServices(ApplicationDbContext context, ISanPhamServices sanPhamServices) 
+        public ComboServices(ApplicationDbContext context, ISanPhamServices sanPhamServices)
         {
             _context = context;
             _sanphamServices = sanPhamServices;
@@ -23,7 +23,7 @@ namespace UltraStrore.Services
             var data = id == null
                 ? _context.ComBoSanPhams.ToList()
                 : _context.ComBoSanPhams.Where(g => g.MaComBo == id).ToList();
-            foreach (var item in data) 
+            foreach (var item in data)
             {
                 ComboAdminView cbv = new ComboAdminView();
                 cbv.MaCombo = item.MaComBo;
@@ -41,7 +41,7 @@ namespace UltraStrore.Services
                     view.MoTa = InfoSanPham[0].MoTa;
                     view.MauSac = InfoSanPham[0].MauSac;
                     view.KichThuoc = InfoSanPham[0].KichThuoc;
-                    view.SoLuong = _chitiet[i].SoLuong??0;
+                    view.SoLuong = _chitiet[i].SoLuong ?? 0;
                     view.DonGia = InfoSanPham[0].DonGia;
                     view.ChatLieu = InfoSanPham[0].ChatLieu;
                     view.Hinh = InfoSanPham[0].Hinh;
@@ -52,13 +52,13 @@ namespace UltraStrore.Services
                 cbv.SanPhams = sp;
                 cbv.MoTa = item.MoTa;
                 cbv.Gia = (int)item.TongGia;
-                if(item.TrangThai!=null && item.TrangThai==true)
+                if (item.TrangThai != null && item.TrangThai == true)
                 {
                     cbv.TrangThai = true;
-                }   
-                else 
+                }
+                else
                     cbv.TrangThai = false;
-                cbv.SoLuong = item.SoLuong??0;
+                cbv.SoLuong = item.SoLuong ?? 0;
                 cbv.NgayTao = item.NgayTao;
                 list.Add(cbv);
             }
@@ -76,7 +76,7 @@ namespace UltraStrore.Services
                 ComboNotEditted.TenComBo = info.TenCombo;
                 ComboNotEditted.SoLuong = info.SoLuong;
                 ComboNotEditted.TongGia = info.Gia;
-                ComboNotEditted.HinhAnh = info.HinhAnh;                           
+                ComboNotEditted.HinhAnh = info.HinhAnh;
                 var ChiTietSanPham = _context.ChiTietComBos.Where(g => g.MaComBo == info.ID).ToList();
                 foreach (var item in ChiTietSanPham)
                 {
@@ -126,7 +126,7 @@ namespace UltraStrore.Services
                 response.ErrorMessage = ex.Message;
                 response.ResponseCode = 400;
                 await transaction.RollbackAsync();
-            } 
+            }
             return response;
         }
 
@@ -147,7 +147,7 @@ namespace UltraStrore.Services
                 };
 
                 _context.ComBoSanPhams.Add(newCB);
-                await _context.SaveChangesAsync(); 
+                await _context.SaveChangesAsync();
                 int MaComBo = newCB.MaComBo;
 
                 foreach (var item in info.SanPham)
@@ -156,7 +156,7 @@ namespace UltraStrore.Services
                     {
                         MaSanPham = item.MaSanPham,
                         SoLuong = item.SoLuong,
-                        MaComBo = MaComBo 
+                        MaComBo = MaComBo
                     };
                     _context.ChiTietComBos.Add(newCTCB);
                 }
@@ -182,7 +182,7 @@ namespace UltraStrore.Services
             try
             {
                 var combo = _context.ComBoSanPhams.Where(g => g.MaComBo == id).FirstOrDefault();
-                if(combo.TrangThai==true)
+                if (combo.TrangThai == true)
                     combo.TrangThai = false;
                 else
                     combo.TrangThai = true;

@@ -51,11 +51,10 @@ namespace UltraStrore.Controllers
             var order = await _context.DonHangs
                 .Include(d => d.MaNguoiDungNavigation)
                 .Include(d => d.ChiTietDonHangs)
-                .ThenInclude(cd => cd.MaSanPhamNavigation)
+                .ThenInclude(cd => cd.MaSanPham)
                 .Include(d => d.ChiTietDonHangs)
                 .ThenInclude(cd => cd.MaComboNavigation)
                 .ThenInclude(c => c.ChiTietComBos)
-                .ThenInclude(ct => ct.MaSanPhamNavigation)
                 .FirstOrDefaultAsync(d => d.MaDonHang == id);
 
             if (order == null)
@@ -69,9 +68,7 @@ namespace UltraStrore.Controllers
                 {
                     MaChiTietDh = cd.MaCtdh,
                     LaCombo = cd.MaCombo != null,
-                    TenSanPham = cd.MaCombo != null
-                        ? cd.MaComboNavigation != null ? cd.MaComboNavigation.TenComBo : "Combo không tồn tại"
-                        : cd.MaSanPhamNavigation != null ? cd.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại", // Đổi tên thành TenSanPham
+                    TenSanPham = _context.SanPhams.Where(g=>g.MaSanPham.Contains(cd.MaSanPham)).Select(g=>g.TenSanPham).FirstOrDefault(),
                     SoLuong = cd.SoLuong,
                     Gia = cd.Gia,
                     ThanhTien = cd.ThanhTien,
@@ -81,10 +78,10 @@ namespace UltraStrore.Controllers
                         GiaCombo = cd.MaComboNavigation.TongGia,
                         SanPhamsTrongCombo = cd.MaComboNavigation.ChiTietComBos.Select(ct => new
                         {
-                            TenSanPham = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại",
+                            TenSanPham = _context.SanPhams.Where(g=>ct.MaSanPham.Contains(g.MaSanPham)).Select(g=>g.TenSanPham).FirstOrDefault(),
                             SoLuong = ct.SoLuong,
-                            Gia = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.Gia : 0,
-                            ThanhTien = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.Gia * ct.SoLuong : 0
+                            Gia = _context.SanPhams.Where(g => ct.MaSanPham.Contains(g.MaSanPham)).Select(g => g.Gia).FirstOrDefault(),
+                            ThanhTien = _context.SanPhams.Where(g => ct.MaSanPham.Contains(g.MaSanPham)).Select(g => g.Gia).FirstOrDefault() * ct.SoLuong
                         })
                     } : null
                 }),
