@@ -48,60 +48,72 @@ namespace UltraStrore.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetOrderDetails(int id)
         {
-            var order = await _context.DonHangs
-                .Include(d => d.MaNguoiDungNavigation)
+            try
+            {
+                var order = await _context.DonHangs
+               .Include(d => d.MaNguoiDungNavigation)
                 .Include(d => d.ChiTietDonHangs)
-                .ThenInclude(cd => cd.MaSanPham)
+                .ThenInclude(cd => cd.MaSanPhamNavigation)
                 .Include(d => d.ChiTietDonHangs)
                 .ThenInclude(cd => cd.MaComboNavigation)
                 .ThenInclude(c => c.ChiTietComBos)
+                .ThenInclude(ct => ct.MaSanPhamNavigation)
                 .FirstOrDefaultAsync(d => d.MaDonHang == id);
 
-            if (order == null)
-            {
-                return NotFound();
-            }
-
-            var orderDetails = new
-            {
-                SanPhams = order.ChiTietDonHangs.Select(cd => new
+                if (order == null)
                 {
-                    MaChiTietDh = cd.MaCtdh,
-                    LaCombo = cd.MaCombo != null,
-                    TenSanPham = _context.SanPhams.Where(g=>g.MaSanPham.Contains(cd.MaSanPham)).Select(g=>g.TenSanPham).FirstOrDefault(),
-                    SoLuong = cd.SoLuong,
-                    Gia = cd.Gia,
-                    ThanhTien = cd.ThanhTien,
-                    Combo = cd.MaCombo != null && cd.MaComboNavigation != null ? new
-                    {
-                        TenCombo = cd.MaComboNavigation.TenComBo,
-                        GiaCombo = cd.MaComboNavigation.TongGia,
-                        SanPhamsTrongCombo = cd.MaComboNavigation.ChiTietComBos.Select(ct => new
-                        {
-                            TenSanPham = _context.SanPhams.Where(g=>ct.MaSanPham.Contains(g.MaSanPham)).Select(g=>g.TenSanPham).FirstOrDefault(),
-                            SoLuong = ct.SoLuong,
-                            Gia = _context.SanPhams.Where(g => ct.MaSanPham.Contains(g.MaSanPham)).Select(g => g.Gia).FirstOrDefault(),
-                            ThanhTien = _context.SanPhams.Where(g => ct.MaSanPham.Contains(g.MaSanPham)).Select(g => g.Gia).FirstOrDefault() * ct.SoLuong
-                        })
-                    } : null
-                }),
-                ThongTinNguoiDung = new
-                {
-                    TenNguoiNhan = order.TenNguoiNhan,
-                    DiaChi = order.DiaChi,
-                    Sdt = order.Sdt,
-                    TenNguoiDat = order.MaNguoiDungNavigation.HoTen
-                },
-                ThongTinDonHang = new
-                {
-                    NgayDat = order.NgayDat != null ? order.NgayDat.Value.ToString("dd/MM/yyyy") : "",
-                    TrangThai = (int)order.TrangThaiDonHang,
-                    ThanhToan = (int)order.TrangThaiHang,
-                    HinhThucThanhToan = order.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang ? "Thanh toán khi nhận hàng" : "Thanh toán VNPay"
+                    return NotFound();
                 }
-            };
 
-            return Ok(orderDetails);
+                var orderDetails = new
+                {
+                    SanPhams = order.ChiTietDonHangs.Select(cd => new
+                    {
+                        MaChiTietDh = cd.MaCtdh,
+                        LaCombo = cd.MaCombo != null,
+                        TenSanPham = _context.SanPhams.Where(g => g.MaSanPham.Contains(cd.MaSanPham)).Select(g => g.TenSanPham).FirstOrDefault(),
+                        SoLuong = cd.SoLuong,
+                        Gia = cd.Gia,
+                        ThanhTien = cd.ThanhTien,
+                        Combo = cd.MaCombo != null && cd.MaComboNavigation != null ? new
+                        {
+                            TenCombo = cd.MaComboNavigation.TenComBo,
+                            GiaCombo = cd.MaComboNavigation.TongGia,
+                            SanPhamsTrongCombo = cd.MaComboNavigation.ChiTietComBos.Select(ct => new
+                            {
+                                TenSanPham = _context.SanPhams.Where(g => ct.MaSanPham.Contains(g.MaSanPham)).Select(g => g.TenSanPham).FirstOrDefault(),
+                                SoLuong = ct.SoLuong,
+                                Gia = _context.SanPhams.Where(g => ct.MaSanPham.Contains(g.MaSanPham)).Select(g => g.Gia).FirstOrDefault(),
+                                ThanhTien = _context.SanPhams.Where(g => ct.MaSanPham.Contains(g.MaSanPham)).Select(g => g.Gia).FirstOrDefault() * ct.SoLuong
+                            })
+                        } : null
+                    }),
+                    ThongTinNguoiDung = new
+                    {
+                        TenNguoiNhan = order.TenNguoiNhan,
+                        DiaChi = order.DiaChi,
+                        Sdt = order.Sdt,
+                        TenNguoiDat = order.MaNguoiDungNavigation.HoTen
+                    },
+                    ThongTinDonHang = new
+                    {
+                        NgayDat = order.NgayDat != null ? order.NgayDat.Value.ToString("dd/MM/yyyy") : "",
+                        TrangThai = (int)order.TrangThaiDonHang,
+                        ThanhToan = (int)order.TrangThaiHang,
+                        HinhThucThanhToan = order.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang ? "Thanh toán khi nhận hàng" : "Thanh toán VNPay"
+                    }
+                };
+                var item = orderDetails;
+                int i = -1;
+                return Ok(orderDetails);
+            }
+            catch(Exception ex)
+            {
+                var item = ex.Message;
+                int i = -1;
+                return BadRequest(ex.Message);
+            }
+ 
         }
 
         // PUT: api/orders/approve/{id}
