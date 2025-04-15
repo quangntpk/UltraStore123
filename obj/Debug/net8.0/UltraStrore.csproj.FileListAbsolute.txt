@@ -1024,3 +1024,4 @@ D:\FPT\XE_SAT_SAU\C6\UltraStore123\obj\Debug\net8.0\refint\UltraStrore.dll
 D:\FPT\XE_SAT_SAU\C6\UltraStore123\obj\Debug\net8.0\UltraStrore.pdb
 D:\FPT\XE_SAT_SAU\C6\UltraStore123\obj\Debug\net8.0\UltraStrore.genruntimeconfig.cache
 D:\FPT\XE_SAT_SAU\C6\UltraStore123\obj\Debug\net8.0\ref\UltraStrore.dll
+D:\FPT\XE_SAT_SAU\C6\UltraStore123\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.Google.dll

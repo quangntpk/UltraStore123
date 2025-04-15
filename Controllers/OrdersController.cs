@@ -81,10 +81,10 @@ namespace UltraStrore.Controllers
                             GiaCombo = cd.MaComboNavigation.TongGia,
                             SanPhamsTrongCombo = cd.MaComboNavigation.ChiTietComBos.Select(ct => new
                             {
-                                TenSanPham = _context.SanPhams.Where(g => ct.MaSanPham.Contains(g.MaSanPham)).Select(g => g.TenSanPham).FirstOrDefault(),
+                                TenSanPham = _context.SanPhams.Where(g => g.MaSanPham.Contains(ct.MaSanPham)).Select(g => g.TenSanPham).FirstOrDefault(),
                                 SoLuong = ct.SoLuong,
-                                Gia = _context.SanPhams.Where(g => ct.MaSanPham.Contains(g.MaSanPham)).Select(g => g.Gia).FirstOrDefault(),
-                                ThanhTien = _context.SanPhams.Where(g => ct.MaSanPham.Contains(g.MaSanPham)).Select(g => g.Gia).FirstOrDefault() * ct.SoLuong
+                                Gia = _context.SanPhams.Where(g => g.MaSanPham.Contains(ct.MaSanPham)).Select(g => g.Gia).FirstOrDefault(),
+                                ThanhTien = _context.SanPhams.Where(g => g.MaSanPham.Contains(ct.MaSanPham)).Select(g => g.Gia).FirstOrDefault() * ct.SoLuong
                             })
                         } : null
                     }),
