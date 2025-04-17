@@ -33,5 +33,11 @@ namespace UltraStrore.Controllers
             var data = await this.service.PhanLoaiGopY(noiDung);
             return Ok(data);
         }
+        [HttpGet("SmartAI")]
+        public async Task<IActionResult> SmartAI(string noiDung)
+        {
+            var data = await this.service.TraLoiUpgrade(noiDung);
+            return Ok(data);
+        }
     }
 }
