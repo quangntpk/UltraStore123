@@ -17,12 +17,20 @@ namespace UltraStrore.Utils
 
         public string GenerateToken(NguoiDungView user)
         {
+            string roleName = user.VaiTro switch
+            {
+                1 => "Admin",
+                2 => "Nhân Viên",
+                0 => "Người Dùng",
+                _ => "Nguoi Dung"
+            };
+
             var claims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.TaiKhoan),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(ClaimTypes.NameIdentifier, user.MaNguoiDung),
-                new Claim(ClaimTypes.Role, user.VaiTro.ToString()) 
+                new Claim(ClaimTypes.Role, roleName) 
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));

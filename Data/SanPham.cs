@@ -25,5 +25,6 @@ namespace UltraStrore.Data
         public virtual ICollection<ChiTietGioHang> ChiTietGioHangs { get; set; }
         public virtual ICollection<Video> Videos { get; set; } 
         public virtual ICollection<BinhLuan> MaBinhLuans { get; set; }
+        public virtual ICollection<HinhAnh> HinhAnhs { get; set; } = new List<HinhAnh>();
     }
 }

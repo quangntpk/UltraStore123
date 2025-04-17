@@ -428,12 +428,12 @@ namespace UltraStrore.Services
         public async Task<(NguoiDungView User, string Token)> DangNhapAdmin(LoginAdmin model)
         {
             var user = await _context.NguoiDungs
-                .FirstOrDefaultAsync(u => u.TaiKhoan == model.TaiKhoan && u.VaiTro == 1);
+                .FirstOrDefaultAsync(u => u.TaiKhoan == model.TaiKhoan && (u.VaiTro == 1 || u.VaiTro == 2));
 
             if (user == null)
                 throw new Exception("Tài khoản Admin không tồn tại.");
 
-            if (user.TrangThai != 1)
+            if (user.TrangThai != 1 && user.TrangThai != 2)
                 throw new Exception("Tài khoản Admin đã bị khóa hoặc chưa được kích hoạt.");
 
             if (!PasswordHasher.VerifyPassword(model.MatKhau, user.MatKhau))
@@ -458,7 +458,8 @@ namespace UltraStrore.Services
         public async Task<bool> IsAdminAsync(string email)
         {
             var user = await _context.NguoiDungs.FirstOrDefaultAsync(u => u.Email == email);
-            return user != null && user.VaiTro == 1;
+            return user != null && (user.VaiTro == 1 || user.VaiTro == 2);
+
         }
 
         public async Task<bool> UpdateUserProfileAsync(string maNguoiDung, UpdateProfileView model)

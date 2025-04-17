@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UltraStrore.Data;
 
 namespace UltraStrore.Controllers
 {
+    //[Authorize(Roles = "1")]
     [Route("api/[controller]")]
     [ApiController]
     public class OrdersController : ControllerBase
@@ -46,65 +48,130 @@ namespace UltraStrore.Controllers
 
         // GET: api/orders/{id}
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetOrderDetails(int id)
+        public async Task<IActionResult> GetOrdersByUserId(string id)
         {
-            var order = await _context.DonHangs
+            if (string.IsNullOrEmpty(id) || id == "undefined")
+            {
+                return BadRequest(new { message = "ID người dùng không hợp lệ." });
+            }
+
+            var ordersQuery = await _context.DonHangs
+                .Where(d => d.MaNguoiDung == id)
                 .Include(d => d.MaNguoiDungNavigation)
                 .Include(d => d.ChiTietDonHangs)
                 .ThenInclude(cd => cd.MaSanPhamNavigation)
+                .ThenInclude(sp => sp.HinhAnhs)
                 .Include(d => d.ChiTietDonHangs)
                 .ThenInclude(cd => cd.MaComboNavigation)
                 .ThenInclude(c => c.ChiTietComBos)
                 .ThenInclude(ct => ct.MaSanPhamNavigation)
-                .FirstOrDefaultAsync(d => d.MaDonHang == id);
+                .ThenInclude(sp => sp.HinhAnhs)
+                .OrderByDescending(d => d.NgayDat)
+                .Select(d => new
+                {
+                    MaDonHang = d.MaDonHang,
+                    TenNguoiNhan = d.TenNguoiNhan,
+                    NgayDat = d.NgayDat != null ? d.NgayDat.Value.ToString("dd/MM/yyyy") : DateTime.UtcNow.ToString("dd/MM/yyyy"), // Sử dụng ngày hiện tại nếu null
+                    TrangThaiDonHang = (int)d.TrangThaiDonHang,
+                    TrangThaiThanhToan = (int)d.TrangThaiHang,
+                    HinhThucThanhToan = d.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang ? "COD" : "VNPay",
+                    LyDoHuy = d.LyDoHuy,
+                    TongTien = d.ChiTietDonHangs.Sum(cd => cd.ThanhTien),
+                    SanPhams = d.ChiTietDonHangs.Select(cd => new
+                    {
+                        MaChiTietDh = cd.MaCtdh,
+                        LaCombo = cd.MaCombo != null,
+                        TenSanPham = cd.MaCombo != null
+                            ? cd.MaComboNavigation != null ? cd.MaComboNavigation.TenComBo : "Combo không tồn tại"
+                            : cd.MaSanPhamNavigation != null ? cd.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại",
+                        SoLuong = cd.SoLuong,
+                        Gia = cd.Gia,
+                        ThanhTien = cd.ThanhTien,
+                        MaCombo = cd.MaCombo,
+                        MaSanPham = cd.MaSanPham,
+                        Combo = cd.MaCombo != null && cd.MaComboNavigation != null ? new
+                        {
+                            TenCombo = cd.MaComboNavigation.TenComBo,
+                            GiaCombo = cd.MaComboNavigation.TongGia,
+                            SanPhamsTrongCombo = cd.MaComboNavigation.ChiTietComBos.Select(ct => new
+                            {
+                                TenSanPham = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại",
+                                SoLuong = ct.SoLuong,
+                                Gia = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.Gia : 0,
+                                ThanhTien = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.Gia * ct.SoLuong : 0,
+                                MaSanPham = ct.MaSanPham
+                            })
+                        } : null
+                    }).ToList(),
+                    ThongTinNguoiDung = new
+                    {
+                        TenNguoiNhan = d.TenNguoiNhan,
+                        DiaChi = d.DiaChi,
+                        Sdt = d.Sdt,
+                        TenNguoiDat = d.MaNguoiDungNavigation.HoTen
+                    },
+                    ThongTinDonHang = new
+                    {
+                        NgayDat = d.NgayDat != null ? d.NgayDat.Value.ToString("dd/MM/yyyy") : DateTime.UtcNow.ToString("dd/MM/yyyy"),
+                        TrangThai = (int)d.TrangThaiDonHang,
+                        ThanhToan = (int)d.TrangThaiHang,
+                        HinhThucThanhToan = d.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang ? "Thanh toán khi nhận hàng" : "Thanh toán VNPay"
+                    }
+                })
+                .ToListAsync();
 
-            if (order == null)
+            if (ordersQuery == null || !ordersQuery.Any())
             {
-                return NotFound();
+                return NotFound(new { message = "Không tìm thấy đơn hàng nào cho người dùng này." });
             }
 
-            var orderDetails = new
+            var orders = ordersQuery.Select(d => new
             {
-                SanPhams = order.ChiTietDonHangs.Select(cd => new
+                d.MaDonHang,
+                d.TenNguoiNhan,
+                d.NgayDat,
+                d.TrangThaiDonHang,
+                d.TrangThaiThanhToan,
+                d.HinhThucThanhToan,
+                d.LyDoHuy,
+                d.TongTien,
+                SanPhams = d.SanPhams.Select(cd => new
                 {
-                    MaChiTietDh = cd.MaCtdh,
-                    LaCombo = cd.MaCombo != null,
-                    TenSanPham = cd.MaCombo != null
-                        ? cd.MaComboNavigation != null ? cd.MaComboNavigation.TenComBo : "Combo không tồn tại"
-                        : cd.MaSanPhamNavigation != null ? cd.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại", // Đổi tên thành TenSanPham
-                    SoLuong = cd.SoLuong,
-                    Gia = cd.Gia,
-                    ThanhTien = cd.ThanhTien,
-                    Combo = cd.MaCombo != null && cd.MaComboNavigation != null ? new
+                    cd.MaChiTietDh,
+                    cd.LaCombo,
+                    cd.TenSanPham,
+                    cd.SoLuong,
+                    cd.Gia,
+                    cd.ThanhTien,
+                    HinhAnh = cd.LaCombo
+                        ? _context.ChiTietComBos
+                            .Where(ct => ct.MaComBo == cd.MaCombo)
+                            .Select(ct => ct.MaSanPhamNavigation.HinhAnhs.FirstOrDefault())
+                            .FirstOrDefault()?.Link
+                        : _context.HinhAnhs
+                            .Where(h => h.MaSanPham == cd.MaSanPham)
+                            .FirstOrDefault()?.Link,
+                    Combo = cd.Combo != null ? new
                     {
-                        TenCombo = cd.MaComboNavigation.TenComBo,
-                        GiaCombo = cd.MaComboNavigation.TongGia,
-                        SanPhamsTrongCombo = cd.MaComboNavigation.ChiTietComBos.Select(ct => new
+                        cd.Combo.TenCombo,
+                        cd.Combo.GiaCombo,
+                        SanPhamsTrongCombo = cd.Combo.SanPhamsTrongCombo.Select(ct => new
                         {
-                            TenSanPham = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại",
-                            SoLuong = ct.SoLuong,
-                            Gia = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.Gia : 0,
-                            ThanhTien = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.Gia * ct.SoLuong : 0
+                            ct.TenSanPham,
+                            ct.SoLuong,
+                            ct.Gia,
+                            ct.ThanhTien,
+                            HinhAnh = _context.HinhAnhs
+                                .Where(h => h.MaSanPham == ct.MaSanPham)
+                                .FirstOrDefault()?.Link
                         })
                     } : null
-                }),
-                ThongTinNguoiDung = new
-                {
-                    TenNguoiNhan = order.TenNguoiNhan,
-                    DiaChi = order.DiaChi,
-                    Sdt = order.Sdt,
-                    TenNguoiDat = order.MaNguoiDungNavigation.HoTen
-                },
-                ThongTinDonHang = new
-                {
-                    NgayDat = order.NgayDat != null ? order.NgayDat.Value.ToString("dd/MM/yyyy") : "",
-                    TrangThai = (int)order.TrangThaiDonHang,
-                    ThanhToan = (int)order.TrangThaiHang,
-                    HinhThucThanhToan = order.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang ? "Thanh toán khi nhận hàng" : "Thanh toán VNPay"
-                }
-            };
+                }).ToList(),
+                d.ThongTinNguoiDung,
+                d.ThongTinDonHang
+            }).ToList();
 
-            return Ok(orderDetails);
+            return Ok(orders);
         }
 
         // PUT: api/orders/approve/{id}

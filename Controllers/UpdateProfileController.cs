@@ -24,7 +24,7 @@ namespace UltraStrore.Controllers
         public async Task<IActionResult> GetCurrentUserProfile()
         {
             var claims = User.FindAll(ClaimTypes.NameIdentifier).ToList();
-            var maNguoiDung = claims.FirstOrDefault(c => c.Value.StartsWith("ND") || c.Value.StartsWith("KH"))?.Value;
+            var maNguoiDung = claims.FirstOrDefault(c => c.Value.StartsWith("ND") || c.Value.StartsWith("KH") || c.Value.StartsWith("AD"))?.Value;
 
             if (string.IsNullOrEmpty(maNguoiDung))
                 return Unauthorized("Không tìm thấy thông tin người dùng.");

@@ -1558,7 +1558,7 @@ namespace UltraStrore.Data
                     MatKhau = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
                     NgayTao = DateTime.Now,
                     VaiTro = 0,
-                    CancelConunt = 2, 
+                    CancelConunt = 2,
                     LockoutEndDate = null
                 },
                 new NguoiDung
@@ -1578,7 +1578,7 @@ namespace UltraStrore.Data
                     VaiTro = 0,
                     CancelConunt = 2,
                     LockoutEndDate = null,
-                    
+
                 },
                 new NguoiDung
                 {
@@ -1802,7 +1802,7 @@ namespace UltraStrore.Data
                                 TrangThai = true,
                                 NgayTao = DateOnly.FromDateTime(DateTime.Now),
                             }
-                            
+
                             );
 
 
@@ -2120,45 +2120,6 @@ namespace UltraStrore.Data
                     TenNguoiNhan = "Tran Thi Binh",
                     Sdt = "0987654321",
                     DiaChi = "456 Market Street"
-                },
-                new DonHang
-                {
-                    MaDonHang = 16,
-                    MaNguoiDung = "ND00013",
-                    MaNhanVien = null,
-                    NgayDat = DateTime.Now,
-                    TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan,
-                    TrangThaiHang = TrangThaiThanhToan.ThanhToanKhiNhanHang,
-                    LyDoHuy = null,
-                    TenNguoiNhan = "Nguyen Thi Mai",
-                    Sdt = "0913456789",
-                    DiaChi = "1010 Elm Street"
-                },
-                new DonHang
-                {
-                    MaDonHang = 17,
-                    MaNguoiDung = "ND00014",
-                    MaNhanVien = "NV00007",
-                    NgayDat = DateTime.Now.AddDays(-1),
-                    TrangThaiDonHang = TrangThaiDonHang.DangXuLy,
-                    TrangThaiHang = TrangThaiThanhToan.ThanhToanVNPay,
-                    LyDoHuy = null,
-                    TenNguoiNhan = "Tran Van Nam",
-                    Sdt = "0923456789",
-                    DiaChi = "1111 Pine Road"
-                },
-                new DonHang
-                {
-                    MaDonHang = 18,
-                    MaNguoiDung = "ND00013",
-                    MaNhanVien = "NV00008",
-                    NgayDat = DateTime.Now.AddDays(-2),
-                    TrangThaiDonHang = TrangThaiDonHang.DaGiaoHang,
-                    TrangThaiHang = TrangThaiThanhToan.ThanhToanVNPay,
-                    LyDoHuy = null,
-                    TenNguoiNhan = "Nguyen Thi Mai",
-                    Sdt = "0913456789",
-                    DiaChi = "1010 Elm Street"
                 }
             );
 
@@ -2334,28 +2295,6 @@ namespace UltraStrore.Data
                     ThanhTien = 200000,
                     MaCombo = 1 // Combo Áo thun + Quần short
                 },
-
-                // Đơn hàng 15: Trần Thị Bình mua Combo 2 và 1 sản phẩm riêng lẻ
-                new ChiTietDonHang
-                {
-                    MaCtdh = 18,
-                    MaDonHang = 15,
-                    MaSanPham = null,
-                    SoLuong = 1,
-                    Gia = 300000, // Giá của Combo 2
-                    ThanhTien = 300000,
-                    MaCombo = 2 // Combo Áo thun + Quần dài
-                },
-                new ChiTietDonHang
-                {
-                    MaCtdh = 19,
-                    MaDonHang = 15,
-                    MaSanPham = "A00002_ff00ff_M", // Sản phẩm riêng lẻ
-                    SoLuong = 1,
-                    Gia = 150000,
-                    ThanhTien = 150000,
-                    MaCombo = null
-                },
                 // Thêm combo vào đơn hàng hiện có (MaDonHang = 9, Nguyễn Văn An, ChuaXacNhan)
                 new ChiTietDonHang
                 {
@@ -2366,68 +2305,18 @@ namespace UltraStrore.Data
                     Gia = 250000, // Giá của Combo 3
                     ThanhTien = 250000,
                     MaCombo = 3 // Combo Áo thun đôi
-                },
-                new ChiTietDonHang
-                {
-                    MaCtdh = 21,
-                    MaDonHang = 16,
-                    MaSanPham = "Q00003_000000_M",
-                    SoLuong = 2,
-                    Gia = 120000,
-                    ThanhTien = 240000,
-                    MaCombo = null
-                },
-                new ChiTietDonHang
-                {
-                    MaCtdh = 22,
-                    MaDonHang = 16,
-                    MaSanPham = null,
-                    SoLuong = 1,
-                    Gia = 220000,
-                    ThanhTien = 220000,
-                    MaCombo = 4
-                },
-                new ChiTietDonHang
-                {
-                    MaCtdh = 23,
-                    MaDonHang = 17,
-                    MaSanPham = "PK00001_000000_ONE",
-                    SoLuong = 1,
-                    Gia = 80000,
-                    ThanhTien = 80000,
-                    MaCombo = null
-                },
-                new ChiTietDonHang
-                {
-                    MaCtdh = 24,
-                    MaDonHang = 17,
-                    MaSanPham = null,
-                    SoLuong = 1,
-                    Gia = 180000,
-                    ThanhTien = 180000,
-                    MaCombo = 5
-                },
-                new ChiTietDonHang
-                {
-                    MaCtdh = 25,
-                    MaDonHang = 18,
-                    MaSanPham = "A00001_ff00ff_XL",
-                    SoLuong = 1,
-                    Gia = 150000,
-                    ThanhTien = 150000,
-                    MaCombo = null
                 }
             );
             modelBuilder.Entity<KichThuoc>().HasData(
                 new KichThuoc
                 {
-                    MaKichThuoc=1,
-                    MaLoai=1,
-                    TenKichThuoc="S"
+                    MaKichThuoc = 1,
+                    MaLoai = 1,
+                    TenKichThuoc = "S"
                 },
                 new KichThuoc
-                 {
-                MaKichThuoc = 2,
+                {
+                    MaKichThuoc = 2,
                     MaLoai = 1,
                     TenKichThuoc = "M"
                 },

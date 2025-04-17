@@ -120,7 +120,7 @@ namespace UltraStrore.Services
 
                 if (request.PaymentMethod.ToLower() == "cod")
                 {
-                    donHang.TrangThaiDonHang = TrangThaiDonHang.DangXuLy;
+                    donHang.TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan;
                     _context.DonHangs.Add(donHang);
                     await _context.SaveChangesAsync();
 
@@ -250,7 +250,7 @@ namespace UltraStrore.Services
             }
         }
 
-        public async Task<PaymentResponse> ProcessVnPayCallbackAsync(IQueryCollection query, HttpContext httpContext)
+        public async Task ProcessVnPayCallbackAsync(IQueryCollection query, HttpContext httpContext)
         {
             try
             {
@@ -258,11 +258,8 @@ namespace UltraStrore.Services
                 if (!vnPayResponse.Success)
                 {
 
-                    return new PaymentResponse
-                    {
-                        Success = false,
-                        Message = "Thanh toán VnPay thất bại"
-                    };
+                    httpContext.Response.Redirect("http://localhost:8080/PaymentSuccess?status=failed&message=Thanh toán VnPay thất bại");
+                    return;
                 }
 
                 var tempOrderId = vnPayResponse.OrderId;
@@ -270,27 +267,21 @@ namespace UltraStrore.Services
                var pendingOrder = await _context.PendingOrders.FirstOrDefaultAsync(c => c.TempOrderId == tempOrderId);
                 if (pendingOrder == null)
                 {
-                    return new PaymentResponse
-                    {
-                        Success = false,
-                        Message = "Không tìm thấy mã đơn hàng tạm thời"
-                    };
+                    httpContext.Response.Redirect("http://localhost:8080/PaymentSuccess?status=failed&message=Không tìm thấy mã đơn hàng tạm thời");
+                    return;
                 }
 
                 var orderData = System.Text.Json.JsonSerializer.Deserialize<PendingVnPayOrder>(pendingOrder.OrderData);
 
                 if (orderData.TempOrderId != tempOrderId ) 
-                {                 
-                    return new PaymentResponse
-                    {
-                        Success = false,
-                        Message = "Mã đơn hàng tạm thời không khớp"
-                    };
+                {
+                    httpContext.Response.Redirect("http://localhost:8080/PaymentSuccess?status=failed&message=Mã đơn hàng tạm thời không khớp");
+                    return;
                 }
 
 
                 var donHang = orderData.Order;
-                donHang.TrangThaiDonHang = TrangThaiDonHang.DangXuLy;
+                donHang.TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan;
                 donHang.TrangThaiHang = TrangThaiThanhToan.ThanhToanVNPay;
 
 
@@ -326,25 +317,13 @@ namespace UltraStrore.Services
                 _context.PendingOrders.Remove(pendingOrder);
                 await _context.SaveChangesAsync();
 
-                return new PaymentResponse
-                {
-                    Success = true,
-                    TransactionId = vnPayResponse.TransactionId,
-                    OriginalAmount = (decimal)orderData.OriginalAmount,
-                    DiscountAmount = (decimal)orderData.DiscountAmount,
-                    FinalAmount = (decimal)orderData.FinalAmount,
-                    OrderId = donHang.MaDonHang,
-                    Message = "Thanh toán VnPay thành công"
-                };
+                var redirectUrl = $"http://localhost:8080/PaymentSuccess?status=success&orderId={donHang.MaDonHang}&transactionId={vnPayResponse.TransactionId}";
+                httpContext.Response.Redirect(redirectUrl);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi xử lý callback VnPay");
-                return new PaymentResponse
-                {
-                    Success = false,
-                    Message = "Lỗi khi xử lý callback VnPay"
-                };
+                httpContext.Response.Redirect("http://localhost:8080/PaymentSuccess?status=failed&message=Lỗi khi xử lý callback VnPay");
             }
         }
     }
