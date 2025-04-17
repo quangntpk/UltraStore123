@@ -186,7 +186,7 @@ namespace UltraStrore.Services
             }
             return response;
         }
-        public async Task<APIResponse> TraLoiUpgrade(string userInput, string MaKhachHang)
+        public async Task<APIResponse> TraLoiUpgrade(string userInput)
         {
             string FinalAnswer="";
             APIResponse response1 = new APIResponse();

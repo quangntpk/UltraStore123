@@ -34,9 +34,9 @@ namespace UltraStrore.Controllers
             return Ok(data);
         }
         [HttpGet("SmartAI")]
-        public async Task<IActionResult> SmartAI(string noiDung)
+        public async Task<IActionResult> SmartAI(string input)
         {
-            var data = await this.service.TraLoiUpgrade(noiDung);
+            var data = await this.service.TraLoiUpgrade(input);
             return Ok(data);
         }
     }
