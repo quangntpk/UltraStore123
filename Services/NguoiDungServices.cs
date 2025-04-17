@@ -433,7 +433,7 @@ namespace UltraStrore.Services
             if (user == null)
                 throw new Exception("Tài khoản Admin không tồn tại.");
 
-            if (user.TrangThai != 1 && user.TrangThai != 2)
+            if (user.TrangThai == 1 )
                 throw new Exception("Tài khoản Admin đã bị khóa hoặc chưa được kích hoạt.");
 
             if (!PasswordHasher.VerifyPassword(model.MatKhau, user.MatKhau))
