@@ -41,17 +41,10 @@ namespace UltraStrore.Controllers
         }
 
         [HttpGet("vnpay-callback")]
-        public async Task<IActionResult> VnPayCallback()
+        public async Task VnPayCallback()
         {
             var query = HttpContext.Request.Query;
-            var result = await _paymentService.ProcessVnPayCallbackAsync(query, HttpContext);
-
-            if (result.Success)
-            {
-                return Ok(result);
-            }
-
-            return BadRequest(result);
+            await _paymentService.ProcessVnPayCallbackAsync(query, HttpContext);
         }
     }
 }

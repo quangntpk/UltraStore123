@@ -1558,7 +1558,7 @@ namespace UltraStrore.Data
                     MatKhau = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
                     NgayTao = DateTime.Now,
                     VaiTro = 0,
-                    CancelConunt = 2, 
+                    CancelConunt = 2,
                     LockoutEndDate = null
                 },
                 new NguoiDung
@@ -1578,7 +1578,7 @@ namespace UltraStrore.Data
                     VaiTro = 0,
                     CancelConunt = 2,
                     LockoutEndDate = null,
-                    
+
                 },
                 new NguoiDung
                 {
@@ -1802,7 +1802,7 @@ namespace UltraStrore.Data
                                 TrangThai = true,
                                 NgayTao = DateOnly.FromDateTime(DateTime.Now),
                             }
-                            
+
                             );
 
 
@@ -2363,28 +2363,6 @@ namespace UltraStrore.Data
                     ThanhTien = 200000,
                     MaCombo = 1 // Combo Áo thun + Quần short
                 },
-
-                // Đơn hàng 15: Trần Thị Bình mua Combo 2 và 1 sản phẩm riêng lẻ
-                new ChiTietDonHang
-                {
-                    MaCtdh = 18,
-                    MaDonHang = 15,
-                    MaSanPham = null,
-                    SoLuong = 1,
-                    Gia = 300000, // Giá của Combo 2
-                    ThanhTien = 300000,
-                    MaCombo = 2 // Combo Áo thun + Quần dài
-                },
-                new ChiTietDonHang
-                {
-                    MaCtdh = 19,
-                    MaDonHang = 15,
-                    MaSanPham = "A00002_ff00ff_M", // Sản phẩm riêng lẻ
-                    SoLuong = 1,
-                    Gia = 150000,
-                    ThanhTien = 150000,
-                    MaCombo = null
-                },
                 // Thêm combo vào đơn hàng hiện có (MaDonHang = 9, Nguyễn Văn An, ChuaXacNhan)
                 new ChiTietDonHang
                 {
@@ -2430,13 +2408,13 @@ namespace UltraStrore.Data
             modelBuilder.Entity<KichThuoc>().HasData(
                 new KichThuoc
                 {
-                    MaKichThuoc=1,
-                    MaLoai=1,
-                    TenKichThuoc="S"
+                    MaKichThuoc = 1,
+                    MaLoai = 1,
+                    TenKichThuoc = "S"
                 },
                 new KichThuoc
-                 {
-                MaKichThuoc = 2,
+                {
+                    MaKichThuoc = 2,
                     MaLoai = 1,
                     TenKichThuoc = "M"
                 },

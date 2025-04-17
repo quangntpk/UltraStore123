@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.EditModels;
@@ -6,6 +7,7 @@ using UltraStrore.Repository;
 
 namespace UltraStrore.Controllers
 {
+    [Authorize(Roles = "1")]
     [Route("api/[controller]")]
     [ApiController]
     public class ComboController : ControllerBase

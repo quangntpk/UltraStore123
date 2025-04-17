@@ -324,6 +324,11 @@ namespace UltraStrore.Controllers
 
                 var (user, token) = await _nguoiDungServices.DangNhapAdmin(model);
 
+                if (user.VaiTro !=1 && user.VaiTro != 2)
+                {
+                    return StatusCode(403, new { message = "Bạn không có quyền truy cập" });
+                }
+
                 return Ok(new
                 {
                     message = "Đăng nhập Admin thành công",
@@ -336,31 +341,5 @@ namespace UltraStrore.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
-        // PUT: api/XacThuc/chitiet/{id}
-        //[HttpPut("chitiet/{id}")]
-        //public async Task<IActionResult> UpdateChiTietUser(string id, [FromForm] ChiTietUser model)
-        //{
-        //    // Kiểm tra xem id có khớp với MaNguoiDung trong model không
-        //    if (id != model.MaNguoiDung)
-        //    {
-        //        return BadRequest(new { message = "Mã người dùng không khớp" });
-        //    }
-
-        //    try
-        //    {
-        //        // Gọi service để cập nhật thông tin chi tiết người dùng
-        //        var updatedUser = await _nguoiDungServices.UpdateChiTietUser(model);
-        //        return Ok(new
-        //        {
-        //            message = "Cập nhật thông tin thành công",
-        //            user = updatedUser
-        //        });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        // Trả về NotFound nếu người dùng không tồn tại hoặc có lỗi khác
-        //        return NotFound(new { message = ex.Message });
-        //    }
-        //}
     }
 }
