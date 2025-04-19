@@ -16,6 +16,10 @@ namespace UltraStrore.Data
         public string? Sdt { get; set; }
         public string? DiaChi { get; set; }
 
+        public decimal ShippingFee { get; set; }
+        public decimal? DiscountAmount { get; set; }
+        public decimal? FinalAmount { get; set; }
+
         public virtual NguoiDung? MaNguoiDungNavigation { get; set; }
        
         public virtual List<ChiTietDonHang> ChiTietDonHangs { get; set; } = new List<ChiTietDonHang>(); // Thêm thuộc tính

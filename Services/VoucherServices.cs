@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.IdentityModel.Tokens;
+using UltraStrore.Helper;
 
 public class VoucherServices : IVoucherServices
 {
@@ -46,6 +47,91 @@ public class VoucherServices : IVoucherServices
                     .ToList()
             })
             .ToList();
+    }
+
+    public async Task<ValidateCouponResponse> ValidateCoupon(string code, int cartId)
+    {
+        try
+        {
+            // Lấy giỏ hàng và chi tiết giỏ hàng
+            var cart = await _context.GioHangs
+                .Include(c => c.ChiTietGioHangs)
+                .ThenInclude(ct => ct.MaSanPhamNavigation)
+                .FirstOrDefaultAsync(c => c.MaGioHang == cartId);
+
+            if (cart == null)
+            {
+                return new ValidateCouponResponse
+                {
+                    Success = false,
+                    Message = "Giỏ hàng không tồn tại"
+                };
+            }
+
+            // Tính tổng tiền giỏ hàng
+            decimal originalAmount = cart.ChiTietGioHangs
+                .Sum(item => item.ThanhTien ?? 0);
+
+            // Tìm coupon theo mã nhập
+            var coupon = await _context.Coupons
+                .Include(c => c.MaVoucherNavigation)
+                .FirstOrDefaultAsync(c => c.MaNhap == code && c.TrangThai == 0);
+
+            if (coupon == null)
+            {
+                return new ValidateCouponResponse
+                {
+                    Success = false,
+                    Message = "Mã giảm giá không hợp lệ hoặc đã sử dụng"
+                };
+            }
+
+            var voucher = coupon.MaVoucherNavigation;
+            var now = DateTime.Now;
+
+            // Kiểm tra điều kiện áp dụng voucher
+            if (voucher.TrangThai != 0
+                || voucher.NgayBatDau > now
+                || voucher.NgayKetThuc < now
+                || voucher.SoLuong <= 0
+                || originalAmount < (voucher.DieuKien ?? 0))
+            {
+                return new ValidateCouponResponse
+                {
+                    Success = false,
+                    Message = "Mã giảm giá không hợp lệ, đã hết hạn, hoặc không đủ điều kiện"
+                };
+            }
+
+            // Tính toán giảm giá
+            decimal discountPercentage = (decimal)(voucher.GiaTri ?? 0);
+            decimal discountAmount = originalAmount * (discountPercentage / 100);
+            decimal finalAmount = originalAmount - discountAmount;
+
+            if (finalAmount < 0)
+            {
+                finalAmount = 0;
+                discountAmount = originalAmount;
+            }
+
+            return new ValidateCouponResponse
+            {
+                Success = true,
+                Message = "Mã giảm giá hợp lệ",
+                DiscountAmount = discountAmount,
+                FinalAmount = finalAmount
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ValidateCouponResponse
+            {
+                Success = false,
+                Message = "Lỗi hệ thống khi xác thực mã giảm giá",
+                DiscountAmount = 0,
+                FinalAmount = 0
+            };
+        }
     }
 
     public async Task<VoucherView> CreateVoucher(VoucherCreate voucher)

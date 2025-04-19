@@ -6,6 +6,7 @@
         public string TransactionId { get; set; }
         public decimal OriginalAmount { get; set; }
         public decimal DiscountAmount { get; set; }
+        public decimal ShippingFee { get; set; }
         public decimal FinalAmount { get; set; }
         public string Message { get; set; }
         public int? OrderId { get; set; }

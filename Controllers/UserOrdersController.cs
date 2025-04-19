@@ -43,6 +43,7 @@ namespace UltraStrore.Controllers
                              d.TrangThaiDonHang == TrangThaiDonHang.DangGiaoHang ? "shipping" :
                              d.TrangThaiDonHang == TrangThaiDonHang.DaGiaoHang ? "completed" : "canceled",
                     Total = d.ChiTietDonHangs.Sum(cd => cd.ThanhTien ?? 0),
+                    FinalAmount = d.FinalAmount,
                     Items = d.ChiTietDonHangs.Select(cd => new
                     {
                         Id = cd.MaCtdh,
@@ -94,6 +95,7 @@ namespace UltraStrore.Controllers
                     HinhThucThanhToan = d.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang ? "COD" : "VNPay",
                     LyDoHuy = d.LyDoHuy,
                     TongTien = d.ChiTietDonHangs.Sum(cd => cd.ThanhTien),
+                    FinalAmount = d.FinalAmount,
                     SanPhams = d.ChiTietDonHangs.Select(cd => new
                     {
                         MaChiTietDh = cd.MaCtdh,
@@ -152,6 +154,7 @@ namespace UltraStrore.Controllers
                 d.HinhThucThanhToan,
                 d.LyDoHuy,
                 d.TongTien,
+                FinalAmount = d.FinalAmount,
                 SanPhams = d.SanPhams.Select(cd => new
                 {
                     cd.MaChiTietDh,
@@ -228,6 +231,7 @@ namespace UltraStrore.Controllers
                              d.TrangThaiDonHang == TrangThaiDonHang.DangGiaoHang ? "shipping" :
                              d.TrangThaiDonHang == TrangThaiDonHang.DaGiaoHang ? "completed" : "canceled",
                     Total = d.ChiTietDonHangs.Sum(cd => cd.ThanhTien ?? 0),
+                    FinalAmount = d.FinalAmount,
                     Items = d.ChiTietDonHangs.Select(cd => new
                     {
                         Id = cd.MaCtdh,

@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using UltraStrore.Repository;
 using System.Net.Http;
 using UltraStrore.Data.Temp;
+using UltraStrore.Migrations;
 
 namespace UltraStrore.Services
 {
@@ -47,45 +48,58 @@ namespace UltraStrore.Services
                 }
 
                 decimal originalAmount = cart.ChiTietGioHangs
-                    .Sum(item => item.ThanhTien ?? 0);
+                    .Sum(item => item.ThanhTien ?? 0); 
 
-                decimal discountAmount = 0;
-                decimal finalAmount = originalAmount;
+                decimal discountAmount = request.DiscountAmount; 
+                decimal finalAmount = request.FinalAmount; 
+                decimal shippingFee = request.ShippingFee; 
 
                 if (!string.IsNullOrEmpty(request.CouponCode))
                 {
                     var coupon = await _context.Coupons
                         .Include(c => c.MaVoucherNavigation)
                         .FirstOrDefaultAsync(d => d.MaNhap == request.CouponCode && d.TrangThai == 0);
+                    if (coupon == null)
+                    {
+                        return new PaymentResponse
+                        {
+                            Success = false,
+                            Message = "Coupon không hợp lệ hoặc đã được sử dụng"
+                        };
+                    }
+
                     var voucher = coupon.MaVoucherNavigation;
                     var now = DateTime.Now;
 
-                    if (voucher.TrangThai == 0
-                        && voucher.NgayBatDau <= now
-                        && voucher.NgayKetThuc >= now
-                        && voucher.SoLuong > 0
-                        && originalAmount >= (voucher.DieuKien ?? 0))
-                    {
-                        decimal discountPercentage = (decimal)(voucher.GiaTri ?? 0);
-                        discountAmount = originalAmount * (discountPercentage / 100);
-                        finalAmount = originalAmount - discountAmount;
-
-                        if (finalAmount < 0)
-                        {
-                            finalAmount = 0;
-                            discountAmount = originalAmount;
-                        }
-
-                        coupon.TrangThai = 1;
-                        voucher.SoLuong -= 1;
-                    }
-                    else
+                    if (voucher.TrangThai != 0
+                        || voucher.NgayBatDau > now
+                        || voucher.NgayKetThuc < now
+                        || voucher.SoLuong <= 0
+                        || originalAmount < (voucher.DieuKien ?? 0))
                     {
                         return new PaymentResponse
                         {
                             Success = false,
                             Message = "Coupon không hợp lệ hoặc đã hết hạn"
                         };
+                    }
+
+                    decimal calculatedFinal = originalAmount - discountAmount + shippingFee;
+
+                    if (calculatedFinal != finalAmount)
+                    {
+                        _logger.LogWarning(
+                            $"Tổng tiền không khớp. CalculatedFinal: {calculatedFinal}, FinalAmount: {finalAmount}, ShippingFee: {shippingFee}, DiscountAmount: {discountAmount}"
+                        );
+                    }
+                }
+                else
+                {
+                    if (finalAmount != originalAmount + shippingFee)
+                    {
+                        _logger.LogWarning(
+                            $"Tổng tiền không khớp khi không có mã giảm giá. Expected: {originalAmount + shippingFee}, FinalAmount: {finalAmount}"
+                        );
                     }
                 }
 
@@ -100,7 +114,10 @@ namespace UltraStrore.Services
                     TrangThaiHang = request.PaymentMethod.ToLower() == "cod"
                         ? TrangThaiThanhToan.ThanhToanKhiNhanHang
                         : TrangThaiThanhToan.ThanhToanVNPay,
-                    ChiTietDonHangs = new List<ChiTietDonHang>()
+                    ChiTietDonHangs = new List<ChiTietDonHang>(),
+                    DiscountAmount = discountAmount,
+                    ShippingFee = shippingFee, 
+                    FinalAmount = finalAmount
                 };
 
                 foreach (var item in cart.ChiTietGioHangs)
@@ -117,36 +134,34 @@ namespace UltraStrore.Services
                     donHang.ChiTietDonHangs.Add(chiTietDonHang);
                 }
 
-
                 if (request.PaymentMethod.ToLower() == "cod")
                 {
-                    donHang.TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan;
                     _context.DonHangs.Add(donHang);
+
+                    if (!string.IsNullOrEmpty(request.CouponCode))
+                    {
+                        var coupon = await _context.Coupons
+                            .Include(c => c.MaVoucherNavigation)
+                            .FirstOrDefaultAsync(c => c.MaNhap == request.CouponCode);
+                        if (coupon != null)
+                        {
+                            coupon.TrangThai = 1;
+                            coupon.MaVoucherNavigation.SoLuong -= 1;
+                        }
+                    }
+
                     await _context.SaveChangesAsync();
 
                     _context.ChiTietGioHangs.RemoveRange(cart.ChiTietGioHangs);
                     _context.GioHangs.Remove(cart);
                     await _context.SaveChangesAsync();
 
-                    if (!string.IsNullOrEmpty(request.CouponCode))
-                    {
-                        var coupon = await _context.Coupons
-                            .FirstOrDefaultAsync(d => d.MaNhap == request.CouponCode && d.TrangThai == 0);
-
-                        if (coupon != null)
-                        {
-                            coupon.TrangThai = 1;
-                            var voucher = coupon.MaVoucherNavigation;
-                            voucher.SoLuong -= 1;
-                            await _context.SaveChangesAsync();
-                        }
-                    }
-
                     return new PaymentResponse
                     {
                         Success = true,
                         OriginalAmount = originalAmount,
                         DiscountAmount = discountAmount,
+                        ShippingFee = shippingFee,
                         FinalAmount = finalAmount,
                         OrderId = donHang.MaDonHang,
                         Message = "Đặt hàng COD thành công"
@@ -154,26 +169,6 @@ namespace UltraStrore.Services
                 }
                 else if (request.PaymentMethod.ToLower() == "vnpay")
                 {
-                    var donhang = new DonHang
-                    {
-                        MaNguoiDung = cart.MaNguoiDung,
-                        TenNguoiNhan = request.TenNguoiNhan,
-                        Sdt = request.Sdt,
-                        DiaChi = request.DiaChi,
-                        NgayDat = DateTime.Now,
-                        TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan,
-                        TrangThaiHang = TrangThaiThanhToan.ThanhToanVNPay,
-                        ChiTietDonHangs = cart.ChiTietGioHangs.Select(item => new ChiTietDonHang
-                        {
-                            MaSanPham = item.MaSanPham,
-                            SoLuong = item.SoLuong,
-                            Gia = item.Gia,
-                            ThanhTien = item.ThanhTien,
-                            MaCombo = item.MaCombo,
-                            SanPhamMaSanPham = item.MaSanPham
-                        }).ToList()
-                    };
-
                     var tempOrderId = Guid.NewGuid().ToString();
 
                     var orderData = new
@@ -182,12 +177,13 @@ namespace UltraStrore.Services
                         Order = donHang,
                         OriginalAmount = originalAmount,
                         DiscountAmount = discountAmount,
+                        ShippingFee = request.ShippingFee,
                         FinalAmount = finalAmount,
                         CouponCode = request.CouponCode,
                         CartId = request.CartId
                     };
 
-                    var orderDataJson = System.Text.Json.JsonSerializer.Serialize(orderData);             
+                    var orderDataJson = System.Text.Json.JsonSerializer.Serialize(orderData);
 
                     var pendingOrder = new PendingOder
                     {
@@ -196,18 +192,8 @@ namespace UltraStrore.Services
                         CreatedAt = DateTime.Now,
                     };
 
-                    _context.PendingOrders.Add(pendingOrder);   
+                    _context.PendingOrders.Add(pendingOrder);
                     await _context.SaveChangesAsync();
-
-                    var saveOrder = await _context.PendingOrders.FirstOrDefaultAsync( c => c.TempOrderId == tempOrderId);
-                    if (saveOrder == null)
-                    {
-                        return new PaymentResponse
-                        {
-                            Success = false,
-                            Message = "Loi khi luu don hang tam thoi"
-                        };
-                    }
 
                     var vnPayRequest = new VnPaymentRequest
                     {
@@ -225,6 +211,7 @@ namespace UltraStrore.Services
                         Success = true,
                         OriginalAmount = originalAmount,
                         DiscountAmount = discountAmount,
+                        ShippingFee = request.ShippingFee,
                         FinalAmount = finalAmount,
                         OrderId = donHang.MaDonHang,
                         Message = paymentUrl
@@ -254,54 +241,62 @@ namespace UltraStrore.Services
         {
             try
             {
-                var vnPayResponse = _vnPayService.PaymentExecute(query);           
+                var vnPayResponse = _vnPayService.PaymentExecute(query);
+
                 if (!vnPayResponse.Success)
                 {
-
-                    httpContext.Response.Redirect("http://localhost:8080/PaymentSuccess?status=failed&message=Thanh toán VnPay thất bại");
+                    string message = vnPayResponse.VnPayResponseCode switch
+                    {
+                        "01" => "Giao dich chua hoan tat (nguoi dung huy)",
+                        "02" => "Giao dich bi loi",
+                        "24" => "Giao dịch bị hủy bởi người dùng",
+                        _ => "Thanh toan VNPay khong thanh cong"
+                    };
+                    httpContext.Response.Redirect(
+                        $"http://localhost:8080/PaymentFail?status=failed&message={Uri.EscapeDataString(message)}"
+                    );
                     return;
                 }
 
                 var tempOrderId = vnPayResponse.OrderId;
 
-               var pendingOrder = await _context.PendingOrders.FirstOrDefaultAsync(c => c.TempOrderId == tempOrderId);
+                var pendingOrder = await _context.PendingOrders.FirstOrDefaultAsync(c => c.TempOrderId == tempOrderId);
                 if (pendingOrder == null)
                 {
-                    httpContext.Response.Redirect("http://localhost:8080/PaymentSuccess?status=failed&message=Không tìm thấy mã đơn hàng tạm thời");
+                    httpContext.Response.Redirect("http://localhost:8080/PaymentFail?status=failed&message=Không tìm thấy mã đơn hàng tạm thời");
                     return;
                 }
 
                 var orderData = System.Text.Json.JsonSerializer.Deserialize<PendingVnPayOrder>(pendingOrder.OrderData);
 
-                if (orderData.TempOrderId != tempOrderId ) 
+                if (orderData.TempOrderId != tempOrderId)
                 {
-                    httpContext.Response.Redirect("http://localhost:8080/PaymentSuccess?status=failed&message=Mã đơn hàng tạm thời không khớp");
+                    httpContext.Response.Redirect("http://localhost:8080/PaymentFail?status=failed&message=Mã đơn hàng tạm thời không khớp");
                     return;
                 }
-
 
                 var donHang = orderData.Order;
                 donHang.TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan;
                 donHang.TrangThaiHang = TrangThaiThanhToan.ThanhToanVNPay;
-
+                donHang.DiscountAmount = orderData.DiscountAmount;
+                donHang.ShippingFee = orderData.ShippingFee;
+                donHang.FinalAmount = orderData.FinalAmount;
 
                 _context.DonHangs.Add(donHang);
-                await _context.SaveChangesAsync();
 
                 if (!string.IsNullOrEmpty(orderData.CouponCode))
                 {
                     var coupon = await _context.Coupons
                         .Include(c => c.MaVoucherNavigation)
-                        .FirstOrDefaultAsync(d => d.MaNhap == orderData.CouponCode && d.TrangThai == 0);
-
+                        .FirstOrDefaultAsync(c => c.MaNhap == orderData.CouponCode);
                     if (coupon != null)
                     {
                         coupon.TrangThai = 1;
-                        var voucher = coupon.MaVoucherNavigation;
-                        voucher.SoLuong -= 1;
-                        await _context.SaveChangesAsync();
+                        coupon.MaVoucherNavigation.SoLuong -= 1;
                     }
                 }
+
+                await _context.SaveChangesAsync();
 
                 var cartId = (int)orderData.CartId;
                 var cart = await _context.GioHangs
@@ -323,7 +318,7 @@ namespace UltraStrore.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi xử lý callback VnPay");
-                httpContext.Response.Redirect("http://localhost:8080/PaymentSuccess?status=failed&message=Lỗi khi xử lý callback VnPay");
+                httpContext.Response.Redirect("http://localhost:8080/PaymentFail?status=failed&message=Lỗi khi xử lý callback VnPay");
             }
         }
     }
