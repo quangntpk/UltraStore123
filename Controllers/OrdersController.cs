@@ -36,6 +36,8 @@ namespace UltraStrore.Controllers
                     TrangThaiThanhToan = (int)d.TrangThaiHang,
                     HinhThucThanhToan = d.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang ? "COD" : "VNPay",
                     LyDoHuy = d.LyDoHuy,
+                    TongTien = d.ChiTietDonHangs.Sum(cd => cd.ThanhTien ?? 0),
+                    FinalAmount = d.FinalAmount,
                     TenSanPhamHoacCombo = d.ChiTietDonHangs.Select(cd => cd.MaCombo != null
                         ? cd.MaComboNavigation != null ? cd.MaComboNavigation.TenComBo : "Combo không tồn tại"
                         : cd.MaSanPhamNavigation != null ? cd.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại")
@@ -76,7 +78,8 @@ namespace UltraStrore.Controllers
                     TrangThaiThanhToan = (int)d.TrangThaiHang,
                     HinhThucThanhToan = d.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang ? "COD" : "VNPay",
                     LyDoHuy = d.LyDoHuy,
-                    TongTien = d.ChiTietDonHangs.Sum(cd => cd.ThanhTien),
+                    TongTien = d.ChiTietDonHangs.Sum(cd => cd.ThanhTien ?? 0),
+                    FinalAmount = d.FinalAmount ?? 0,
                     SanPhams = d.ChiTietDonHangs.Select(cd => new
                     {
                         MaChiTietDh = cd.MaCtdh,
@@ -135,6 +138,7 @@ namespace UltraStrore.Controllers
                 d.HinhThucThanhToan,
                 d.LyDoHuy,
                 d.TongTien,
+                FinalAmount = d.FinalAmount,
                 SanPhams = d.SanPhams.Select(cd => new
                 {
                     cd.MaChiTietDh,

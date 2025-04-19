@@ -33,6 +33,17 @@ namespace UltraStrore.Controllers
             }
         }
 
+        [HttpGet("Validate")]
+        public async Task<IActionResult> ValidateCoupon(string code, int cartId)
+        {
+            var response = await _voucherServices.ValidateCoupon(code, cartId);
+            if (response.Success)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
         [HttpPost]
         public async Task<ActionResult<VoucherView>> CreateVoucher([FromBody] VoucherCreate voucher)
         {

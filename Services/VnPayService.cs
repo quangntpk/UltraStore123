@@ -17,6 +17,7 @@ namespace UltraStrore.Services
         {
             var tick = DateTime.Now.Ticks.ToString();
 
+
             var vnpay = new VnPayLibrary();
             vnpay.AddRequestData("vnp_Version", _config["VnPay:Version"]);
             vnpay.AddRequestData("vnp_Command", _config["VnPay:Command"]);
@@ -61,19 +62,26 @@ namespace UltraStrore.Services
             var vnp_SecureHash = collections.FirstOrDefault(p => p.Key == "vnp_SecureHash").Value;
             var vnp_ResponseCode = vnpay.GetResponseData("vnp_ResponseCode");
             var vnp_OrderInfo = vnpay.GetResponseData("vnp_OrderInfo");
+            var vnp_TransactionStatus = vnpay.GetResponseData("vnp_TransactionStatus");
 
             bool checkSignature = vnpay.ValidateSignature(vnp_SecureHash, _config["VnPay:HashSecret"]);
             if (!checkSignature)
             {
                 return new VnPaymentResponse
                 {
-                    Success = false
+                    Success = false,
+                    OrderId = vnp_OrderId,
+                    TransactionId = vnp_TransactionId.ToString(),
+                    VnPayResponseCode = vnp_ResponseCode,
+                    OrderDescription = vnp_OrderInfo
                 };
             }
 
+            bool isSuccess = !string.IsNullOrEmpty(vnp_TransactionStatus) && vnp_TransactionStatus == "00";
+
             return new VnPaymentResponse
             {
-                Success = true,
+                Success = isSuccess,
                 PaymentMethod = "VnPay",
                 OrderDescription = vnp_OrderInfo,
                 OrderId = vnp_OrderId,
