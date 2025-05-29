@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using UltraStrore.Models.CreateModels;
-using UltraStrore.Models.EditModels;
-using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
+using System.Threading.Tasks;
 
 namespace UltraStrore.Controllers
 {
@@ -17,88 +16,25 @@ namespace UltraStrore.Controllers
             _services = services;
         }
 
-        [HttpPost("Send")]
-        public async Task<IActionResult> SendMessage([FromBody] TinNhanCreate model)
+        [HttpPost("gui")]
+        public async Task<IActionResult> GuiTinNhan([FromForm] TinNhanCreate model)
         {
-            if (model == null)
-                return BadRequest("Model không được để trống.");
-
-            try
-            {
-                var result = await _services.SendMessageAsync(model);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest($"Có lỗi xảy ra: {ex.Message}");
-            }
+            var result = await _services.GuiTinNhanAsync(model);
+            return Ok(result);
         }
 
-        [HttpGet("Conversation")]
-        public async Task<IActionResult> GetConversation([FromQuery] string nguoiGuiId, [FromQuery] string nguoiNhanId)
+        [HttpGet("doan-chat")]
+        public async Task<IActionResult> LayTinNhan([FromQuery] string nguoiGuiId, [FromQuery] string nguoiNhanId)
         {
-            if (string.IsNullOrWhiteSpace(nguoiGuiId) || string.IsNullOrWhiteSpace(nguoiNhanId))
-                return BadRequest("Cần cung cấp đủ ID người gửi và người nhận.");
-
-            try
-            {
-                var conversation = await _services.GetConversationAsync(nguoiGuiId, nguoiNhanId);
-                return Ok(conversation);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest($"Có lỗi xảy ra: {ex.Message}");
-            }
+            var result = await _services.LayTinNhanGiuaHaiNguoiAsync(nguoiGuiId, nguoiNhanId);
+            return Ok(result);
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateMessage(int id, [FromBody] TinNhanEdit model)
+        [HttpGet("threads")]
+        public async Task<IActionResult> LayThreads([FromQuery] string userId)
         {
-            if (id != model.MaTinNhan)
-                return BadRequest("ID tin nhắn không khớp.");
-
-            try
-            {
-                var updatedMessage = await _services.UpdateMessageAsync(model);
-                return Ok(updatedMessage);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest($"Có lỗi xảy ra: {ex.Message}");
-            }
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteMessage(int id)
-        {
-            try
-            {
-                bool result = await _services.DeleteMessageAsync(id);
-                if (!result)
-                    return NotFound("Tin nhắn không tồn tại.");
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest($"Có lỗi xảy ra: {ex.Message}");
-            }
-        }
-
-        [HttpPut("MarkAsRead")]
-        public async Task<IActionResult> MarkAsRead([FromBody] MarkAsReadRequest request)
-        {
-            if (string.IsNullOrWhiteSpace(request.NguoiGuiId) || string.IsNullOrWhiteSpace(request.NguoiNhanId))
-                return BadRequest("Cần cung cấp ID người gửi và người nhận.");
-
-            try
-            {
-                await _services.MarkAsReadAsync(request.NguoiGuiId, request.NguoiNhanId);
-                return Ok("Tin nhắn đã được đánh dấu là đã đọc.");
-            }
-            catch (Exception ex)
-            {
-                return BadRequest($"Có lỗi xảy ra: {ex.Message}");
-            }
+            var result = await _services.LayDanhSachThreadsAsync(userId);
+            return Ok(result);
         }
     }
 }

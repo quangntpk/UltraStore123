@@ -30,5 +30,8 @@ namespace UltraStrore.Data
         public virtual ICollection<DanhSachDiaChi> DanhSachDiaChis { get; set; }
         public virtual ICollection<DonHang> DonHangMaNguoiDungNavigations { get; set; }
         public virtual ICollection<GioHang> GioHangs { get; set; }
+
+        public ICollection<TinNhan> TinNhanGui { get; set; }   // Tin nhắn người dùng gửi
+        public ICollection<TinNhan> TinNhanNhan { get; set; }
     }
 }

@@ -37,6 +37,8 @@ namespace UltraStrore.Controllers
             var userDto = new
             {
                 maNguoiDung = user.MaNguoiDung,
+                taiKhoan = user.TaiKhoan,
+                gioiTinh = user.GioiTinh,
                 hoTen = user.HoTen,
                 email = user.Email,
                 sdt = user.Sdt,

@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using UltraStrore.Data;
 using UltraStrore.Helper;
+using UltraStrore.Hubs;
 using UltraStrore.Middleware;
 using UltraStrore.Repository;
 using UltraStrore.Services;
@@ -53,6 +54,8 @@ namespace UltraStrore
             builder.Services.AddSingleton(sp =>
                 sp.GetRequiredService<IOptions<VnPayConfig>>().Value);
 
+            builder.Services.AddSignalR();
+
             builder.Services.AddMemoryCache();
 
             builder.Services.AddDistributedMemoryCache();
@@ -75,11 +78,12 @@ namespace UltraStrore
             // Định nghĩa chính sách CORS
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowAll", policy =>
+                options.AddPolicy("AllowAll", builder =>
                 {
-                    policy.AllowAnyOrigin()
-                          .AllowAnyMethod()
-                          .AllowAnyHeader();
+                    builder.WithOrigins("http://localhost:8080") // Origin của frontend
+                           .AllowAnyMethod()
+                           .AllowAnyHeader()
+                           .AllowCredentials(); // Quan trọng: Cho phép credentials
                 });
             });
 
@@ -154,6 +158,12 @@ namespace UltraStrore
             app.UseAuthorization();
 
             app.MapControllers();
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+                endpoints.MapHub<ChatHub>("/chatHub");
+                endpoints.MapHub<Hubs.LienHeHub>("/lienHeHub");
+            });
 
             app.Run("http://0.0.0.0:5261");
         }
