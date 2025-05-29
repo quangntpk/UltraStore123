@@ -1,147 +1,113 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using UltraStrore.Data;
+using UltraStrore.Hubs;
 using UltraStrore.Models.CreateModels;
-using UltraStrore.Models.EditModels;
 using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace UltraStrore.Services
 {
     public class TinNhanServices : ITinNhanServices
     {
         private readonly ApplicationDbContext _context;
+        private readonly IHubContext<ChatHub> _hub;
 
-        public TinNhanServices(ApplicationDbContext context)
+        public TinNhanServices(ApplicationDbContext context, IHubContext<ChatHub> hub)
         {
             _context = context;
+            _hub = hub;
         }
 
-        // Gửi tin nhắn mới
-        public async Task<TinNhanView> SendMessageAsync(TinNhanCreate model)
+        public async Task<TinNhanView> GuiTinNhanAsync(TinNhanCreate model)
         {
-            var message = new TinNhan
+            string? tepDinhKemUrl = null;
+            if (model.TepTin != null)
+            {
+                var fileName = $"{Guid.NewGuid()}_{model.TepTin.FileName}";
+                var path = Path.Combine("wwwroot/uploads/chat", fileName);
+                await using var stream = new FileStream(path, FileMode.Create);
+                await model.TepTin.CopyToAsync(stream);
+                tepDinhKemUrl = $"/uploads/chat/{fileName}";
+            }
+
+            var tinNhan = new TinNhan
             {
                 NguoiGuiId = model.NguoiGuiId,
                 NguoiNhanId = model.NguoiNhanId,
                 NoiDung = model.NoiDung,
-                NgayTao = model.NgayTao != default(DateTime) ? model.NgayTao : DateTime.Now,
-                TrangThai = model.TrangThai
+                KieuTinNhan = model.KieuTinNhan ?? "text",
+                TepDinhKemUrl = tepDinhKemUrl,
+                NgayTao = DateTime.Now,
+                TrangThai = "sent"
             };
 
-            _context.TinNhans.Add(message);
+            _context.TinNhans.Add(tinNhan);
             await _context.SaveChangesAsync();
 
-            return new TinNhanView
+            var result = new TinNhanView
             {
-                MaTinNhan = message.MaTinNhan,
-                NguoiGuiId = message.NguoiGuiId,
-                NguoiNhanId = message.NguoiNhanId,
-                NoiDung = message.NoiDung,
-                NgayTao = message.NgayTao,
-                TrangThai = message.TrangThai
+                MaTinNhan = tinNhan.MaTinNhan ?? 0,
+                NguoiGuiId = tinNhan.NguoiGuiId,
+                NguoiNhanId = tinNhan.NguoiNhanId,
+                NoiDung = tinNhan.NoiDung,
+                KieuTinNhan = tinNhan.KieuTinNhan,
+                TepDinhKemUrl = tinNhan.TepDinhKemUrl,
+                NgayTao = tinNhan.NgayTao ?? DateTime.MinValue,
+                TrangThai = tinNhan.TrangThai
             };
+
+            await _hub.Clients.User(tinNhan.NguoiNhanId).SendAsync("NhanTinNhan", result);
+            return result;
         }
 
-        // Lấy cuộc trò chuyện giữa 2 người dùng
-        public async Task<List<TinNhanView>> GetConversationAsync(string nguoiGuiId, string nguoiNhanId)
+        public async Task<IEnumerable<TinNhanView>> LayTinNhanGiuaHaiNguoiAsync(string nguoiGuiId, string nguoiNhanId)
         {
-            var conversation = await _context.TinNhans
+            var tinNhans = await _context.TinNhans
                 .Where(t => (t.NguoiGuiId == nguoiGuiId && t.NguoiNhanId == nguoiNhanId)
                          || (t.NguoiGuiId == nguoiNhanId && t.NguoiNhanId == nguoiGuiId))
                 .OrderBy(t => t.NgayTao)
+                .Select(t => new TinNhanView
+                {
+                    MaTinNhan = t.MaTinNhan ?? 0,
+                    NguoiGuiId = t.NguoiGuiId,
+                    NguoiNhanId = t.NguoiNhanId,
+                    NoiDung = t.NoiDung,
+                    KieuTinNhan = t.KieuTinNhan,
+                    TepDinhKemUrl = t.TepDinhKemUrl,
+                    NgayTao = t.NgayTao ?? DateTime.MinValue,
+                    TrangThai = t.TrangThai
+                })
                 .ToListAsync();
 
-            return conversation.Select(t => new TinNhanView
-            {
-                MaTinNhan = t.MaTinNhan,
-                NguoiGuiId = t.NguoiGuiId,
-                NguoiNhanId = t.NguoiNhanId,
-                NoiDung = t.NoiDung,
-                NgayTao = t.NgayTao,
-                TrangThai = t.TrangThai
-            }).ToList();
+            return tinNhans;
         }
 
-        // Cập nhật nội dung tin nhắn
-        public async Task<TinNhanView> UpdateMessageAsync(TinNhanEdit model)
+        public async Task<IEnumerable<TinNhanView>> LayDanhSachThreadsAsync(string userId)
         {
-            var message = await _context.TinNhans.FirstOrDefaultAsync(t => t.MaTinNhan == model.MaTinNhan);
-            if (message == null)
-                throw new Exception("Tin nhắn không tồn tại.");
-
-            message.NoiDung = model.NoiDung;
-            await _context.SaveChangesAsync();
-
-            return new TinNhanView
-            {
-                MaTinNhan = message.MaTinNhan,
-                NguoiGuiId = message.NguoiGuiId,
-                NguoiNhanId = message.NguoiNhanId,
-                NoiDung = message.NoiDung,
-                NgayTao = message.NgayTao,
-                TrangThai = message.TrangThai
-            };
-        }
-
-        // Xóa tin nhắn theo ID
-        public async Task<bool> DeleteMessageAsync(int id)
-        {
-            var message = await _context.TinNhans.FirstOrDefaultAsync(t => t.MaTinNhan == id);
-            if (message == null)
-                return false;
-
-            _context.TinNhans.Remove(message);
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        // Đánh dấu tin nhắn giữa 2 người là đã đọc
-        public async Task MarkAsReadAsync(string nguoiGuiId, string nguoiNhanId)
-        {
-            var messages = await _context.TinNhans
-                .Where(t => t.NguoiNhanId == nguoiNhanId &&
-                            t.NguoiGuiId == nguoiGuiId &&
-                            t.TrangThai == "Unread")
-                .ToListAsync();
-
-            if (messages.Any())
-            {
-                messages.ForEach(t => t.TrangThai = "Read");
-                await _context.SaveChangesAsync();
-            }
-        }
-
-        // Tìm kiếm tin nhắn liên quan đến 1 người dùng (người gửi hoặc người nhận)
-        public async Task<List<TinNhanView>> SearchMessagesByUserIdAsync(string userId)
-        {
-            var messages = await _context.TinNhans
+            var query = _context.TinNhans
                 .Where(t => t.NguoiGuiId == userId || t.NguoiNhanId == userId)
-                .OrderBy(t => t.NgayTao)
-                .ToListAsync();
+                .OrderByDescending(t => t.NgayTao)
+                .AsEnumerable()
+                .GroupBy(t => t.NguoiGuiId == userId ? t.NguoiNhanId : t.NguoiGuiId)
+                .Select(g => g.First())
+                .Select(t => new TinNhanView
+                {
+                    MaTinNhan = t.MaTinNhan ?? 0,
+                    NguoiGuiId = t.NguoiGuiId,
+                    NguoiNhanId = t.NguoiNhanId,
+                    NoiDung = t.NoiDung,
+                    KieuTinNhan = t.KieuTinNhan,
+                    TepDinhKemUrl = t.TepDinhKemUrl,
+                    NgayTao = t.NgayTao ?? DateTime.MinValue,
+                    TrangThai = t.TrangThai
+                });
 
-            return messages.Select(t => new TinNhanView
-            {
-                MaTinNhan = t.MaTinNhan,
-                NguoiGuiId = t.NguoiGuiId,
-                NguoiNhanId = t.NguoiNhanId,
-                NoiDung = t.NoiDung,
-                NgayTao = t.NgayTao,
-                TrangThai = t.TrangThai
-            }).ToList();
-        }
-
-        // Lấy danh sách các ID người dùng đã từng nhắn tin (kết hợp sender và receiver)
-        public async Task<List<string>> GetDistinctUserIdsAsync()
-        {
-            var senderIds = await _context.TinNhans
-                                .Select(t => t.NguoiGuiId)
-                                .Distinct()
-                                .ToListAsync();
-            var receiverIds = await _context.TinNhans
-                                .Select(t => t.NguoiNhanId)
-                                .Distinct()
-                                .ToListAsync();
-            return senderIds.Union(receiverIds).ToList();
+            return await Task.FromResult(query);
         }
     }
 }

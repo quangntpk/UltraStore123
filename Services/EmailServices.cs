@@ -28,7 +28,6 @@ namespace UltraStrore.Services
 
             var bodyBuilder = new BodyBuilder();
 
-            // Nội dung HTML cho email
             string htmlBody = @"
                 <!DOCTYPE html>
                 <html lang='vi'>
@@ -86,7 +85,7 @@ namespace UltraStrore.Services
                 <body>
                     <div class='container'>
                         <div class='header'>
-                            <img src='https://your-logo-url.com/logo.png' alt='UltraStore Logo'>
+                            <img src='https://pbs.twimg.com/profile_images/1473704011291402240/jfQ8kO2u_400x400.jpg' alt='UltraStore Logo'>
                             <h2>Xin chào từ UltraStore!</h2>
                         </div>
                         <div class='content'>
@@ -192,7 +191,7 @@ namespace UltraStrore.Services
                 <body>
                     <div class='container'>
                         <div class='header'>
-                            <img src='https://your-logo-url.com/logo.png' alt='UltraStore Logo'>
+                            <img src='https://pbs.twimg.com/profile_images/1473704011291402240/jfQ8kO2u_400x400.jpg' alt='UltraStore Logo'>
                             <h2>Xin chào từ UltraStore!</h2>
                         </div>
                         <div class='content'>

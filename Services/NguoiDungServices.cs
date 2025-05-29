@@ -318,7 +318,7 @@ namespace UltraStrore.Services
                 HoTen = name,
                 NgayTao = DateTime.Now,
                 TrangThai = 0,
-                VaiTro = 0
+                VaiTro = 0,
             };
 
             _context.NguoiDungs.Add(newUser);

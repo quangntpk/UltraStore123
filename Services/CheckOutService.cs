@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Http;
 using UltraStrore.Repository;
 using System.Net.Http;
 using UltraStrore.Data.Temp;
-using UltraStrore.Migrations;
 
 namespace UltraStrore.Services
 {

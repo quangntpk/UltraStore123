@@ -93,7 +93,7 @@ namespace UltraStrore.Controllers
                 var (user, token) = await _nguoiDungServices.DangNhap(model);
 
                 string redirectUrl = user.VaiTro == 1
-                    ? "http://localhost:8081"
+                    ? "http://localhost:8080"
                     : "http://localhost:8080";
                 return Ok(new
                 {
@@ -249,7 +249,7 @@ namespace UltraStrore.Controllers
             };
 
             string redirectUrl = existingUser.VaiTro == 1
-               ? "http://localhost:8081"
+               ? "http://localhost:8080"
                : "http://localhost:8080";
 
             var redirectWithData = $"{redirectUrl}?token={Uri.EscapeDataString(token)}&userId={existingUser.MaNguoiDung}&email={Uri.EscapeDataString(existingUser.Email)}&name={Uri.EscapeDataString(existingUser.HoTen)}&role={existingUser.VaiTro}";
