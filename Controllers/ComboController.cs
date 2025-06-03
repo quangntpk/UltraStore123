@@ -7,7 +7,6 @@ using UltraStrore.Repository;
 
 namespace UltraStrore.Controllers
 {
-    [Authorize(Roles = "1")]
     [Route("api/[controller]")]
     [ApiController]
     public class ComboController : ControllerBase
