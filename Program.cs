@@ -42,6 +42,7 @@ namespace UltraStrore
             builder.Services.AddTransient<EmailService>();
             builder.Services.AddScoped<IThongKeServices, ThongKeServices>();
 
+            builder.Services.AddScoped<IBlogServices, BlogServices>();
             builder.Services.AddScoped<IYeuThichServices, YeuThichServices>();
             builder.Services.AddScoped<IComboServices, ComboServices>();
             builder.Services.AddScoped<IGiaoDienServices, GiaoDienServices>();

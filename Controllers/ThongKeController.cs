@@ -43,5 +43,19 @@ namespace UltraStrore.Controllers
             var result = _thongKeServices.GetOrderStatusStatistics();
             return Ok(result);
         }
+
+        [HttpGet("TopProducts")]
+        public IActionResult GetTopProductsStatistics(int year, int? month = null, int? day = null)
+        {
+            try
+            {
+                var result = _thongKeServices.GetTopProductsStatistics(year, month, day);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred while fetching top products statistics.", error = ex.Message });
+            }
+        }
     }
 }
