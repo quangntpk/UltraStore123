@@ -38,9 +38,9 @@ namespace UltraStrore.Controllers
         }
 
         [HttpGet("OrderStatus")]
-        public IActionResult GetOrderStatusStatistics()
+        public IActionResult GetOrderStatusStatistics(int? year = null, int? month = null, int? day = null)
         {
-            var result = _thongKeServices.GetOrderStatusStatistics();
+            var result = _thongKeServices.GetOrderStatusStatistics(year, month, day);
             return Ok(result);
         }
 

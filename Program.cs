@@ -164,6 +164,7 @@ namespace UltraStrore
                 endpoints.MapControllers();
                 endpoints.MapHub<ChatHub>("/chatHub");
                 endpoints.MapHub<Hubs.LienHeHub>("/lienHeHub");
+                endpoints.MapHub<Hubs.GiaoDienHub>("/giaoDienHub");
             });
 
             app.Run("http://0.0.0.0:5261");

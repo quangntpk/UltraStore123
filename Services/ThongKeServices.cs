@@ -66,9 +66,25 @@ namespace UltraStrore.Services
                 })
                 .ToList();
         }
-        public List<ThongKeView> GetOrderStatusStatistics()
+        public List<ThongKeView> GetOrderStatusStatistics(int? year = null, int? month = null, int? day = null)
         {
-            var groupedData = _context.DonHangs
+            var query = _context.DonHangs.AsQueryable();
+
+            // Apply time filters if provided
+            if (year.HasValue)
+            {
+                query = query.Where(d => d.NgayDat.HasValue && d.NgayDat.Value.Year == year.Value);
+            }
+            if (month.HasValue)
+            {
+                query = query.Where(d => d.NgayDat.HasValue && d.NgayDat.Value.Month == month.Value);
+            }
+            if (day.HasValue)
+            {
+                query = query.Where(d => d.NgayDat.HasValue && d.NgayDat.Value.Day == day.Value);
+            }
+
+            var groupedData = query
                 .GroupBy(d => d.TrangThaiDonHang)
                 .Select(g => new ThongKeView
                 {

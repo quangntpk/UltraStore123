@@ -8,7 +8,10 @@ using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.SignalR;
+using UltraStrore.Hubs;
 
 namespace UltraStrore.Controllers
 {
@@ -21,18 +24,21 @@ namespace UltraStrore.Controllers
         private readonly EmailService _emailService;
         private readonly HttpClient _httpClient;
         private readonly ILogger<LienHeController> _logger;
+        private readonly IHubContext<LienHeHub> _hubContext;
 
         public LienHeController(
             ILienHeServices services,
             IConfiguration configuration,
             EmailService emailService,
-            ILogger<LienHeController> logger)
+            ILogger<LienHeController> logger,
+            IHubContext<LienHeHub> hubContext)
         {
             _services = services ?? throw new ArgumentNullException(nameof(services));
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
             _httpClient = new HttpClient();
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext));
         }
 
         [HttpGet]
@@ -54,7 +60,7 @@ namespace UltraStrore.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi lấy liên hệ với ID: {Id}", id);
+                _logger.LogError(ex, "Lỗi khi lấy thông tin liên hệ với ID: {Id}", id);
                 return NotFound(ex.Message);
             }
         }
@@ -80,19 +86,19 @@ namespace UltraStrore.Controllers
 
             var lienHeCreate = new LienHeCreate
             {
-                MaLienHe = model.MaLienHe,
                 HoTen = model.HoTen,
                 Sdt = model.Sdt,
                 NoiDung = model.NoiDung,
                 Email = model.Email,
                 TrangThai = int.TryParse(model.TrangThai, out int trangThai) ? trangThai : 0
-
             };
 
             try
             {
                 var newLienHe = await _services.CreateLienHe(lienHeCreate);
                 _logger.LogInformation("Tạo liên hệ mới thành công với ID: {Id}", newLienHe.MaLienHe);
+
+                await _hubContext.Clients.All.SendAsync("ReceiveLienHeAdded", newLienHe);
 
                 try
                 {
@@ -102,38 +108,44 @@ namespace UltraStrore.Controllers
                       <meta charset='utf-8' />
                       <title>Thông tin liên hệ mới</title>
                       <style>
-                        body {{ margin: 0; padding: 0; background-color: #f2f2f2; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }}
-                        .email-container {{ width: 100%; max-width: 600px; margin: 20px auto; background-color: #ffffff; border: 1px solid #dddddd; border-radius: 8px; overflow: hidden; }}
-                        .header {{ background-color: #007BFF; color: #ffffff; text-align: center; padding: 20px; }}
-                        .header h1 {{ font-size: 24px; margin: 0; }}
-                        .content {{ padding: 20px; color: #333333; line-height: 1.5; }}
-                        .content h2 {{ font-size: 20px; color: #007BFF; }}
-                        .content p {{ margin: 15px 0; font-size: 16px; }}
-                        .footer {{ background-color: #f4f4f4; text-align: center; padding: 15px; font-size: 12px; color: #777777; }}
+                        body {{ margin: 0; padding: 0; background-color: #f4f4f4; font-family: 'Arial', sans-serif; color: #333; }}
+                        .email-container {{ width: 100%; max-width: 650px; margin: 30px auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); overflow: hidden; }}
+                        .header {{ background: linear-gradient(135deg, #9b87f5 0%, #6b5be3 100%); color: #ffffff; text-align: center; padding: 25px 0; }}
+                        .header img {{ max-width: 150px; margin-bottom: 10px; }}
+                        .header h1 {{ font-size: 28px; margin: 0; font-weight: 600; letter-spacing: 1px; }}
+                        .content {{ padding: 30px; background-color: #f9f9f9; }}
+                        .content h2 {{ font-size: 22px; color: #9b87f5; margin-bottom: 20px; font-weight: 500; border-bottom: 2px solid #9b87f5; padding-bottom: 8px; }}
+                        .content p {{ margin: 12px 0; font-size: 16px; line-height: 1.6; }}
+                        .content .label {{ font-weight: 600; color: #555; }}
+                        .content .value {{ color: #333; }}
+                        .footer {{ background-color: #9b87f5; color: #ffffff; text-align: center; padding: 15px; font-size: 14px; }}
+                        .footer p {{ margin: 5px 0; }}
+                        .footer a {{ color: #ffffff; text-decoration: none; font-weight: 500; }}
+                        .footer a:hover {{ text-decoration: underline; }}
                       </style>
                     </head>
                     <body>
                       <div class='email-container'>
                         <div class='header'>
+                          <img src='https://fashionhub.com.br/wp-content/uploads/2021/10/Fashion-Hub_logo-preta.png' alt='Logo FashionHub' />
                           <h1>Thông tin liên hệ mới</h1>
                         </div>
                         <div class='content'>
                           <h2>Chi tiết liên hệ</h2>
-                          <p><strong>Họ và tên:</strong> {newLienHe.HoTen ?? "N/A"}</p>
-                          <p><strong>Email:</strong> {newLienHe.Email ?? "N/A"}</p>
-                          <p><strong>Số điện thoại:</strong> {(string.IsNullOrWhiteSpace(newLienHe.Sdt) ? "N/A" : newLienHe.Sdt)}</p>
-                          <p><strong>Nội dung:</strong><br/>{newLienHe.NoiDung ?? "N/A"}</p>
-                          <p><strong>Ngày tạo:</strong> {newLienHe.NgayTao?.ToString("dd/MM/yyyy HH:mm:ss") ?? "N/A"}</p>
+                          <p><span class='label'>Họ và tên:</span> <span class='value'>{newLienHe.HoTen ?? "N/A"}</span></p>
+                          <p><span class='label'>Email:</span> <span class='value'>{newLienHe.Email ?? "N/A"}</span></p>
+                          <p><span class='label'>Số điện thoại:</span> <span class='value'>{(string.IsNullOrWhiteSpace(newLienHe.Sdt) ? "N/A" : newLienHe.Sdt)}</span></p>
+                          <p><span class='label'>Nội dung:</span><br/><span class='value'>{newLienHe.NoiDung ?? "N/A"}</span></p>
+                          <p><span class='label'>Ngày gửi:</span> <span class='value'>{newLienHe.NgayTao?.ToString("dd/MM/yyyy HH:mm:ss") ?? "N/A"}</span></p>
                         </div>
                         <div class='footer'>
-                          <p>UltraStore © {DateTime.Now.Year}. Mọi quyền được bảo lưu.</p>
-                          <p>Hệ thống bán hàng chuyên nghiệp</p>
+                          <p>FashionHub © {DateTime.Now.Year}. Mọi quyền được bảo lưu.</p>
+                          <p><a href='http://localhost:8080'>Truy cập trang web của chúng tôi</a></p>
                         </div>
                       </div>
                     </body>
                     </html>";
-                    await _emailService.SendEmailAsync(_configuration["Smtp:Username"], "UltraStore", emailBody);
-
+                    await _emailService.SendEmailAsync(_configuration["Smtp:Username"], "FashionHub - Thông tin liên hệ mới", emailBody);
                     _logger.LogInformation("Gửi email thông báo liên hệ mới thành công.");
                 }
                 catch (Exception ex)
@@ -160,6 +172,7 @@ namespace UltraStrore.Controllers
             {
                 var newLienHe = await _services.AddLienHe(model);
                 _logger.LogInformation("Thêm liên hệ mới thành công với ID: {Id}", newLienHe.MaLienHe);
+                await _hubContext.Clients.All.SendAsync("ReceiveLienHeAdded", newLienHe);
                 return CreatedAtAction(nameof(GetById), new { id = newLienHe.MaLienHe }, newLienHe);
             }
             catch (Exception ex)
@@ -181,34 +194,39 @@ namespace UltraStrore.Controllers
                 <html>
                 <head>
                   <meta charset='utf-8' />
-                  <title>Hỗ trợ từ UltraStore</title>
+                  <title>Hỗ trợ từ FashionHub</title>
                   <style>
-                    body {{ margin: 0; padding: 0; background-color: #f2f2f2; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }}
-                    .email-container {{ width: 100%; max-width: 600px; margin: 20px auto; background-color: #ffffff; border: 1px solid #dddddd; border-radius: 8px; overflow: hidden; }}
-                    .header {{ background-color: #007BFF; color: #ffffff; text-align: center; padding: 20px; }}
-                    .header h1 {{ font-size: 24px; margin: 0; }}
-                    .content {{ padding: 20px; color: #333333; line-height: 1.5; }}
-                    .content p {{ margin: 15px 0; font-size: 16px; }}
-                    .footer {{ background-color: #f4f4f4; text-align: center; padding: 15px; font-size: 12px; color: #777777; }}
+                    body {{ margin: 0; padding: 0; background-color: #f4f4f4; font-family: 'Arial', sans-serif; color: #333; }}
+                    .email-container {{ width: 100%; max-width: 650px; margin: 30px auto; background-color: #ffffff; border-radius: 10px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); overflow: hidden; }}
+                    .header {{ background: linear-gradient(135deg, #9b87f5 0%, #6b5be3 100%); color: #ffffff; text-align: center; padding: 25px 0; }}
+                    .header img {{ max-width: 150px; margin-bottom: 10px; }}
+                    .header h1 {{ font-size: 28px; margin: 0; font-weight: 600; letter-spacing: 1px; }}
+                    .content {{ padding: 30px; background-color: #f9f9f9; }}
+                    .content p {{ margin: 12px 0; font-size: 16px; line-height: 1.6; color: #333; }}
+                    .footer {{ background-color: #9b87f5; color: #ffffff; text-align: center; padding: 15px; font-size: 14px; }}
+                    .footer p {{ margin: 5px 0; }}
+                    .footer a {{ color: #ffffff; text-decoration: none; font-weight: 500; }}
+                    .footer a:hover {{ text-decoration: underline; }}
                   </style>
                 </head>
                 <body>
                   <div class='email-container'>
                     <div class='header'>
-                      <h1>Hỗ trợ từ UltraStore</h1>
+                      <img src='https://fashionhub.com.br/wp-content/uploads/2021/10/Fashion-Hub_logo-preta.png' alt='Logo FashionHub' />
+                      <h1>Hỗ trợ từ FashionHub</h1>
                     </div>
                     <div class='content'>
                       <p>{request.Message}</p>
                     </div>
                     <div class='footer'>
-                      <p>UltraStore © {DateTime.Now.Year}. Mọi quyền được bảo lưu.</p>
-                      <p>Hệ thống bán hàng chuyên nghiệp</p>
+                      <p>FashionHub © {DateTime.Now.Year}. Mọi quyền được bảo lưu.</p>
+                      <p><a href='http://localhost:8080'>Truy cập trang web của chúng tôi</a></p>
                     </div>
                   </div>
                 </body>
                 </html>";
 
-                await _emailService.SendEmailAsync(request.ToEmail, "Hỗ trợ từ UltraStore", emailBody);
+                await _emailService.SendEmailAsync(request.ToEmail, "FashionHub - Phản hồi hỗ trợ", emailBody);
                 _logger.LogInformation("Gửi email hỗ trợ thành công tới: {ToEmail}", request.ToEmail);
                 return Ok("Email hỗ trợ đã được gửi thành công.");
             }
@@ -235,6 +253,7 @@ namespace UltraStrore.Controllers
             {
                 var updatedLienHe = await _services.UpdateLienHe(model);
                 _logger.LogInformation("Cập nhật liên hệ thành công với ID: {Id}", id);
+                await _hubContext.Clients.All.SendAsync("ReceiveLienHeUpdated", updatedLienHe);
                 return Ok(updatedLienHe);
             }
             catch (Exception ex)
@@ -256,12 +275,35 @@ namespace UltraStrore.Controllers
                     return NotFound("Liên hệ không tồn tại.");
                 }
                 _logger.LogInformation("Xóa liên hệ thành công với ID: {Id}", id);
+                await _hubContext.Clients.All.SendAsync("ReceiveLienHeDeleted", id);
                 return NoContent();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Lỗi khi xóa liên hệ với ID: {Id}", id);
                 return StatusCode(500, ex.Message);
+            }
+        }
+
+        [HttpDelete("DeleteMultiple")]
+        public async Task<IActionResult> DeleteMultiple([FromBody] List<int> ids)
+        {
+            try
+            {
+                var result = await _services.DeleteMultipleLienHe(ids);
+                if (!result)
+                {
+                    _logger.LogWarning("Không tìm thấy liên hệ để xóa với danh sách ID: {Ids}", string.Join(",", ids));
+                    return NotFound("Không tìm thấy liên hệ để xóa.");
+                }
+                _logger.LogInformation("Xóa nhiều liên hệ thành công với danh sách ID: {Ids}", string.Join(",", ids));
+                await _hubContext.Clients.All.SendAsync("ReceiveLienHeDeletedMultiple", ids);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Lỗi khi xóa nhiều liên hệ.");
+                return StatusCode(500, $"Lỗi máy chủ: {ex.Message}");
             }
         }
 
@@ -279,23 +321,6 @@ namespace UltraStrore.Controllers
                 return recaptchaResponse?.success == true;
             }
             return false;
-        }
-
-        [HttpDelete("DeleteMultiple")]
-        public async Task<IActionResult> DeleteMultiple([FromBody] List<int> ids)
-        {
-            try
-            {
-                var result = await _services.DeleteMultipleLienHe(ids);
-                if (!result)
-                    return NotFound("Không tìm thấy liên hệ để xóa.");
-
-                return NoContent();
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Lỗi server: {ex.Message}");
-            }
         }
     }
 

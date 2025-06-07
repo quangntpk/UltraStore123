@@ -1,14 +1,15 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using UltraStrore.Data;
+using UltraStrore.Data.Temp;
 using UltraStrore.Helper;
 using UltraStrore.Models.DTO;
-using Microsoft.AspNetCore.Http;
 using UltraStrore.Repository;
-using System.Net.Http;
-using UltraStrore.Data.Temp;
 
 namespace UltraStrore.Services
 {
@@ -47,11 +48,11 @@ namespace UltraStrore.Services
                 }
 
                 decimal originalAmount = cart.ChiTietGioHangs
-                    .Sum(item => item.ThanhTien ?? 0); 
+                    .Sum(item => item.ThanhTien ?? 0);
 
-                decimal discountAmount = request.DiscountAmount; 
-                decimal finalAmount = request.FinalAmount; 
-                decimal shippingFee = request.ShippingFee; 
+                decimal discountAmount = request.DiscountAmount;
+                decimal finalAmount = request.FinalAmount;
+                decimal shippingFee = request.ShippingFee;
 
                 if (!string.IsNullOrEmpty(request.CouponCode))
                 {
@@ -105,17 +106,19 @@ namespace UltraStrore.Services
                 var donHang = new DonHang
                 {
                     MaNguoiDung = cart.MaNguoiDung,
-                    TenNguoiNhan = request.TenNguoiNhan,
-                    Sdt = request.Sdt,
-                    DiaChi = request.DiaChi,
+                    TenNguoiNhan = request.TenNguoiNhan ?? cart.MaNguoiDungNavigation?.HoTen,
+                    Sdt = request.Sdt ?? cart.MaNguoiDungNavigation?.Sdt,
+                    DiaChi = request.DiaChi ?? cart.MaNguoiDungNavigation?.DiaChi,
                     NgayDat = DateTime.Now,
-                    TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan,
-                    TrangThaiHang = request.PaymentMethod.ToLower() == "cod"
-                        ? TrangThaiThanhToan.ThanhToanKhiNhanHang
-                        : TrangThaiThanhToan.ThanhToanVNPay,
+                    TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan, // Sẽ cập nhật sau
+                    TrangThaiHang = request.PaymentMethod.ToLower() == "cash"
+              ? TrangThaiThanhToan.ThanhToanTienMat
+              : request.PaymentMethod.ToLower() == "cod"
+                  ? TrangThaiThanhToan.ThanhToanKhiNhanHang
+                  : TrangThaiThanhToan.ThanhToanVNPay,
                     ChiTietDonHangs = new List<ChiTietDonHang>(),
                     DiscountAmount = discountAmount,
-                    ShippingFee = shippingFee, 
+                    ShippingFee = shippingFee,
                     FinalAmount = finalAmount
                 };
 
@@ -133,7 +136,45 @@ namespace UltraStrore.Services
                     donHang.ChiTietDonHangs.Add(chiTietDonHang);
                 }
 
-                if (request.PaymentMethod.ToLower() == "cod")
+                if (request.PaymentMethod.ToLower() == "cash")
+                {
+                    // Thanh toán offline bằng tiền mặt
+                    _context.DonHangs.Add(donHang);
+
+                    // Cập nhật coupon nếu có
+                    if (!string.IsNullOrEmpty(request.CouponCode))
+                    {
+                        var coupon = await _context.Coupons
+                            .Include(c => c.MaVoucherNavigation)
+                            .FirstOrDefaultAsync(c => c.MaNhap == request.CouponCode);
+                        if (coupon != null)
+                        {
+                            coupon.TrangThai = 1;
+                            coupon.MaVoucherNavigation.SoLuong -= 1;
+                        }
+                    }
+
+                    // Cập nhật trạng thái đơn hàng thành "Đã thanh toán"
+                    donHang.TrangThaiDonHang = TrangThaiDonHang.DaGiaoHang;
+                    await _context.SaveChangesAsync();
+
+                    // Xóa giỏ hàng
+                    _context.ChiTietGioHangs.RemoveRange(cart.ChiTietGioHangs);
+                    _context.GioHangs.Remove(cart);
+                    await _context.SaveChangesAsync();
+
+                    return new PaymentResponse
+                    {
+                        Success = true,
+                        OriginalAmount = originalAmount,
+                        DiscountAmount = discountAmount,
+                        ShippingFee = shippingFee,
+                        FinalAmount = finalAmount,
+                        OrderId = donHang.MaDonHang,
+                        Message = "Thanh toán tiền mặt thành công"
+                    };
+                }
+                else if (request.PaymentMethod.ToLower() == "cod")
                 {
                     _context.DonHangs.Add(donHang);
 

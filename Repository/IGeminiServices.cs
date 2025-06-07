@@ -9,5 +9,6 @@ namespace UltraStrore.Repository
         Task<APIResponse> Response(RequestGeminiHinhAnh? info);
         Task<APIResponse> PhanLoaiGopY(string noiDung);
         Task<APIResponse> TraLoiUpgrade(string userInput);
+        Task<APIResponse> TraLoiLienHe(string userInput);
     }
 }

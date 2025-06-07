@@ -1,25 +1,55 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Text.Json;
 using UltraStrore.Data;
 using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.EditModels;
 using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
+using Microsoft.AspNetCore.SignalR;
+using UltraStrore.Hubs;
 
 namespace UltraStrore.Services
 {
     public class GiaoDienServices : IGiaoDienServices
     {
-        private readonly ApplicationDbContext _context;
+        private readonly string _filePath;
+        private readonly IHubContext<GiaoDienHub> _hubContext;
 
-        public GiaoDienServices(ApplicationDbContext context)
+        public GiaoDienServices(IHubContext<GiaoDienHub> hubContext)
         {
-            _context = context;
+            _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext));
+            var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "DanhMuc");
+            if (!Directory.Exists(directoryPath))
+            {
+                Directory.CreateDirectory(directoryPath);
+            }
+            _filePath = Path.Combine(directoryPath, "giaodien.json");
+
+            if (!File.Exists(_filePath))
+            {
+                File.WriteAllText(_filePath, "[]");
+            }
+        }
+
+        private async Task<List<GiaoDien>> ReadGiaoDiensFromFileAsync()
+        {
+            var json = await File.ReadAllTextAsync(_filePath);
+            return JsonSerializer.Deserialize<List<GiaoDien>>(json) ?? new List<GiaoDien>();
+        }
+
+        private async Task WriteGiaoDiensToFileAsync(List<GiaoDien> giaoDiens)
+        {
+            var json = JsonSerializer.Serialize(giaoDiens, new JsonSerializerOptions { WriteIndented = true });
+            await File.WriteAllTextAsync(_filePath, json);
         }
 
         public async Task<GiaoDienView> CreateGiaoDienAsync(GiaoDienCreate model)
         {
+            var giaoDiens = await ReadGiaoDiensFromFileAsync();
+            var newId = giaoDiens.Any() ? giaoDiens.Max(g => g.MaGiaoDien) + 1 : 1;
+
             var newGiaoDien = new GiaoDien
             {
+                MaGiaoDien = newId,
                 TenGiaoDien = model.TenGiaoDien,
                 Logo = model.Logo,
                 Slider1 = model.Slider1,
@@ -31,10 +61,10 @@ namespace UltraStrore.Services
                 TrangThai = 0
             };
 
-            _context.GiaoDiens.Add(newGiaoDien);
-            await _context.SaveChangesAsync();
+            giaoDiens.Add(newGiaoDien);
+            await WriteGiaoDiensToFileAsync(giaoDiens);
 
-            return new GiaoDienView
+            var giaoDienView = new GiaoDienView
             {
                 MaGiaoDien = newGiaoDien.MaGiaoDien,
                 TenGiaoDien = newGiaoDien.TenGiaoDien,
@@ -47,12 +77,16 @@ namespace UltraStrore.Services
                 NgayTao = newGiaoDien.NgayTao,
                 TrangThai = newGiaoDien.TrangThai
             };
+
+            await _hubContext.Clients.All.SendAsync("ReceiveGiaoDienAdded", giaoDienView);
+
+            return giaoDienView;
         }
 
         public async Task<List<GiaoDienView>> GetAllGiaoDienAsync()
         {
-            var list = await _context.GiaoDiens.ToListAsync();
-            return list.Select(g => new GiaoDienView
+            var giaoDiens = await ReadGiaoDiensFromFileAsync();
+            return giaoDiens.Select(g => new GiaoDienView
             {
                 MaGiaoDien = g.MaGiaoDien,
                 TenGiaoDien = g.TenGiaoDien,
@@ -69,8 +103,8 @@ namespace UltraStrore.Services
 
         public async Task<GiaoDienView> GetGiaoDienAsync(int maGiaoDien)
         {
-            var giaoDien = await _context.GiaoDiens
-                .FirstOrDefaultAsync(g => g.MaGiaoDien == maGiaoDien);
+            var giaoDiens = await ReadGiaoDiensFromFileAsync();
+            var giaoDien = giaoDiens.FirstOrDefault(g => g.MaGiaoDien == maGiaoDien);
             if (giaoDien == null)
                 throw new Exception("Giao diện không tồn tại.");
 
@@ -91,8 +125,8 @@ namespace UltraStrore.Services
 
         public async Task<GiaoDienView> UpdateGiaoDienAsync(GiaoDienEdit model)
         {
-            var giaoDien = await _context.GiaoDiens
-                .FirstOrDefaultAsync(g => g.MaGiaoDien == model.MaGiaoDien);
+            var giaoDiens = await ReadGiaoDiensFromFileAsync();
+            var giaoDien = giaoDiens.FirstOrDefault(g => g.MaGiaoDien == model.MaGiaoDien);
             if (giaoDien == null)
                 throw new Exception("Giao diện không tồn tại.");
 
@@ -105,9 +139,9 @@ namespace UltraStrore.Services
             if (model.Avt != null) giaoDien.Avt = model.Avt;
             if (model.TrangThai != null) giaoDien.TrangThai = model.TrangThai;
 
-            await _context.SaveChangesAsync();
+            await WriteGiaoDiensToFileAsync(giaoDiens);
 
-            return new GiaoDienView
+            var giaoDienView = new GiaoDienView
             {
                 MaGiaoDien = giaoDien.MaGiaoDien,
                 TenGiaoDien = giaoDien.TenGiaoDien,
@@ -120,43 +154,51 @@ namespace UltraStrore.Services
                 NgayTao = giaoDien.NgayTao,
                 TrangThai = giaoDien.TrangThai
             };
+
+            await _hubContext.Clients.All.SendAsync("ReceiveGiaoDienUpdated", giaoDienView);
+
+            return giaoDienView;
         }
 
         public async Task<bool> DeleteGiaoDienAsync(int maGiaoDien)
         {
-            var giaoDien = await _context.GiaoDiens
-                .FirstOrDefaultAsync(g => g.MaGiaoDien == maGiaoDien);
+            var giaoDiens = await ReadGiaoDiensFromFileAsync();
+            var giaoDien = giaoDiens.FirstOrDefault(g => g.MaGiaoDien == maGiaoDien);
             if (giaoDien == null)
                 return false;
 
-            _context.GiaoDiens.Remove(giaoDien);
-            await _context.SaveChangesAsync();
+            giaoDiens.Remove(giaoDien);
+            await WriteGiaoDiensToFileAsync(giaoDiens);
+
+            await _hubContext.Clients.All.SendAsync("ReceiveGiaoDienDeleted", maGiaoDien);
+
             return true;
         }
 
         public async Task SetActiveGiaoDienAsync(int maGiaoDien)
         {
-            var activeGiaoDiens = await _context.GiaoDiens
-                .Where(g => g.TrangThai == 1 && g.MaGiaoDien != maGiaoDien)
-                .ToListAsync();
+            var giaoDiens = await ReadGiaoDiensFromFileAsync();
+            var activeGiaoDiens = giaoDiens.Where(g => g.TrangThai == 1 && g.MaGiaoDien != maGiaoDien).ToList();
             foreach (var gd in activeGiaoDiens)
             {
                 gd.TrangThai = 0;
             }
 
-            var selectedGiaoDien = await _context.GiaoDiens
-                .FirstOrDefaultAsync(g => g.MaGiaoDien == maGiaoDien);
+            var selectedGiaoDien = giaoDiens.FirstOrDefault(g => g.MaGiaoDien == maGiaoDien);
             if (selectedGiaoDien != null)
             {
                 selectedGiaoDien.TrangThai = 1;
             }
 
-            await _context.SaveChangesAsync();
+            await WriteGiaoDiensToFileAsync(giaoDiens);
+
+            await _hubContext.Clients.All.SendAsync("ReceiveGiaoDienSetActive", maGiaoDien);
         }
 
         public async Task<List<GiaoDienView>> SearchGiaoDienAsync(string? tenGiaoDien, int? maGiaoDien, int? trangThai, DateTime? ngayTao)
         {
-            var query = _context.GiaoDiens.AsQueryable();
+            var giaoDiens = await ReadGiaoDiensFromFileAsync();
+            var query = giaoDiens.AsQueryable();
 
             if (!string.IsNullOrEmpty(tenGiaoDien))
             {
@@ -178,7 +220,7 @@ namespace UltraStrore.Services
                 query = query.Where(g => g.NgayTao.HasValue && g.NgayTao.Value.Date == ngayTao.Value.Date);
             }
 
-            var list = await query.ToListAsync();
+            var list = query.ToList();
             return list.Select(g => new GiaoDienView
             {
                 MaGiaoDien = g.MaGiaoDien,

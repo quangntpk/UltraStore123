@@ -1,7 +1,10 @@
-﻿namespace UltraStrore.Data
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace UltraStrore.Data
 {
     public class LienHe
     {
+        [Key]
         public int MaLienHe { get; set; }
         public string? HoTen { get; set; }
         public string? Sdt { get; set; }

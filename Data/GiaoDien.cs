@@ -1,7 +1,10 @@
-﻿namespace UltraStrore.Data
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace UltraStrore.Data
 {
     public class GiaoDien
     {
+        [Key]
         public int MaGiaoDien { get; set; }
         public string? TenGiaoDien { get; set; }
         public byte[]? Logo { get; set; }

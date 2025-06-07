@@ -21,6 +21,13 @@ namespace UltraStrore.Controllers
             var data = await this.service.TraLoi(question);
             return Ok(data);
         }
+        [HttpGet("TraLoiLienHe")]
+        public async Task<IActionResult> TraLoiLienHe(string question)
+        {
+            var data = await this.service.TraLoiLienHe(question);
+            return Ok(data);
+        }
+
         [HttpPost("Response")]
         public async Task<IActionResult> Response(RequestGeminiHinhAnh info)            
         {
