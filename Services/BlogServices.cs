@@ -25,37 +25,38 @@ public class BlogServices : IBlogServices
             {
                 MaBlog = b.MaBlog,
                 MaNguoiDung = b.MaNguoiDung,
-                HoTen = null, // Cần logic lấy HoTen từ bảng người dùng nếu có
+                HoTen = null, // Cần thêm truy vấn user nếu muốn
                 NgayTao = b.NgayTao,
-                NoiDung = b.NoiDung,
+                NgayCapNhat = b.NgayCapNhat,
                 TieuDe = b.TieuDe,
-                HinhAnh = b.HinhAnh != null ? Convert.ToBase64String(b.HinhAnh) : null
+                NoiDung = b.NoiDung,
+                Slug = b.Slug,
+                MetaTitle = b.MetaTitle,
+                MetaDescription = b.MetaDescription,
+                HinhAnh = b.HinhAnh,
+                MoTaHinhAnh = b.MoTaHinhAnh,
+                IsPublished = b.IsPublished,
+                Tags = b.Tags
             })
             .ToList();
     }
 
     public async Task<BlogView> CreateBlog(BlogCreate blogCreate)
     {
-        byte[]? hinhAnh = null;
-        if (!string.IsNullOrEmpty(blogCreate.HinhAnh))
-        {
-            try
-            {
-                hinhAnh = Convert.FromBase64String(blogCreate.HinhAnh);
-            }
-            catch (FormatException)
-            {
-                throw new ArgumentException("Chuỗi Base64 không hợp lệ.");
-            }
-        }
-
         var blog = new Blogs
         {
             MaNguoiDung = blogCreate.MaNguoiDung,
             NgayTao = blogCreate.NgayTao ?? DateTime.Now,
-            NoiDung = blogCreate.NoiDung,
+            NgayCapNhat = DateTime.Now,
             TieuDe = blogCreate.TieuDe,
-            HinhAnh = hinhAnh
+            NoiDung = blogCreate.NoiDung,
+            Slug = blogCreate.Slug ?? GenerateSlug(blogCreate.TieuDe),
+            MetaTitle = blogCreate.MetaTitle,
+            MetaDescription = blogCreate.MetaDescription,
+            HinhAnh = blogCreate.HinhAnh,
+            MoTaHinhAnh = blogCreate.MoTaHinhAnh,
+            IsPublished = blogCreate.IsPublished,
+            Tags = blogCreate.Tags
         };
 
         _context.Blogs.Add(blog);
@@ -65,39 +66,41 @@ public class BlogServices : IBlogServices
         {
             MaBlog = blog.MaBlog,
             MaNguoiDung = blog.MaNguoiDung,
-            HoTen = null, // Cần logic lấy HoTen từ bảng người dùng nếu có
+            HoTen = null,
             NgayTao = blog.NgayTao,
-            NoiDung = blog.NoiDung,
+            NgayCapNhat = blog.NgayCapNhat,
             TieuDe = blog.TieuDe,
+            NoiDung = blog.NoiDung,
+            Slug = blog.Slug,
+            MetaTitle = blog.MetaTitle,
+            MetaDescription = blog.MetaDescription,
+            HinhAnh = blog.HinhAnh,
+            MoTaHinhAnh = blog.MoTaHinhAnh,
+            IsPublished = blog.IsPublished,
+            Tags = blog.Tags
         };
     }
 
-    public async Task<BlogView> EditBlog(BlogEdit blogEdit)
+    public async Task<BlogView?> EditBlog(BlogEdit blogEdit)
     {
         var blog = await _context.Blogs.FindAsync(blogEdit.MaBlog);
         if (blog == null)
             return null;
 
         blog.MaNguoiDung = blogEdit.MaNguoiDung ?? blog.MaNguoiDung;
-        blog.NgayTao = blogEdit.NgayTao ?? blog.NgayTao;
-        blog.NoiDung = blogEdit.NoiDung ?? blog.NoiDung;
         blog.TieuDe = blogEdit.TieuDe ?? blog.TieuDe;
+        blog.NoiDung = blogEdit.NoiDung ?? blog.NoiDung;
+        blog.NgayCapNhat = DateTime.Now;
 
-        if (!string.IsNullOrEmpty(blogEdit.HinhAnh))
-        {
-            try
-            {
-                blog.HinhAnh = Convert.FromBase64String(blogEdit.HinhAnh);
-            }
-            catch (FormatException)
-            {
-                throw new ArgumentException("Chuỗi Base64 không hợp lệ.");
-            }
-        }
-        else if (blogEdit.HinhAnh == null)
-        {
-            blog.HinhAnh = null; // Xóa hình ảnh nếu HinhAnh là null
-        }
+        blog.Slug = blogEdit.Slug ?? blog.Slug ?? GenerateSlug(blogEdit.TieuDe ?? blog.TieuDe);
+        blog.MetaTitle = blogEdit.MetaTitle ?? blog.MetaTitle;
+        blog.MetaDescription = blogEdit.MetaDescription ?? blog.MetaDescription;
+
+        blog.HinhAnh = blogEdit.HinhAnh ?? blog.HinhAnh;
+        blog.MoTaHinhAnh = blogEdit.MoTaHinhAnh ?? blog.MoTaHinhAnh;
+
+        blog.IsPublished = blogEdit.IsPublished;
+        blog.Tags = blogEdit.Tags ?? blog.Tags;
 
         _context.Blogs.Update(blog);
         await _context.SaveChangesAsync();
@@ -106,11 +109,18 @@ public class BlogServices : IBlogServices
         {
             MaBlog = blog.MaBlog,
             MaNguoiDung = blog.MaNguoiDung,
-            HoTen = null, // Cần logic lấy HoTen từ bảng người dùng nếu có
+            HoTen = null,
             NgayTao = blog.NgayTao,
-            NoiDung = blog.NoiDung,
+            NgayCapNhat = blog.NgayCapNhat,
             TieuDe = blog.TieuDe,
-            HinhAnh = blog.HinhAnh != null ? Convert.ToBase64String(blog.HinhAnh) : null
+            NoiDung = blog.NoiDung,
+            Slug = blog.Slug,
+            MetaTitle = blog.MetaTitle,
+            MetaDescription = blog.MetaDescription,
+            HinhAnh = blog.HinhAnh,
+            MoTaHinhAnh = blog.MoTaHinhAnh,
+            IsPublished = blog.IsPublished,
+            Tags = blog.Tags
         };
     }
 
@@ -123,5 +133,74 @@ public class BlogServices : IBlogServices
         _context.Blogs.Remove(blog);
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    private string GenerateSlug(string? title)
+    {
+        if (string.IsNullOrWhiteSpace(title))
+            return Guid.NewGuid().ToString();
+
+        var slug = title.ToLower().Trim()
+            .Replace(" ", "-")
+            .Replace(".", "")
+            .Replace(",", "")
+            .Replace(":", "")
+            .Replace(";", "")
+            .Replace("?", "")
+            .Replace("!", "")
+            .Replace("–", "-");
+
+        return slug;
+    }
+    public async Task<BlogView?> GetBlogById(int maBlog)
+    {
+        var blog = await _context.Blogs.FindAsync(maBlog);
+        if (blog == null) return null;
+
+        return new BlogView
+        {
+            MaBlog = blog.MaBlog,
+            MaNguoiDung = blog.MaNguoiDung,
+            HoTen = null,
+            NgayTao = blog.NgayTao,
+            NgayCapNhat = blog.NgayCapNhat,
+            TieuDe = blog.TieuDe,
+            NoiDung = blog.NoiDung,
+            Slug = blog.Slug,
+            MetaTitle = blog.MetaTitle,
+            MetaDescription = blog.MetaDescription,
+            HinhAnh = blog.HinhAnh,
+            MoTaHinhAnh = blog.MoTaHinhAnh,
+            IsPublished = blog.IsPublished,
+            Tags = blog.Tags
+        };
+    }
+
+    public async Task<BlogView?> GetBlogBySlug(string slug)
+    {
+        if (string.IsNullOrWhiteSpace(slug))
+            throw new ArgumentException("Slug cannot be empty", nameof(slug));
+
+        var blog = await _context.Blogs.AsNoTracking().FirstOrDefaultAsync(b => b.Slug == slug);
+        if (blog == null)
+            return null;
+
+        return new BlogView
+        {
+            MaBlog = blog.MaBlog,
+            MaNguoiDung = blog.MaNguoiDung,
+            HoTen = null, // Consider joining with Users table if needed
+            NgayTao = blog.NgayTao,
+            NgayCapNhat = blog.NgayCapNhat,
+            TieuDe = blog.TieuDe,
+            NoiDung = blog.NoiDung,
+            Slug = blog.Slug,
+            MetaTitle = blog.MetaTitle,
+            MetaDescription = blog.MetaDescription,
+            HinhAnh = blog.HinhAnh,
+            MoTaHinhAnh = blog.MoTaHinhAnh,
+            IsPublished = blog.IsPublished,
+            Tags = blog.Tags
+        };
     }
 }
