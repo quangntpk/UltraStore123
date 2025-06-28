@@ -53,7 +53,7 @@ namespace UltraStrore.Controllers
             return Ok(blog);
         }
 
-        [HttpPost]
+        [HttpPost("CreateBlog")]
         public async Task<ActionResult<BlogView>> CreateBlog([FromBody] BlogCreate blogCreate)
         {
             try
