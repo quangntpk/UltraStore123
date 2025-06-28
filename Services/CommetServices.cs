@@ -28,6 +28,8 @@ namespace UltraStrore.Services
             var binhLuans = await _context.BinhLuans
                 .Select(bl => new BinhLuanView
                 {
+                    MaBlog = bl.MaBlog,
+                    MaCombo = bl.MaCombo,
                     MaBinhLuan = bl.MaBinhLuan,
                     MaSanPham = bl.MaSanPham,
                     MaNguoiDung = bl.MaNguoiDung,
@@ -166,6 +168,8 @@ namespace UltraStrore.Services
             // Tạo một đối tượng BinhLuan từ BinhLuanCreate
             var newBinhLuan = new BinhLuan
             {
+                MaCombo = binhLuan.MaCombo,
+                MaBlog = binhLuan.MaBlog,
                 MaSanPham = binhLuan.MaSanPham,
                 MaNguoiDung = binhLuan.MaNguoiDung,
                 NoiDungBinhLuan = binhLuan.NoiDungBinhLuan,
@@ -193,6 +197,8 @@ namespace UltraStrore.Services
             // Trả về một BinhLuanView từ dữ liệu vừa thêm
             return new BinhLuanView
             {
+                MaBlog = newBinhLuan.MaBlog,
+                MaCombo = newBinhLuan.MaCombo,
                 MaBinhLuan = newBinhLuan.MaBinhLuan,
                 MaSanPham = newBinhLuan.MaSanPham,
                 TenSanPham = tenSanPham,
@@ -244,6 +250,8 @@ namespace UltraStrore.Services
             // Trả về một BinhLuanView từ dữ liệu vừa cập nhật
             return new BinhLuanView
             {
+                MaCombo = existingBinhLuan.MaCombo,
+                MaBlog = existingBinhLuan.MaBlog,
                 MaBinhLuan = existingBinhLuan.MaBinhLuan,
                 MaSanPham = existingBinhLuan.MaSanPham,
                 TenSanPham = tenSanPham,

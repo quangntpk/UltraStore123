@@ -30,6 +30,7 @@ namespace UltraStrore.Services
 
         public async Task<PaymentResponse> ProcessPaymentAsync(PaymentRequestDto request, HttpContext httpContext)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 var cart = await _context.GioHangs
@@ -121,7 +122,8 @@ namespace UltraStrore.Services
                     ShippingFee = shippingFee,
                     FinalAmount = finalAmount
                 };
-
+                _context.DonHangs.Add(donHang);
+                await _context.SaveChangesAsync();
                 foreach (var item in cart.ChiTietGioHangs)
                 {
                     var chiTietDonHang = new ChiTietDonHang
@@ -131,9 +133,25 @@ namespace UltraStrore.Services
                         Gia = item.Gia,
                         ThanhTien = item.ThanhTien,
                         MaCombo = item.MaCombo,
-                        SanPhamMaSanPham = item.MaSanPham
+                        SanPhamMaSanPham = item.MaSanPham,
+                        MaDonHang = donHang.MaDonHang 
                     };
-                    donHang.ChiTietDonHangs.Add(chiTietDonHang);
+                    _context.ChiTietDonHangs.Add(chiTietDonHang);
+                    await _context.SaveChangesAsync();
+                    var Test = chiTietDonHang;
+                    var ChiTietGioHangsp = _context.GioHangSupports.Where(g => g.ChiTietGioHang == item.MaCtgh && item.MaCombo!=null).ToList();
+                    foreach (var k in ChiTietGioHangsp)
+                    {
+                        var GHsupport = new DonHangSupport
+                        {
+                            MaSanPham = k.MaSanPham,
+                            ChiTietGioHang = chiTietDonHang.MaCtdh,
+                            MaChiTietCombo = k.MaChiTietCombo,
+                            SoLuong = k.SoLuong,
+                        };
+                         _context.DonHangSupports.Add(GHsupport);
+                    }
+                    await _context.SaveChangesAsync();
                 }
 
                 if (request.PaymentMethod.ToLower() == "cash")
@@ -176,7 +194,6 @@ namespace UltraStrore.Services
                 }
                 else if (request.PaymentMethod.ToLower() == "cod")
                 {
-                    _context.DonHangs.Add(donHang);
 
                     if (!string.IsNullOrEmpty(request.CouponCode))
                     {
@@ -195,7 +212,7 @@ namespace UltraStrore.Services
                     _context.ChiTietGioHangs.RemoveRange(cart.ChiTietGioHangs);
                     _context.GioHangs.Remove(cart);
                     await _context.SaveChangesAsync();
-
+                    await transaction.CommitAsync();
                     return new PaymentResponse
                     {
                         Success = true,
@@ -259,6 +276,7 @@ namespace UltraStrore.Services
                 }
                 else
                 {
+                    await transaction.RollbackAsync();
                     return new PaymentResponse
                     {
                         Success = false,
@@ -268,6 +286,7 @@ namespace UltraStrore.Services
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Lỗi khi xử lý thanh toán");
                 return new PaymentResponse
                 {

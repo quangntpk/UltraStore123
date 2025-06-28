@@ -15,6 +15,8 @@ namespace UltraStrore.Models.CreateModels
         public double? DanhGia { get; set; }
         public int? TrangThai { get; set; }
         public DateTime? NgayBinhLuan { get; set; }
+        public int? MaBlog { get; set; }
+        public int? MaCombo { get; set; }
 
     }
 }

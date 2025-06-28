@@ -70,7 +70,7 @@ namespace UltraStrore.Controllers
             }
 
             var ordersQuery = await _context.DonHangs
-                .Where(d => d.MaNguoiDung == id)
+                .Where(d => d.MaDonHang == int.Parse(id))
                 .Include(d => d.MaNguoiDungNavigation)
                 .Include(d => d.ChiTietDonHangs)
                 .ThenInclude(cd => cd.MaSanPhamNavigation)
@@ -110,11 +110,12 @@ namespace UltraStrore.Controllers
                             GiaCombo = cd.MaComboNavigation.TongGia,
                             SanPhamsTrongCombo = cd.MaComboNavigation.ChiTietComBos.Select(ct => new
                             {
-                                TenSanPham = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại",
+                                TenSanPham = _context.SanPhams.Where(g => g.MaSanPham == ct.MaSanPham).Select(g => g.TenSanPham).FirstOrDefault(),
                                 SoLuong = ct.SoLuong,
                                 Gia = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.Gia : 0,
                                 ThanhTien = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.Gia * ct.SoLuong : 0,
-                                MaSanPham = ct.MaSanPham
+                                MaSanPham = ct.MaSanPham,
+                                MaSanPham1 = _context.DonHangSupports.Where(g => g.MaChiTietCombo == ct.MaChiTietComBo && g.ChiTietGioHang == cd.MaCtdh).Select(g => g.MaSanPham).FirstOrDefault()
                             })
                         } : null
                     }).ToList(),
@@ -139,55 +140,57 @@ namespace UltraStrore.Controllers
             {
                 return NotFound(new { message = "Không tìm thấy đơn hàng nào cho người dùng này." });
             }
+            var temp = ordersQuery;
+            //var orders = ordersQuery.Select(d => new
+            //{
+            //    d.MaDonHang,
+            //    d.TenNguoiNhan,
+            //    d.NgayDat,
+            //    d.TrangThaiDonHang,
+            //    d.TrangThaiThanhToan,
+            //    d.HinhThucThanhToan,
+            //    d.LyDoHuy,
+            //    d.TongTien,
+            //    FinalAmount = d.FinalAmount,
+            //    SanPhams = d.SanPhams.Select(cd => new
+            //    {
+            //        cd.MaChiTietDh,
+            //        cd.LaCombo,
+            //        cd.TenSanPham,
+            //        cd.SoLuong,
+            //        cd.Gia,
+            //        cd.ThanhTien,
+            //        cd.MaSanPham,
+            //        HinhAnh = cd.LaCombo
+            //            ? _context.ChiTietComBos
+            //                .Where(ct => ct.MaComBo == cd.MaCombo)
+            //                .Select(ct => ct.MaSanPhamNavigation.HinhAnhs.FirstOrDefault())
+            //                .FirstOrDefault().ToString()
+            //            : _context.HinhAnhs
+            //                .Where(h => h.MaSanPham == cd.MaSanPham)
+            //                .FirstOrDefault().ToString(),
+            //        Combo = cd.Combo != null ? new
+            //        {
+            //            cd.Combo.TenCombo,
+            //            cd.Combo.GiaCombo,
+            //            SanPhamsTrongCombo = cd.Combo.SanPhamsTrongCombo.Select(ct => new
+            //            {
+            //                ct.TenSanPham,
+            //                ct.SoLuong,
+            //                ct.Gia,
+            //                ct.ThanhTien,
+            //                HinhAnh = _context.HinhAnhs
+            //                    .Where(h => h.MaSanPham == ct.MaSanPham)
+            //                    .FirstOrDefault().ToString(),
+            //                ct.MaSanPham1
+            //            })
+            //        } : null
+            //    }).ToList(),
+            //    d.ThongTinNguoiDung,
+            //    d.ThongTinDonHang
+            //}).ToList();
 
-            var orders = ordersQuery.Select(d => new
-            {
-                d.MaDonHang,
-                d.TenNguoiNhan,
-                d.NgayDat,
-                d.TrangThaiDonHang,
-                d.TrangThaiThanhToan,
-                d.HinhThucThanhToan,
-                d.LyDoHuy,
-                d.TongTien,
-                FinalAmount = d.FinalAmount,
-                SanPhams = d.SanPhams.Select(cd => new
-                {
-                    cd.MaChiTietDh,
-                    cd.LaCombo,
-                    cd.TenSanPham,
-                    cd.SoLuong,
-                    cd.Gia,
-                    cd.ThanhTien,
-                    HinhAnh = cd.LaCombo
-                        ? _context.ChiTietComBos
-                            .Where(ct => ct.MaComBo == cd.MaCombo)
-                            .Select(ct => ct.MaSanPhamNavigation.HinhAnhs.FirstOrDefault())
-                            .FirstOrDefault()?.Link
-                        : _context.HinhAnhs
-                            .Where(h => h.MaSanPham == cd.MaSanPham)
-                            .FirstOrDefault()?.Link,
-                    Combo = cd.Combo != null ? new
-                    {
-                        cd.Combo.TenCombo,
-                        cd.Combo.GiaCombo,
-                        SanPhamsTrongCombo = cd.Combo.SanPhamsTrongCombo.Select(ct => new
-                        {
-                            ct.TenSanPham,
-                            ct.SoLuong,
-                            ct.Gia,
-                            ct.ThanhTien,
-                            HinhAnh = _context.HinhAnhs
-                                .Where(h => h.MaSanPham == ct.MaSanPham)
-                                .FirstOrDefault()?.Link
-                        })
-                    } : null
-                }).ToList(),
-                d.ThongTinNguoiDung,
-                d.ThongTinDonHang
-            }).ToList();
-
-            return Ok(orders);
+            return Ok(temp);
         }
 
         [HttpPut("approve/{id}")]

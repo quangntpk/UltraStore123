@@ -17,6 +17,8 @@ namespace UltraStrore.Models.ViewModels
         public DateTime? NgayBinhLuan { get; set; }
 
         public string? HinhAnh { get; set; }
+        public int? MaBlog { get; set; }
+        public int? MaCombo { get; set; }
 
     }
 }

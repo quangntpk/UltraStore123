@@ -44,7 +44,7 @@ namespace UltraStrore.Data
         public virtual DbSet<KichThuoc> KichThuocs { get; set; } = null!;
         public virtual DbSet<Blogs> Blog { get; set; } = null!;
         public DbSet<PendingOder> PendingOrders { get; set; }
-
+        public virtual DbSet<DonHangSupport> DonHangSupports { get; set; } = null!; 
         public virtual DbSet<Blogs> Blogs { get; set; } = null!;
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -62,6 +62,12 @@ namespace UltraStrore.Data
                 modelBuilder.Entity<PendingOder>()
                     .HasIndex(p => p.TempOrderId)
                     .IsUnique();
+            });
+            modelBuilder.Entity<DonHangSupport>(entity =>
+            {
+                modelBuilder.Entity<DonHangSupport>()
+                    .HasKey(p => p.ID);
+                entity.Property(e => e.ID).ValueGeneratedOnAdd();
             });
             modelBuilder.Entity<ChiTietGioHangSupport>(entity =>
             {
