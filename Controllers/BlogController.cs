@@ -32,7 +32,28 @@ namespace UltraStrore.Controllers
             }
         }
 
-        [HttpPost]
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetBlogById(int id)
+        {
+            var blog = await _blogServices.GetBlogById(id);
+            if (blog == null)
+                return NotFound();
+            return Ok(blog);
+        }
+
+        [HttpGet("slug/{slug}")]
+        public async Task<IActionResult> GetBlogBySlug(string slug)
+        {
+            if (string.IsNullOrWhiteSpace(slug))
+                return BadRequest("Slug cannot be empty");
+
+            var blog = await _blogServices.GetBlogBySlug(slug);
+            if (blog == null)
+                return NotFound();
+            return Ok(blog);
+        }
+
+        [HttpPost("CreateBlog")]
         public async Task<ActionResult<BlogView>> CreateBlog([FromBody] BlogCreate blogCreate)
         {
             try

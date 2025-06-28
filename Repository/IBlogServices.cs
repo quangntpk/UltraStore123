@@ -14,5 +14,8 @@ namespace UltraStrore.Repository
         Task<BlogView> CreateBlog(BlogCreate blogCreate);
         Task<BlogView> EditBlog(BlogEdit blogEdit);
         Task<bool> DeleteBlog(int maBlog);
+        Task<BlogView?> GetBlogById(int maBlog);
+        Task <BlogView> GetBlogBySlug(string slug);
+
     }
 }

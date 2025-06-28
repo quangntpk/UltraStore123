@@ -73,6 +73,96 @@ namespace UltraStrore.Services
 
         public async Task<BinhLuanView> AddBinhLuan(BinhLuanCreate binhLuan)
         {
+            // Danh sách từ ngữ thô tục
+            var badWords = new List<string>
+    {
+
+        "lồn", "cặc", "địt", "chịch", "buồi", "đụ", "đéo", "điếm", "bitch", "fuck",
+        "dick", "pussy", "asshole", "motherfucker", "cu", "chó chết", "dâm", "ngu",
+        "vl", "dm", "clgt", "vcl", "phò", "đĩ", "khốn nạn", "con mẹ mày", "đéo mẹ",
+        "nứng", "tổ sư", "mẹ kiếp", "bố mày", "liếm lồn", "liếm cặc", "óc chó",
+        "cave", "đm", "wtf", "fucking", "shit", "cum", "slut", "whore", "tits",
+        "boobs", "rape", "jerk", "suck", "balls", "blowjob", "handjob", "faggot",
+        "gay", "lesbian", "dildo", "vagina", "penis", "anus", "scum", "bastard",
+        "đĩ mẹ", "đụ mẹ", "đụ cha", "đụ bà", "mẹ cha", "đù", "fuck you", "đéo hiểu",
+        "mẹ nó", "fuck off", "cút", "get lost", "piss off", "liếm buồi", "bú cặc",
+        "bú lồn", "bố láo", "chó má", "súc vật", "mất dạy", "khốn", "khốn kiếp",
+        "mẹ kiếp", "thằng khốn", "con khốn", "dickhead", "cunt", "shithead", "piss",
+        "pissing", "screw you", "goddamn", "son of a bitch", "sonofabitch", "dirty",
+        "mothafucka", "jackass", "douchebag", "retard", "fuckface", "cock", "shitbag",
+        "fuckwit", "fuckstick", "arsehole", "tosser", "bloody hell", "cuntface",
+        "ballsack", "fucker", "dickhead", "bitchface", "ho", "cumdumpster", "dickwad",
+        "twat", "shitfaced", "cockface", "gobshite", "bollocks", "minger", "arse",
+        "knobhead", "twatwaffle", "dumbfuck", "shitcunt", "cumslut", "wanker", "prick",
+        "fucknugget", "fuckhead", "dickweasel", "cockmongler", "dickfucker", "shitweasel",
+        "fucksocks", "fucksponge", "fuckbiscuit", "fuckbucket", "cumguzzler", "cockjockey",
+        "shitbrick", "cumbucket", "fucktard", "dicknose", "shitstain", "craphole",
+        "fuckpile", "shitstick", "fuckbunny", "fuckrag", "fuckknuckle", "shitsmear",
+        "cocksucker", "cocksplat",
+
+        "đít", "lỗ đít", "cứt", "đù má", "đéo thèm", "mẹ mày", "bố láo bố lếu",
+        "con đĩ", "thằng chó", "con chó", "đồ ngu", "ngốc", "đần", "hãm", "lỗn",
+        "đầu buồi", "bú buồi", "đụ con mẹ", "địt mẹ", "địt cha", "đéo cần",
+        "cặc lồn", "vãi lồn", "vãi cặc", "đéo chịu", "mẹ cha mày", "đồ súc sinh",
+        "thằng đần", "con đần", "đồ mất dạy", "khốn nạn kiếp", "đéo ra gì",
+        "cặc gì", "lồn gì", "đù mẹ", "đồ đểu", "thằng đểu", "con đểu",
+        "đéo đáng", "mẹ mày chứ", "bố mẹ mày", "đù cha", "đéo thằng nào",
+        "vãi đái", "đái bậy", "ỉa bậy", "đồ khốn", "thằng ngu", "con ngu",
+        "mẹ kiếp đời",
+
+        "đồ dỏm", "hàng giả", "hàng đểu", "lừa đảo", "đồ lừa", "bán đồ rởm",
+        "dịch vụ tệ", "dịch vụ như cứt", "thái độ lồi lõm", "nhân viên ngu",
+        "đồ thối", "hàng thối", "chất lượng như lồn", "đồ cùi", "hàng cùi bắp",
+        "lừa tiền", "ăn cắp tiền", "bán đồ như cứt", "đồ rẻ rách", "hàng rẻ tiền",
+        "đồ vứt đi", "hàng như rác", "dịch vụ như hạch", "bán hàng đểu", "hàng dởm",
+        "đồ giả mạo", "bán hàng lừa", "chất lượng rác", "đồ tồi", "hàng tồi",
+        "dịch vụ khốn nạn", "nhân viên đểu", "thái độ như cứt", "bán đồ hỏng",
+        "hàng hỏng", "đồ lỗi", "bán hàng lỗi", "lừa khách", "đéo đáng tiền",
+        "đồ đắt cắt cổ", "hàng kém", "chất lượng kém", "bán đồ kém", "đồ đểu cáng",
+        "hàng như hạch", "dịch vụ dởm", "nhân viên láo", "thái độ láo",
+        "bán hàng giả", "đồ không xài được", "hàng vớ vẩn", "đồ vớ vẩn",
+        "bán đồ vớ vẩn", "dịch vụ lừa đảo", "nhân viên khốn", "thái độ khốn",
+        "bán hàng đéo ra gì", "đồ rởm rít", "hàng rởm rít", "đồ dở hơi",
+        "bán đồ dở hơi", "hàng không ra gì", "đồ như đồ bỏ", "bán đồ bỏ",
+        "dịch vụ chó má", "nhân viên chó má", "thái độ chó má", "bán hàng ngu",
+        "đồ ngu xuẩn", "hàng ngu xuẩn", "đồ không đáng tiền", "bán đồ cắt cổ",
+        "hàng cắt cổ", "đồ lừa gạt", "bán hàng lừa gạt", "dịch vụ đểu cáng",
+        "nhân viên đểu cáng", "thái độ đểu cáng", "bán hàng như lồn", "đồ tào lao",
+        "hàng tào lao", "đồ bèo nhèo", "bán đồ bèo nhèo", "hàng bèo nhèo",
+        "đồ không giống quảng cáo", "bán hàng khác quảng cáo", "dịch vụ ngu xuẩn",
+        "nhân viên ngu dốt", "thái độ ngu dốt", "bán hàng dối trá", "đồ dối trá",
+        "hàng dối trá", "đồ không đúng mô tả", "bán hàng không đúng mô tả",
+        "dịch vụ tào lao", "nhân viên tào lao", "thái độ tào lao"
+    };
+
+            // Hàm tiền xử lý để làm sạch nội dung bình luận
+            string CleanComment(string comment)
+            {
+                if (string.IsNullOrEmpty(comment)) return comment;
+
+                // Danh sách ký tự đặc biệt cần loại bỏ hoặc thay bằng khoảng trắng
+                char[] specialChars = { '@', '!', '#', '$', '%', '^', '.', '?', ':', '"', '<', '>', '*', '&', '(', ')', '-', '_', '+', '=', '[', ']', '{', '}', '|', '\\', '/', ',', ';' };
+
+                // Chuyển về chữ thường
+                string cleaned = comment.ToLower();
+
+                // Thay thế ký tự đặc biệt bằng khoảng trắng
+                foreach (var c in specialChars)
+                {
+                    cleaned = cleaned.Replace(c.ToString(), " ");
+                }
+
+                // Thay thế nhiều khoảng trắng liên tiếp bằng một khoảng trắng
+                cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"\s+", " ");
+
+                // Loại bỏ khoảng trắng ở đầu và cuối
+                return cleaned.Trim();
+            }
+
+            // Kiểm tra từ ngữ thô tục
+            string cleanedComment = CleanComment(binhLuan.NoiDungBinhLuan);
+            bool containsBadWords = badWords.Any(word => cleanedComment.Contains(word.ToLower()));
+
             // Tạo một đối tượng BinhLuan từ BinhLuanCreate
             var newBinhLuan = new BinhLuan
             {
@@ -81,7 +171,7 @@ namespace UltraStrore.Services
                 NoiDungBinhLuan = binhLuan.NoiDungBinhLuan,
                 SoTimBinhLuan = binhLuan.SoTimBinhLuan ?? 0, // Giá trị mặc định nếu null
                 DanhGia = binhLuan.DanhGia,
-                TrangThai = 0, // Giá trị mặc định nếu null
+                TrangThai = containsBadWords ? 0 : 1, // 0 nếu có từ thô tục, 1 nếu không
                 NgayBinhLuan = binhLuan.NgayBinhLuan ?? DateTime.Now // Gán ngày hiện tại nếu null
             };
 
@@ -111,7 +201,7 @@ namespace UltraStrore.Services
                 NoiDungBinhLuan = newBinhLuan.NoiDungBinhLuan,
                 SoTimBinhLuan = newBinhLuan.SoTimBinhLuan,
                 DanhGia = newBinhLuan.DanhGia,
-                TrangThai = 0,
+                TrangThai = newBinhLuan.TrangThai,
                 NgayBinhLuan = newBinhLuan.NgayBinhLuan,
                 HinhAnh = nguoiDung != null && nguoiDung.HinhAnh != null
                     ? $"data:image/jpeg;base64,{Convert.ToBase64String(nguoiDung.HinhAnh)}"
@@ -246,6 +336,6 @@ namespace UltraStrore.Services
         }
     }
 
-  
-   
+
+
 }

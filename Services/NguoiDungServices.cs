@@ -284,6 +284,11 @@ namespace UltraStrore.Services
             if (!PasswordHasher.VerifyPassword(model.MatKhau, user.MatKhau))
                 throw new Exception("Mật khẩu không đúng.");
 
+            if (user.Isveryfied == false)
+            {
+                throw new Exception("Tài khoản chưa được kích hoạt. Vui lòng nhập OTP để kích hoạt.");
+            }
+
             var userView = new NguoiDungView
             {
                 MaNguoiDung = user.MaNguoiDung,
@@ -293,7 +298,8 @@ namespace UltraStrore.Services
                 VaiTro = user.VaiTro,
                 TrangThai = user.TrangThai,
                 NgayTao = user.NgayTao,
-                GioiTinh = user.GioiTinh
+                GioiTinh = user.GioiTinh,
+                Isveryfied = user.Isveryfied
             };
 
             var token = _jwtTokenGenerator.GenerateToken(userView);
@@ -417,7 +423,9 @@ namespace UltraStrore.Services
             }
 
             string hashedPassword = PasswordHasher.HashPassword(newPassword);
+
             user.MatKhau = hashedPassword;
+            user.Isveryfied = true;
             user.Otp = null;
             user.OtpExpiry = null;
             await _context.SaveChangesAsync();

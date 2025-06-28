@@ -82,12 +82,23 @@ namespace UltraStrore
             // Định nghĩa chính sách CORS
             builder.Services.AddCors(options =>
             {
-                options.AddPolicy("AllowAll", builder =>
+                options.AddPolicy("AllowAll", corsBuilder =>
                 {
-                    builder.WithOrigins("http://localhost:8080") // Origin của frontend
-                           .AllowAnyMethod()
-                           .AllowAnyHeader()
-                           .AllowCredentials(); // Quan trọng: Cho phép credentials
+                    corsBuilder
+                        .SetIsOriginAllowed(origin =>
+                        {
+                            if (origin.Contains("localhost"))
+                                return true;
+
+                            if (origin == "https://fashionhub.name.vn"
+                                || origin == "https://admin.your-production-domain.com")
+                                return true;
+
+                            return false;
+                        })
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .AllowCredentials();
                 });
             });
 

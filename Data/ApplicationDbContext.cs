@@ -42,6 +42,7 @@ namespace UltraStrore.Data
         public virtual DbSet<ChiTietGioHangSupport> GioHangSupports { get; set; }
         public virtual DbSet<GiaoDien> GiaoDiens { get; set; } = null!;
         public virtual DbSet<KichThuoc> KichThuocs { get; set; } = null!;
+        public virtual DbSet<Blogs> Blog { get; set; } = null!;
         public DbSet<PendingOder> PendingOrders { get; set; }
 
         public virtual DbSet<Blogs> Blogs { get; set; } = null!;
@@ -134,6 +135,37 @@ namespace UltraStrore.Data
                 entity.Property(e => e.SoTimBinhLuan).HasColumnName("so_binh_luan");
 
 
+            });
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Blogs>(entity =>
+            {
+                entity.HasKey(b => b.MaBlog);
+
+                entity.Property(b => b.TieuDe)
+                      .HasMaxLength(255);
+
+                entity.Property(b => b.Slug)
+                      .HasMaxLength(255);
+
+                entity.HasIndex(b => b.Slug)
+                      .IsUnique();
+
+                entity.Property(b => b.MetaTitle)
+                      .HasMaxLength(255);
+
+                entity.Property(b => b.MetaDescription)
+                      .HasMaxLength(500);
+
+                entity.Property(b => b.MoTaHinhAnh)
+                      .HasMaxLength(255);
+
+                // Chuyển Tags thành JSON string khi lưu vào DB
+                entity.Property(b => b.Tags)
+                      .HasConversion(
+                          v => string.Join(",", v ?? new List<string>()),
+                          v => v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
+                      );
             });
             modelBuilder.Entity<ChiTietComBo>(entity =>
             {
