@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using UltraStrore.Controllers;
 using UltraStrore.Data;
 using UltraStrore.Helper;
 using UltraStrore.Hubs;
@@ -25,6 +26,8 @@ namespace UltraStrore
             builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
             builder.Services.AddScoped<IGHNService, GHNService>();
             builder.Services.AddHttpClient();
+
+            builder.Services.AddScoped<IOrderNotificationService, OrderNotificationService>();
 
             builder.Services.AddScoped<IGeminiServices, GeminiServices>();
             builder.Services.AddScoped<ICartServices, CartServices>();

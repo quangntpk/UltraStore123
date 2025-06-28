@@ -18,6 +18,14 @@ namespace UltraStrore.Services
             _configuration = configuration;
         }
 
+
+        public Task SendOrderStatusNotificationAsync(string email, int orderId, string statusMessage)
+        {
+   
+            return Task.CompletedTask;
+        }
+
+
         public async Task SendOtpEmailAsync(string email, string otp)
         {
             var emailSettings = _configuration.GetSection("EmailSettings");

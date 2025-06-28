@@ -224,7 +224,7 @@ namespace UltraStrore.Controllers
                 .ThenInclude(sp => sp.HinhAnhs)
                 .Select(d => new
                 {
-                    Id =   d.MaDonHang,
+                    Id = d.MaDonHang,
                     Date = d.NgayDat != null ? d.NgayDat.Value.ToString("yyyy-MM-dd") : "",
                     Status = d.TrangThaiDonHang == TrangThaiDonHang.ChuaXacNhan ? "pending" :
                              d.TrangThaiDonHang == TrangThaiDonHang.DangXuLy ? "processing" :
@@ -311,5 +311,52 @@ namespace UltraStrore.Controllers
             await _context.SaveChangesAsync();
             return Ok(new { message = "Hủy đơn thành công" });
         }
+
+
+        // GET: api/user/orders/bill/{orderId}
+        [HttpGet("bill/{orderId}")]
+        [AllowAnonymous] 
+        public async Task<IActionResult> GetOrderByOrderId(int orderId)
+        {
+            var donHang = await _context.DonHangs
+                .Include(d => d.ChiTietDonHangs)
+                    .ThenInclude(ct => ct.MaSanPhamNavigation)
+                        .ThenInclude(sp => sp.HinhAnhs)
+                .FirstOrDefaultAsync(d => d.MaDonHang == orderId);
+
+            if (donHang == null)
+            {
+                return NotFound(new { message = "Không tìm thấy đơn hàng." });
+            }
+
+            return Ok(new
+            {
+                maDonHang = donHang.MaDonHang,
+                tenNguoiNhan = donHang.TenNguoiNhan,
+                sdt = donHang.Sdt,
+                diaChi = donHang.DiaChi,
+                finalAmount = donHang.FinalAmount,
+                discountAmount = donHang.DiscountAmount,
+                shippingFee = donHang.ShippingFee,
+                ngayDat = donHang.NgayDat,
+                chiTietDonHangs = donHang.ChiTietDonHangs.Select(ct => new
+                {
+                    soLuong = ct.SoLuong,
+                    gia = ct.Gia,
+                    thanhTien = ct.ThanhTien,
+                    maSanPhamNavigation = ct.MaSanPhamNavigation != null ? new
+                    {
+                        tenSanPham = ct.MaSanPhamNavigation.TenSanPham,
+                        hinhAnhs = ct.MaSanPhamNavigation.HinhAnhs.Select(h => new {
+                            link = !string.IsNullOrEmpty(h.Link) ? h.Link :
+                        (h.Data != null ? $"data:image/jpeg;base64,{Convert.ToBase64String(h.Data)}" : null)
+                        }).ToList()
+
+                    } : null
+                }).ToList()
+            });
+        }
+
+
     }
 }

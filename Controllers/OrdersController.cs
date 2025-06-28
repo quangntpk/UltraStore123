@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UltraStrore.Data;
+using System.Security.Claims;
+
 
 namespace UltraStrore.Controllers
 {
@@ -18,16 +20,16 @@ namespace UltraStrore.Controllers
             _context = context;
         }
 
-        // GET: api/orders
+
         [HttpGet]
         public async Task<IActionResult> GetOrders()
         {
             var orders = await _context.DonHangs
                 .Include(d => d.MaNguoiDungNavigation)
                 .Include(d => d.ChiTietDonHangs)
-                .ThenInclude(cd => cd.MaSanPhamNavigation)
+                    .ThenInclude(cd => cd.MaSanPhamNavigation)
                 .Include(d => d.ChiTietDonHangs)
-                .ThenInclude(cd => cd.MaComboNavigation)
+                    .ThenInclude(cd => cd.MaComboNavigation)
                 .Select(d => new
                 {
                     MaDonHang = d.MaDonHang,
@@ -39,15 +41,24 @@ namespace UltraStrore.Controllers
                     LyDoHuy = d.LyDoHuy,
                     TongTien = d.ChiTietDonHangs.Sum(cd => cd.ThanhTien ?? 0),
                     FinalAmount = d.FinalAmount,
+
+                    // Lấy tên sản phẩm hoặc combo đầu tiên
                     TenSanPhamHoacCombo = d.ChiTietDonHangs.Select(cd => cd.MaCombo != null
-                        ? cd.MaComboNavigation != null ? cd.MaComboNavigation.TenComBo : "Combo không tồn tại"
-                        : cd.MaSanPhamNavigation != null ? cd.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại")
-                        .FirstOrDefault()
+                        ? (cd.MaComboNavigation != null ? cd.MaComboNavigation.TenComBo : "Combo không tồn tại")
+                        : (cd.MaSanPhamNavigation != null ? cd.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại"))
+                        .FirstOrDefault(),
+
+                    // Đây là mã người duyệt đơn (nếu có)
+                    MaNguoiDung = d.MaNguoiDung,
+                    HoTenNguoiDuyet = d.MaNguoiDungNavigation != null ? d.MaNguoiDungNavigation.HoTen : null
                 })
+                .AsNoTracking()
                 .ToListAsync();
 
             return Ok(orders);
         }
+
+
 
         // GET: api/orders/{id}
         [HttpGet("{id}")]
@@ -179,22 +190,35 @@ namespace UltraStrore.Controllers
             return Ok(orders);
         }
 
-        // PUT: api/orders/approve/{id}
         [HttpPut("approve/{id}")]
         public async Task<IActionResult> ApproveOrder(int id)
         {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
             var order = await _context.DonHangs
                 .Include(d => d.ChiTietDonHangs)
                 .ThenInclude(cd => cd.MaComboNavigation)
-                .ThenInclude(c => c.ChiTietComBos)
                 .FirstOrDefaultAsync(d => d.MaDonHang == id);
 
             if (order == null)
-            {
                 return NotFound(new { message = "Đơn hàng không tồn tại" });
+
+            // Phân quyền: nếu không phải admin thì kiểm tra nhân viên được phép xử lý
+            if (userRole != "1")
+            {
+                if (!string.IsNullOrEmpty(order.MaNhanVien))
+                {
+                    if (order.MaNhanVien != userId)
+                        return Forbid("Đơn hàng đã được xử lý bởi nhân viên khác.");
+                }
+                else
+                {
+                    order.MaNhanVien = userId;
+                }
             }
 
-            // Kiểm tra trạng thái đơn hàng
+            // Chỉ duyệt nếu trạng thái hợp lệ
             if (order.TrangThaiDonHang != TrangThaiDonHang.ChuaXacNhan &&
                 order.TrangThaiDonHang != TrangThaiDonHang.DangXuLy &&
                 order.TrangThaiDonHang != TrangThaiDonHang.DangGiaoHang)
@@ -202,126 +226,22 @@ namespace UltraStrore.Controllers
                 return BadRequest(new { message = "Không thể duyệt đơn hàng ở trạng thái này" });
             }
 
-            // Kiểm tra số lượng tồn kho
-            foreach (var chiTiet in order.ChiTietDonHangs)
+            // Cập nhật trạng thái đơn hàng (tăng lên một cấp)
+            order.TrangThaiDonHang = (TrangThaiDonHang)((int)order.TrangThaiDonHang + 1);
+
+            // Nếu đã giao hàng thì đánh dấu là đã thanh toán
+            if (order.TrangThaiDonHang == TrangThaiDonHang.DaGiaoHang)
             {
-                if (chiTiet.MaCombo != null)
-                {
-                    // Nếu là combo
-                    var combo = chiTiet.MaComboNavigation;
-                    if (combo == null)
-                    {
-                        return BadRequest(new { message = $"Combo {chiTiet.MaCombo} không tồn tại" });
-                    }
-
-                    // Kiểm tra số lượng tồn kho của combo
-                    if (combo.SoLuong < chiTiet.SoLuong)
-                    {
-                        return BadRequest(new { message = $"Số lượng tồn kho của combo {combo.TenComBo} không đủ (còn {combo.SoLuong})" });
-                    }
-
-                    // Kiểm tra số lượng tồn kho của các sản phẩm trong combo
-                    foreach (var chiTietCombo in combo.ChiTietComBos)
-                    {
-                        // Lấy mã sản phẩm cơ bản (ví dụ: Q00001)
-                        var baseProductCode = chiTietCombo.MaSanPham;
-
-                        // Tìm sản phẩm trong bảng SanPham có mã bắt đầu bằng baseProductCode
-                        var sanPham = await _context.SanPhams
-                            .FirstOrDefaultAsync(p => p.MaSanPham.StartsWith(baseProductCode));
-
-                        if (sanPham == null)
-                        {
-                            return BadRequest(new { message = $"Sản phẩm {baseProductCode} trong combo không tồn tại" });
-                        }
-
-                        int soLuongCan = (chiTietCombo.SoLuong ?? 0) * (chiTiet.SoLuong ?? 0); // Số lượng cần cho mỗi sản phẩm trong combo
-                        if (sanPham.SoLuong < soLuongCan)
-                        {
-                            return BadRequest(new { message = $"Số lượng tồn kho của sản phẩm {sanPham.TenSanPham} trong combo không đủ (còn {sanPham.SoLuong})" });
-                        }
-                    }
-                }
-                else
-                {
-                    // Nếu là sản phẩm đơn lẻ
-                    var sanPham = await _context.SanPhams
-                        .FirstOrDefaultAsync(p => p.MaSanPham == chiTiet.MaSanPham);
-
-                    if (sanPham == null)
-                    {
-                        return BadRequest(new { message = $"Sản phẩm {chiTiet.MaSanPham} không tồn tại" });
-                    }
-
-                    if (sanPham.SoLuong < chiTiet.SoLuong)
-                    {
-                        return BadRequest(new { message = $"Số lượng tồn kho của sản phẩm {sanPham.TenSanPham} không đủ (còn {sanPham.SoLuong})" });
-                    }
-                }
+                order.TrangThaiHang = TrangThaiThanhToan.ThanhToanVNPay;
             }
 
-            // Nếu số lượng đủ, cập nhật tồn kho
-            using (var transaction = await _context.Database.BeginTransactionAsync())
-            {
-                try
-                {
-                    foreach (var chiTiet in order.ChiTietDonHangs)
-                    {
-                        if (chiTiet.MaCombo != null)
-                        {
-                            // Cập nhật số lượng tồn kho của combo
-                            var combo = chiTiet.MaComboNavigation;
-                            if (combo != null)
-                            {
-                                combo.SoLuong -= chiTiet.SoLuong;
-                            }
+            _context.DonHangs.Update(order);
+            await _context.SaveChangesAsync();
 
-                            // Cập nhật số lượng tồn kho của các sản phẩm trong combo
-                            foreach (var chiTietCombo in combo.ChiTietComBos)
-                            {
-                                // Tìm sản phẩm có mã bắt đầu bằng baseProductCode
-                                var baseProductCode = chiTietCombo.MaSanPham;
-                                var sanPham = await _context.SanPhams
-                                    .FirstOrDefaultAsync(p => p.MaSanPham.StartsWith(baseProductCode));
-
-                                if (sanPham != null)
-                                {
-                                    int soLuongCan = (chiTietCombo.SoLuong ?? 0) * (chiTiet.SoLuong ?? 0);
-                                    sanPham.SoLuong -= soLuongCan;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            // Cập nhật số lượng tồn kho của sản phẩm
-                            var sanPham = await _context.SanPhams
-                                .FirstOrDefaultAsync(p => p.MaSanPham == chiTiet.MaSanPham);
-
-                            if (sanPham != null)
-                            {
-                                sanPham.SoLuong -= chiTiet.SoLuong;
-                            }
-                        }
-                    }
-
-                    // Cập nhật trạng thái đơn hàng
-                    order.TrangThaiDonHang = (TrangThaiDonHang)((int)order.TrangThaiDonHang + 1);
-                    if (order.TrangThaiDonHang == TrangThaiDonHang.DaGiaoHang)
-                    {
-                        order.TrangThaiHang = TrangThaiThanhToan.ThanhToanVNPay;
-                    }
-
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-                    return Ok(new { message = "Duyệt đơn thành công" });
-                }
-                catch
-                {
-                    await transaction.RollbackAsync();
-                    throw;
-                }
-            }
+            return Ok(new { message = "Duyệt đơn thành công" });
         }
+
+
 
         // PUT: api/orders/cancel/{id}
         [HttpPut("cancel/{id}")]

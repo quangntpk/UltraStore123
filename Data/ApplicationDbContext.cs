@@ -240,6 +240,8 @@ namespace UltraStrore.Data
                 entity.HasOne(d => d.MaNguoiDungNavigation).WithMany(p => p.DanhSachDiaChis)
                     .HasForeignKey(d => d.MaNguoiDung)
                     .HasConstraintName("FK_DANH_SACH_DIA_CHI_NGUOI_DUNG");
+
+
             });
 
             modelBuilder.Entity<DonHang>(entity =>
@@ -780,6 +782,13 @@ namespace UltraStrore.Data
                     .WithMany(p => p.DonHangMaNguoiDungNavigations)
                     .HasForeignKey(d => d.MaNguoiDung)
                     .HasConstraintName("FK_DON_HANG_NGUOI_DUNG1");
+
+                entity.HasOne(d => d.MaNhanVienNavigation)
+                    .WithMany(p => p.DonHangMaNhanVienNavigations)
+                    .HasForeignKey(d => d.MaNhanVien)
+                    .HasPrincipalKey(nd => nd.MaNguoiDung)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasConstraintName("FK_DonHang_NhanVien");
             });
 
             modelBuilder.Entity<GioHang>(entity =>

@@ -1,11 +1,13 @@
 ﻿
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace UltraStrore.Data
 {
     public partial class NguoiDung
     {
+        [Key]
         public string? MaNguoiDung { get; set; }
         public string? HoTen { get; set; }
         public DateTime? NgaySinh { get; set; }
@@ -30,6 +32,9 @@ namespace UltraStrore.Data
         public virtual ICollection<DanhSachDiaChi> DanhSachDiaChis { get; set; }
         public virtual ICollection<DonHang> DonHangMaNguoiDungNavigations { get; set; }
         public virtual ICollection<GioHang> GioHangs { get; set; }
+
+        public virtual ICollection<DonHang> DonHangMaNhanVienNavigations { get; set; } = new List<DonHang>();
+
 
         public ICollection<TinNhan> TinNhanGui { get; set; }   // Tin nhắn người dùng gửi
         public ICollection<TinNhan> TinNhanNhan { get; set; }

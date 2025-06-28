@@ -8,6 +8,7 @@ namespace UltraStrore.Data
         public int MaDonHang { get; set; }
         public string? MaNguoiDung { get; set; }
         public string? MaNhanVien { get; set; }
+        public virtual NguoiDung? MaNhanVienNavigation { get; set; }
         public DateTime? NgayDat { get; set; }
         public TrangThaiDonHang TrangThaiDonHang { get; set; }
         public TrangThaiThanhToan TrangThaiHang { get; set; }
