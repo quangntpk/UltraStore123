@@ -79,22 +79,22 @@ namespace UltraStrore.Services
 
         public async Task<List<SanPham>> SanPhamByID(string? id)
         {
-           
+
             var ListSanPham = _context.SanPhams.Where(g => g.MaSanPham.Contains(id)).ToList();
             return ListSanPham;
-            
+
         }
-        public async Task<List<SanPhamByIDSorted>> SanPhamByIDSorteds (string? id)
+        public async Task<List<SanPhamByIDSorted>> SanPhamByIDSorteds(string? id)
         {
             List<SanPhamByIDSorted> listsp = new List<SanPhamByIDSorted>();
-            var nhomSanPham = _context.SanPhams.Where(g=>g.MaSanPham.Contains(id)).GroupBy(s => s.MaSanPham.Substring(0, 13)).ToList();
+            var nhomSanPham = _context.SanPhams.Where(g => g.MaSanPham.Contains(id)).GroupBy(s => s.MaSanPham.Substring(0, 13)).ToList();
             foreach (var nhom in nhomSanPham)
             {
                 var sanPhamDauTien = nhom.First();
                 var HinhAnhSanPhamList = _context.HinhAnhs.Where(g => g.MaSanPham.Substring(0, 6) == sanPhamDauTien.MaSanPham.Substring(0, 6)).Select(g => g.TenHinhAnh).ToList();
                 var listMauSac = sanPhamDauTien.MaSanPham.Split('_')[1];
                 List<SanPhamEditDetail> detailedit = new List<SanPhamEditDetail>();
-                foreach(var item in nhom)
+                foreach (var item in nhom)
                 {
                     SanPhamEditDetail ed = new SanPhamEditDetail();
                     ed.KichThuoc = item.KichThuoc;
@@ -102,18 +102,18 @@ namespace UltraStrore.Services
                         ed.SoLuong = item.SoLuong - item.SoLuongDaBan ?? 0;
                     else
                         ed.SoLuong = item.SoLuong;
-                    ed.Gia = item.Gia?? 0;
+                    ed.Gia = item.Gia ?? 0;
                     detailedit.Add(ed);
-                }    
+                }
                 var tongSoLuong = nhom.Sum(sp => sp.SoLuong);
-                var MaLoai = _context.LoaiSanPhams.Where(g=>g.MaLoaiSanPham==sanPhamDauTien.MaLoaiSanPham).Select(g=>g.TenLoaiSanPham).FirstOrDefault();
-                var ThuongHieu = _context.ThuongHieus.Where(g=>g.MaThuongHieu==sanPhamDauTien.MaThuongHieu).Select(g=>g.TenThuongHieu).FirstOrDefault();
-                var HinhAnh = _context.HinhAnhs.Where(g => g.MaSanPham.Trim() == sanPhamDauTien.MaSanPham.Substring(0, 6).Trim()).Select(g=>g.Data).ToList();
+                var MaLoai = _context.LoaiSanPhams.Where(g => g.MaLoaiSanPham == sanPhamDauTien.MaLoaiSanPham).Select(g => g.TenLoaiSanPham).FirstOrDefault();
+                var ThuongHieu = _context.ThuongHieus.Where(g => g.MaThuongHieu == sanPhamDauTien.MaThuongHieu).Select(g => g.TenThuongHieu).FirstOrDefault();
+                var HinhAnh = _context.HinhAnhs.Where(g => g.MaSanPham.Trim() == sanPhamDauTien.MaSanPham.Substring(0, 6).Trim()).Select(g => g.Data).ToList();
                 listsp.Add(new SanPhamByIDSorted
                 {
                     ID = sanPhamDauTien.MaSanPham.Substring(0, 13),
                     TenSanPham = sanPhamDauTien.TenSanPham,
-                    MauSac = listMauSac,                   
+                    MauSac = listMauSac,
                     LoaiSanPham = MaLoai,
                     MaThuongHieu = ThuongHieu,
                     Details = detailedit,
@@ -162,7 +162,7 @@ namespace UltraStrore.Services
                         SanPhamEdited.MaLoaiSanPham = item.MaLoaiSanPham;
                         SanPhamEdited.MaThuongHieu = item.MaThuongHieu;
                         SanPhamEdited.KichThuoc = item.KichThuoc;
-                        if (SanPhamEdited.SoLuongDaBan != null||SanPhamEdited.SoLuongDaBan==0)
+                        if (SanPhamEdited.SoLuongDaBan != null || SanPhamEdited.SoLuongDaBan == 0)
                             SanPhamEdited.SoLuong = SanPhamEdited.SoLuongDaBan + item.SoLuong;
                         else
                             SanPhamEdited.SoLuong = item.SoLuong;
@@ -177,38 +177,39 @@ namespace UltraStrore.Services
                         _context.SanPhams.Add(item);
                     }
                 }
-                foreach(var item in SanPhamNotEdited)
+                foreach (var item in SanPhamNotEdited)
                 {
                     bool Found = false;
-                    for (int i = 0; i < EditCheck.Count(); i++) 
+                    for (int i = 0; i < EditCheck.Count(); i++)
                     {
-                        if(EditCheck[i].MaSanPham == item.MaSanPham)
+                        if (EditCheck[i].MaSanPham == item.MaSanPham)
                         {
                             Found = true;
                             break;
                         }
                     }
-                    if (!Found) 
+                    if (!Found)
                     {
                         item.SoLuong = item.SoLuongDaBan;
                         _context.SanPhams.Update(item);
-                    }                                             
+                    }
                 }
                 var HinhDelete = _context.HinhAnhs.Where(g => g.MaSanPham.Contains(data[0].ID.Trim())).ToList();
                 _context.HinhAnhs.RemoveRange(HinhDelete);
-                foreach(var item in data[0].HinhAnhs)
+                foreach (var item in data[0].HinhAnhs)
                 {
                     HinhAnh newHinhAnh = new HinhAnh();
                     newHinhAnh.TenHinhAnh = data[0].TenSanPham;
                     newHinhAnh.Data = item;
                     newHinhAnh.MaSanPham = data[0].ID;
                     _context.HinhAnhs.Add(newHinhAnh);
-                }    
+                }
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 response.ResponseCode = 200;
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
 
                 response.ErrorMessage = ex.Message;
                 response.ResponseCode = 400;
@@ -233,13 +234,13 @@ namespace UltraStrore.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                for (int i=0;i <data.Count();i++) 
+                for (int i = 0; i < data.Count(); i++)
                 {
-                    foreach(var item in data[i].Details)
+                    foreach (var item in data[i].Details)
                     {
                         SanPham sp = new SanPham();
                         sp.TenSanPham = data[i].TenSanPham;
-                        sp.MaSanPham = KiHieu.KiHieu.ToString().Trim() + Max.ToString("00000").Trim()+ "_"+data[i].MauSac.Trim()+"_"+item.KichThuoc.Trim();
+                        sp.MaSanPham = KiHieu.KiHieu.ToString().Trim() + Max.ToString("00000").Trim() + "_" + data[i].MauSac.Trim() + "_" + item.KichThuoc.Trim();
                         sp.Gia = item.Gia;
                         sp.SoLuong = item.SoLuong;
                         sp.ChatLieu = data[i].ChatLieu;
@@ -253,7 +254,7 @@ namespace UltraStrore.Services
                         _context.SanPhams.Add(sp);
                     }
                 }
-                foreach(var item in data[0].HinhAnhs)
+                foreach (var item in data[0].HinhAnhs)
                 {
                     HinhAnh newHA = new HinhAnh();
                     newHA.TenHinhAnh = data[0].TenSanPham + 1;
@@ -264,8 +265,8 @@ namespace UltraStrore.Services
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 response.ResponseCode = 200;
-            }           
-            catch(Exception ex) 
+            }
+            catch (Exception ex)
             {
                 response.ErrorMessage = ex.Message;
                 response.ResponseCode = 400;
@@ -278,9 +279,9 @@ namespace UltraStrore.Services
             APIResponse response = new APIResponse();
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
-            {                
+            {
                 var SanPham = _context.SanPhams.Where(g => g.MaSanPham.Contains(id)).ToList();
-                foreach(var Sp in SanPham)
+                foreach (var Sp in SanPham)
                 {
                     Sp.TrangThai = 0;
                     _context.SanPhams.Update(Sp);
@@ -289,7 +290,7 @@ namespace UltraStrore.Services
                 await transaction.CommitAsync();
                 response.ResponseCode = 200;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 response.ErrorMessage = ex.Message;
                 response.ResponseCode = 400;
