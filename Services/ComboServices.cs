@@ -93,7 +93,8 @@ namespace UltraStrore.Services
                     }
                     if (!found)
                     {
-                        _context.ChiTietComBos.Remove(item);
+                        item.SoLuong = 0;
+                        _context.ChiTietComBos.Update(item);
                     }
                 }
                 foreach (var check in info.SanPham)

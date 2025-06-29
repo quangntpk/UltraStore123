@@ -98,7 +98,10 @@ namespace UltraStrore.Services
                 {
                     SanPhamEditDetail ed = new SanPhamEditDetail();
                     ed.KichThuoc = item.KichThuoc;
-                    ed.SoLuong = item.SoLuong-item.SoLuongDaBan??0;
+                    if (item.SoLuongDaBan != null)
+                        ed.SoLuong = item.SoLuong - item.SoLuongDaBan ?? 0;
+                    else
+                        ed.SoLuong = item.SoLuong;
                     ed.Gia = item.Gia?? 0;
                     detailedit.Add(ed);
                 }    
@@ -130,13 +133,14 @@ namespace UltraStrore.Services
             try
             {
                 for (int i = 0; i < data.Count(); i++)
-                {
+                {                   
                     for (int j = 0; j < data[i].Details.Count(); j++)
                     {
+                        var tem = data[i].Details[j];
                         SanPham edit = new SanPham();
                         edit.MaSanPham = data[i].ID.Trim() + "_" + data[i].MauSac.Trim() + "_" + data[i].Details[j].KichThuoc.Trim();
                         edit.TenSanPham = data[i].TenSanPham.Trim();
-                        edit.SoLuong = data[i].Details[j].SoLuong + edit.SoLuongDaBan;
+                        edit.SoLuong = data[i].Details[j].SoLuong;
                         edit.Gia = data[i].Details[j].Gia;
                         edit.MaThuongHieu = data[i].MaThuongHieu;
                         edit.MaLoaiSanPham = data[i].LoaiSanPham;
@@ -158,7 +162,10 @@ namespace UltraStrore.Services
                         SanPhamEdited.MaLoaiSanPham = item.MaLoaiSanPham;
                         SanPhamEdited.MaThuongHieu = item.MaThuongHieu;
                         SanPhamEdited.KichThuoc = item.KichThuoc;
-                        SanPhamEdited.SoLuong = item.SoLuong;
+                        if (SanPhamEdited.SoLuongDaBan != null||SanPhamEdited.SoLuongDaBan==0)
+                            SanPhamEdited.SoLuong = SanPhamEdited.SoLuongDaBan + item.SoLuong;
+                        else
+                            SanPhamEdited.SoLuong = item.SoLuong;
                         SanPhamEdited.Gia = item.Gia;
                         SanPhamEdited.MoTa = item.MoTa;
                         SanPhamEdited.Example = item.Example;
