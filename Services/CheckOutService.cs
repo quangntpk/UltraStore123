@@ -198,39 +198,6 @@ namespace UltraStrore.Services
                 else if (request.PaymentMethod.ToLower() == "cod")
                 {
 
-                    if (!string.IsNullOrEmpty(request.CouponCode))
-                    {
-                        var coupon = await _context.Coupons
-                            .Include(c => c.MaVoucherNavigation)
-                            .FirstOrDefaultAsync(c => c.MaNhap == request.CouponCode);
-                        if (coupon == null || coupon.MaVoucherNavigation.SoLuong <= 0)
-                        {
-                            await transaction.RollbackAsync();
-                            return new PaymentResponse { Success = false, Message = "Mã coupon không hợp lệ hoặc đã hết lượt sử dụng" };
-                        }
-                        coupon.TrangThai = 1;
-                        coupon.MaVoucherNavigation.SoLuong -= 1;
-                    }
-
-                    await _context.SaveChangesAsync();
-                    _context.ChiTietGioHangs.RemoveRange(cart.ChiTietGioHangs);
-                    _context.GioHangs.Remove(cart);
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-                    return new PaymentResponse
-                    {
-                        Success = true,
-                        OriginalAmount = originalAmount,
-                        DiscountAmount = discountAmount,
-                        ShippingFee = shippingFee,
-                        FinalAmount = finalAmount,
-                        OrderId = donHang.MaDonHang,
-                        Message = "Thanh toán tiền mặt thành công"
-                    };
-                }
-                else if (request.PaymentMethod.ToLower() == "cod")
-                {
-
                     var donHang = new DonHang
                     {
                         MaNguoiDung = orderDto.MaNguoiDung,
@@ -238,28 +205,27 @@ namespace UltraStrore.Services
                         Sdt = orderDto.Sdt,
                         DiaChi = orderDto.DiaChi,
                         NgayDat = orderDto.NgayDat,
-                        TrangThaiDonHang = orderDto.TrangThaiDonHang,
-                        TrangThaiHang = orderDto.TrangThaiHang,
+                        TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan,
+                        TrangThaiHang = TrangThaiThanhToan.ThanhToanKhiNhanHang,
                         DiscountAmount = orderDto.DiscountAmount,
                         ShippingFee = orderDto.ShippingFee,
                         FinalAmount = orderDto.FinalAmount
                     };
 
-                    _context.DonHangs.Add(donHang);
+                    _context.Add(donHang);
                     await _context.SaveChangesAsync();
 
-                    foreach (var chiTiet in chiTietDonHangs)
+                    foreach(var chiTiet in chiTietDonHangs)
                     {
                         chiTiet.MaDonHang = donHang.MaDonHang;
                     }
-                    foreach (var support in donHangSupports)
+                    foreach(var support in donHangSupports)
                     {
                         support.ChiTietGioHang = chiTietDonHangs.FirstOrDefault()?.MaCtdh ?? 0;
                     }
 
                     _context.ChiTietDonHangs.AddRange(chiTietDonHangs);
                     _context.DonHangSupports.AddRange(donHangSupports);
-                    await _context.SaveChangesAsync();
 
                     if (!string.IsNullOrEmpty(request.CouponCode))
                     {
@@ -273,9 +239,7 @@ namespace UltraStrore.Services
                         }
                         coupon.TrangThai = 1;
                         coupon.MaVoucherNavigation.SoLuong -= 1;
-                        await _context.SaveChangesAsync();
                     }
-
                     _context.ChiTietGioHangs.RemoveRange(cart.ChiTietGioHangs);
                     _context.GioHangs.Remove(cart);
                     await _context.SaveChangesAsync();
@@ -288,7 +252,7 @@ namespace UltraStrore.Services
                         ShippingFee = shippingFee,
                         FinalAmount = finalAmount,
                         OrderId = donHang.MaDonHang,
-                        Message = "Đặt hàng COD thành công"
+                        Message = "Thanh toán COD thành công"
                     };
                 }
                 else if (request.PaymentMethod.ToLower() == "vnpay")
@@ -375,7 +339,7 @@ namespace UltraStrore.Services
                     Success = false,
                     Message = "Đã xảy ra lỗi trong quá trình thanh toán"
                 };
-            }               
+            }
         }
 
 
@@ -427,7 +391,7 @@ namespace UltraStrore.Services
                 }
 
                 var donHang = orderData.Order;
-                donHang.TrangThaiDonHang = TrangThaiDonHang.DangXuLy;
+                donHang.TrangThaiDonHang = TrangThaiDonHang.DaThanhToan;
                 donHang.TrangThaiHang = TrangThaiThanhToan.ThanhToanVNPay;
                 donHang.DiscountAmount = orderData.DiscountAmount;
                 donHang.ShippingFee = orderData.ShippingFee;
@@ -441,9 +405,9 @@ namespace UltraStrore.Services
                 {
                     MaSanPham = item.MaSanPham.ToString(),
                     SoLuong = item.SoLuong,
-                    Gia = (int?)item.Gia,                
-                    ThanhTien = (int?)item.ThanhTien,     
-                    MaCombo = item.MaCombo,               
+                    Gia = (int?)item.Gia,
+                    ThanhTien = (int?)item.ThanhTien,
+                    MaCombo = item.MaCombo,
                     SanPhamMaSanPham = item.MaSanPham.ToString(),
                     MaDonHang = donHang.MaDonHang
                 }).ToList();
