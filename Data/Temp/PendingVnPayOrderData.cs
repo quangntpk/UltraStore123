@@ -1,4 +1,6 @@
-﻿namespace UltraStrore.Data.Temp
+﻿using UltraStrore.Models.DTO;
+
+namespace UltraStrore.Data.Temp
 {
     public class PendingVnPayOrder
     {
@@ -11,5 +13,7 @@
         public string CouponCode { get; set; }
         public int CartId { get; set; }
 
+        public List<ChiTietGioHangDto> ChiTietGioHangs { get; set; }
+        public List<DonHangSupportDto> DonHangSupports { get; set; }
     }
 }

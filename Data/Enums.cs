@@ -6,7 +6,8 @@
         DangXuLy = 1,
         DangGiaoHang = 2,
         DaGiaoHang = 3,
-        DaHuy = 4
+        DaThanhToan = 4,
+        DaHuy = 5
     }
 
     public enum TrangThaiThanhToan
