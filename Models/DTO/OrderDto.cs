@@ -14,5 +14,7 @@ namespace UltraStrore.Models.DTO
         public decimal DiscountAmount { get; set; }
         public decimal ShippingFee { get; set; }
         public decimal FinalAmount { get; set; }
+
+        public List<ChiTietDonHang> ChiTietDonHangs { get; set; }
     }
 }
