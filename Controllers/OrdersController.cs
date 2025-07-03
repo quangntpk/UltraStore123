@@ -90,7 +90,9 @@ namespace UltraStrore.Controllers
                     TrangThaiThanhToan = (int)d.TrangThaiHang,
                     HinhThucThanhToan = d.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang ? "COD" : "VNPay",
                     LyDoHuy = d.LyDoHuy,
+                        
                     TongTien = d.ChiTietDonHangs.Sum(cd => cd.ThanhTien ?? 0),
+                    
                     FinalAmount = d.FinalAmount ?? 0,
                     SanPhams = d.ChiTietDonHangs.Select(cd => new
                     {

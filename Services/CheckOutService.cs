@@ -48,63 +48,23 @@ namespace UltraStrore.Services
                     };
                 }
 
+                if (!cart.ChiTietGioHangs.Any())
+                {
+                    return new PaymentResponse
+                    {
+                        Success = false,
+                        Message = "Giỏ hàng không chứa sản phẩm nào"
+                    };
+                }
+
                 decimal originalAmount = cart.ChiTietGioHangs
                     .Sum(item => item.ThanhTien ?? 0);
 
                 decimal discountAmount = request.DiscountAmount;
-                decimal finalAmount = request.FinalAmount;
                 decimal shippingFee = request.ShippingFee;
+                decimal finalAmount = request.FinalAmount;
 
-                if (!string.IsNullOrEmpty(request.CouponCode))
-                {
-                    var coupon = await _context.Coupons
-                        .Include(c => c.MaVoucherNavigation)
-                        .FirstOrDefaultAsync(d => d.MaNhap == request.CouponCode && d.TrangThai == 0);
-                    if (coupon == null)
-                    {
-                        return new PaymentResponse
-                        {
-                            Success = false,
-                            Message = "Coupon không hợp lệ hoặc đã được sử dụng"
-                        };
-                    }
-
-                    var voucher = coupon.MaVoucherNavigation;
-                    var now = DateTime.Now;
-
-                    if (voucher.TrangThai != 0
-                        || voucher.NgayBatDau > now
-                        || voucher.NgayKetThuc < now
-                        || voucher.SoLuong <= 0
-                        || originalAmount < (voucher.DieuKien ?? 0))
-                    {
-                        return new PaymentResponse
-                        {
-                            Success = false,
-                            Message = "Coupon không hợp lệ hoặc đã hết hạn"
-                        };
-                    }
-
-                    decimal calculatedFinal = originalAmount - discountAmount + shippingFee;
-
-                    if (calculatedFinal != finalAmount)
-                    {
-                        _logger.LogWarning(
-                            $"Tổng tiền không khớp. CalculatedFinal: {calculatedFinal}, FinalAmount: {finalAmount}, ShippingFee: {shippingFee}, DiscountAmount: {discountAmount}"
-                        );
-                    }
-                }
-                else
-                {
-                    if (finalAmount != originalAmount + shippingFee)
-                    {
-                        _logger.LogWarning(
-                            $"Tổng tiền không khớp khi không có mã giảm giá. Expected: {originalAmount + shippingFee}, FinalAmount: {finalAmount}"
-                        );
-                    }
-                }
-
-                var donHang = new DonHang
+                var orderDto = new OrderDto
                 {
                     MaNguoiDung = cart.MaNguoiDung,
                     TenNguoiNhan = request.TenNguoiNhan ?? cart.MaNguoiDungNavigation?.HoTen,
@@ -231,13 +191,22 @@ namespace UltraStrore.Services
                     var orderData = new
                     {
                         TempOrderId = tempOrderId,
-                        Order = donHang,
+                        Order = orderDto,
                         OriginalAmount = originalAmount,
                         DiscountAmount = discountAmount,
-                        ShippingFee = request.ShippingFee,
+                        ShippingFee = shippingFee,
                         FinalAmount = finalAmount,
                         CouponCode = request.CouponCode,
-                        CartId = request.CartId
+                        CartId = request.CartId,
+
+                          ChiTietGioHangs = cart.ChiTietGioHangs.Select(item => new {
+                              item.MaSanPham,
+                              item.SoLuong,
+                              item.Gia,
+                              item.ThanhTien,
+                              item.MaCombo,
+                              item.MaCtgh
+                          }).ToList()
                     };
 
                     var orderDataJson = System.Text.Json.JsonSerializer.Serialize(orderData);
@@ -251,13 +220,14 @@ namespace UltraStrore.Services
 
                     _context.PendingOrders.Add(pendingOrder);
                     await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
 
                     var vnPayRequest = new VnPaymentRequest
                     {
                         OrderId = tempOrderId,
-                        FullName = donHang.TenNguoiNhan,
-                        Description = $"Thanh toán đơn hàng #{donHang.MaDonHang}",
-                        Amount = (double)finalAmount,
+                        FullName = orderDto.TenNguoiNhan,
+                        Description = $"Thanh toán đơn hàng #{tempOrderId}",
+                        Amount = Convert.ToDouble(Math.Ceiling(finalAmount)),
                         CreatedDate = DateTime.Now
                     };
 
@@ -268,19 +238,64 @@ namespace UltraStrore.Services
                         Success = true,
                         OriginalAmount = originalAmount,
                         DiscountAmount = discountAmount,
-                        ShippingFee = request.ShippingFee,
+                        ShippingFee = shippingFee,
                         FinalAmount = finalAmount,
-                        OrderId = donHang.MaDonHang,
+                        OrderId = 0, 
                         Message = paymentUrl
                     };
                 }
                 else
                 {
-                    await transaction.RollbackAsync();
+                    var donHang = new DonHang
+                    {
+                        MaNguoiDung = orderDto.MaNguoiDung,
+                        TenNguoiNhan = orderDto.TenNguoiNhan,
+                        Sdt = orderDto.Sdt,
+                        DiaChi = orderDto.DiaChi,
+                        NgayDat = DateTime.Now,
+                        TrangThaiDonHang = request.PaymentMethod.ToLower() == "cod"
+                            ? TrangThaiDonHang.DaGiaoHang
+                            : TrangThaiDonHang.ChuaXacNhan,
+                        TrangThaiHang = request.PaymentMethod.ToLower() == "cod"
+                            ? TrangThaiThanhToan.ThanhToanTienMat
+                            : TrangThaiThanhToan.ThanhToanKhiNhanHang,
+                        DiscountAmount = discountAmount,
+                        ShippingFee = shippingFee,
+                        FinalAmount = finalAmount
+                    };
+
+                    _context.DonHangs.Add(donHang);
+                    await _context.SaveChangesAsync();
+
+                    var chiTietDonHangs = cart.ChiTietGioHangs.Select(item => new ChiTietDonHang
+                    {
+                        MaSanPham = item.MaSanPham,
+                        SoLuong = item.SoLuong,
+                        Gia = item.Gia,
+                        ThanhTien = item.ThanhTien,
+                        MaCombo = item.MaCombo,
+                        SanPhamMaSanPham = item.MaSanPham,
+                        MaDonHang = donHang.MaDonHang
+                    }).ToList();
+
+                    _context.ChiTietDonHangs.AddRange(chiTietDonHangs);
+                    _context.ChiTietGioHangs.RemoveRange(cart.ChiTietGioHangs);
+                    _context.GioHangs.Remove(cart);
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
                     return new PaymentResponse
                     {
-                        Success = false,
-                        Message = "Phương thức thanh toán không được hỗ trợ"
+                        Success = true,
+                        OriginalAmount = originalAmount,
+                        DiscountAmount = discountAmount,
+                        ShippingFee = shippingFee,
+                        FinalAmount = finalAmount,
+                        OrderId = donHang.MaDonHang,
+                        Message = request.PaymentMethod.ToLower() == "cash"
+                            ? "Thanh toán tiền mặt thành công"
+                            : "Đặt hàng COD thành công"
                     };
                 }
             }
@@ -296,8 +311,11 @@ namespace UltraStrore.Services
             }
         }
 
+
         public async Task ProcessVnPayCallbackAsync(IQueryCollection query, HttpContext httpContext)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
             try
             {
                 var vnPayResponse = _vnPayService.PaymentExecute(query);
@@ -308,9 +326,11 @@ namespace UltraStrore.Services
                     {
                         "01" => "Giao dich chua hoan tat (nguoi dung huy)",
                         "02" => "Giao dich bi loi",
-                        "24" => "Giao dịch bị hủy bởi người dùng",
+                        "24" => "Giao dich bi huy boi nguoi dung",
                         _ => "Thanh toan VNPay khong thanh cong"
                     };
+
+                    message = System.Text.RegularExpressions.Regex.Replace(message, "[^\\x00-\\x7F]", "");
                     httpContext.Response.Redirect(
                         $"http://localhost:8080/PaymentFail?status=failed&message={Uri.EscapeDataString(message)}"
                     );
@@ -322,7 +342,7 @@ namespace UltraStrore.Services
                 var pendingOrder = await _context.PendingOrders.FirstOrDefaultAsync(c => c.TempOrderId == tempOrderId);
                 if (pendingOrder == null)
                 {
-                    httpContext.Response.Redirect("http://localhost:8080/PaymentFail?status=failed&message=Không tìm thấy mã đơn hàng tạm thời");
+                    httpContext.Response.Redirect("http://localhost:8080/PaymentFail?status=failed&message=Khong tim thay ma don hang tam thoi");
                     return;
                 }
 
@@ -330,7 +350,7 @@ namespace UltraStrore.Services
 
                 if (orderData.TempOrderId != tempOrderId)
                 {
-                    httpContext.Response.Redirect("http://localhost:8080/PaymentFail?status=failed&message=Mã đơn hàng tạm thời không khớp");
+                    httpContext.Response.Redirect("http://localhost:8080/PaymentFail?status=failed&message=Ma don hang tam thoi khong khop");
                     return;
                 }
 
@@ -342,6 +362,21 @@ namespace UltraStrore.Services
                 donHang.FinalAmount = orderData.FinalAmount;
 
                 _context.DonHangs.Add(donHang);
+                await _context.SaveChangesAsync();
+
+
+                var chiTietDonHangs = orderData.ChiTietGioHangs.Select(item => new ChiTietDonHang
+                {
+                    MaSanPham = item.MaSanPham.ToString(),
+                    SoLuong = item.SoLuong,
+                    Gia = (int?)item.Gia,                
+                    ThanhTien = (int?)item.ThanhTien,     
+                    MaCombo = item.MaCombo,               
+                    SanPhamMaSanPham = item.MaSanPham.ToString(),
+                    MaDonHang = donHang.MaDonHang
+                }).ToList();
+
+                _context.ChiTietDonHangs.AddRange(chiTietDonHangs);
 
                 if (!string.IsNullOrEmpty(orderData.CouponCode))
                 {
@@ -355,30 +390,34 @@ namespace UltraStrore.Services
                     }
                 }
 
-                await _context.SaveChangesAsync();
-
-                var cartId = (int)orderData.CartId;
+                var cartId = orderData.CartId;
                 var cart = await _context.GioHangs
                     .Include(c => c.ChiTietGioHangs)
                     .FirstOrDefaultAsync(c => c.MaGioHang == cartId);
+
                 if (cart != null)
                 {
                     _context.ChiTietGioHangs.RemoveRange(cart.ChiTietGioHangs);
                     _context.GioHangs.Remove(cart);
-                    await _context.SaveChangesAsync();
                 }
-
                 _context.PendingOrders.Remove(pendingOrder);
+
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 var redirectUrl = $"http://localhost:8080/PaymentSuccess?status=success&orderId={donHang.MaDonHang}&transactionId={vnPayResponse.TransactionId}";
                 httpContext.Response.Redirect(redirectUrl);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Lỗi khi xử lý callback VnPay");
-                httpContext.Response.Redirect("http://localhost:8080/PaymentFail?status=failed&message=Lỗi khi xử lý callback VnPay");
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Lỗi khi xử lý callback VNPay");
+                string errorMessage = "Loi khi xu ly callback VNPay";
+                httpContext.Response.Redirect(
+                    $"http://localhost:8080/PaymentFail?status=failed&message={Uri.EscapeDataString(errorMessage)}"
+                );
             }
         }
+
     }
 }
