@@ -11,6 +11,7 @@ namespace UltraStrore.Data
         public byte[]? HinhAnh { get; set; }
         public int? SoLuong { get; set; }
         public double? TongGia { get; set; }
+        public float? Discount { get; set; }
         public bool? TrangThai { get; set; }
         public DateOnly? NgayTao { get; set; }
         public virtual ICollection<ChiTietGioHang> ChiTietGioHangs { get; set; }

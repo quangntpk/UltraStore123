@@ -75,7 +75,7 @@ namespace UltraStrore.Services
                 ComboNotEditted.MoTa = info.MoTa;
                 ComboNotEditted.TenComBo = info.TenCombo;
                 ComboNotEditted.SoLuong = info.SoLuong;
-                ComboNotEditted.TongGia = info.Gia;
+                ComboNotEditted.Discount = info.Discount;
                 ComboNotEditted.HinhAnh = info.HinhAnh;
                 var ChiTietSanPham = _context.ChiTietComBos.Where(g => g.MaComBo == info.ID).ToList();
                 foreach (var item in ChiTietSanPham)
@@ -117,6 +117,28 @@ namespace UltraStrore.Services
                         _context.ChiTietComBos.Add(newct);
                     }
                 }
+                float TongTien = 0;
+                foreach (var item in info.SanPham)
+                {
+                    float TongTienSanPham = 0;
+                    var ListTienSanPhamChooose = _context.SanPhams
+                        .Where(g => g.MaSanPham.Contains(item.MaSanPham))
+                        .Select(h => h.Gia)
+                        .ToList();
+
+                    foreach (var SItem in ListTienSanPhamChooose)
+                    {
+                        if (SItem.HasValue)
+                        {
+                            TongTienSanPham += SItem.Value;
+                        }
+                    }
+                    if (item.SoLuong.HasValue && item.SoLuong.Value != 0)
+                    {
+                        TongTien += TongTienSanPham * item.SoLuong.Value/ListTienSanPhamChooose.Count();
+                    }
+                }
+                ComboNotEditted.TongGia = TongTien * (100 - info.Discount) / 100;
                 _context.ComBoSanPhams.Update(ComboNotEditted);
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -137,16 +159,38 @@ namespace UltraStrore.Services
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                float TongTien = 0;
                 ComBoSanPham newCB = new ComBoSanPham
                 {
                     TenComBo = info.TenCombo.Trim(),
                     MoTa = info.MoTa.Trim(),
                     SoLuong = info.SoLuong,
-                    HinhAnh = info.HinhAnh,
-                    TongGia = info.Gia,
-                    TrangThai = true
+                    HinhAnh = info.HinhAnh,                   
+                    TrangThai = true,
+                    Discount = info.Discount,
+                    NgayTao =  DateOnly.FromDateTime(DateTime.Now),
                 };
+                foreach (var item in info.SanPham)
+                {
+                    float TongTienSanPham = 0;
+                    var ListTienSanPhamChooose = _context.SanPhams
+                        .Where(g => g.MaSanPham.Contains(item.MaSanPham))
+                        .Select(h => h.Gia)
+                        .ToList();
 
+                    foreach (var SItem in ListTienSanPhamChooose)
+                    {
+                        if (SItem.HasValue)
+                        {
+                            TongTienSanPham += SItem.Value;
+                        }
+                    }
+                    if (item.SoLuong.HasValue && item.SoLuong.Value != 0)
+                    {
+                        TongTien += TongTienSanPham * item.SoLuong.Value / ListTienSanPhamChooose.Count();
+                    }
+                }
+                newCB.TongGia=TongTien*(100-info.Discount)/100;
                 _context.ComBoSanPhams.Add(newCB);
                 await _context.SaveChangesAsync();
                 int MaComBo = newCB.MaComBo;
