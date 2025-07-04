@@ -231,16 +231,43 @@ namespace UltraStrore.Controllers
                 return BadRequest(new { message = "Không thể duyệt đơn hàng ở trạng thái này" });
             }
 
+            // Kiểm tra số lượng tồn kho
+            foreach (var chiTiet in order.ChiTietDonHangs)
+            var originalHinhThucThanhToan = order.TrangThaiHang;
+
             // Cập nhật trạng thái đơn hàng (tăng lên một cấp)
             order.TrangThaiDonHang = (TrangThaiDonHang)((int)order.TrangThaiDonHang + 1);
 
             // Nếu đã giao hàng thì đánh dấu là đã thanh toán
-            if (order.TrangThaiDonHang == TrangThaiDonHang.DaGiaoHang)
+            if (order.TrangThaiDonHang == TrangThaiDonHang.DaGiaoHang && order.TrangThaiHang == TrangThaiThanhToan.ThanhToanVNPay)
             {
                 order.TrangThaiHang = TrangThaiThanhToan.ThanhToanVNPay;
             }
+            else if(order.TrangThaiDonHang == TrangThaiDonHang.DaGiaoHang && order.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang)
+            {
+                order.TrangThaiHang = TrangThaiThanhToan.ThanhToanKhiNhanHang;
+            }
 
             _context.DonHangs.Update(order);
+            // Nếu số lượng đủ, cập nhật tồn kho
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    foreach (var chiTiet in order.ChiTietDonHangs)
+                    {
+                        if (chiTiet.MaCombo != null)
+                        {
+                            // Cập nhật số lượng tồn kho của combo
+                            var combo = chiTiet.MaComboNavigation;
+                            if (combo != null)
+                            {
+                                combo.SoLuong -= chiTiet.SoLuong;
+                            }
+                        }
+                    }
+                }
+                _context.DonHangs.Update(order);
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Duyệt đơn thành công" });

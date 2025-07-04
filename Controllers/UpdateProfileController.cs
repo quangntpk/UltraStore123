@@ -19,6 +19,11 @@ namespace UltraStrore.Controllers
             _userService = userService;
         }
 
+        /// <summary>
+        /// Lấy danh sách profile người dùng 
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns>Trả về thông tin đăng ký</returns>
         [Authorize]
         [HttpGet("profile")]
         public async Task<IActionResult> GetCurrentUserProfile()
@@ -51,7 +56,11 @@ namespace UltraStrore.Controllers
             return Ok(userDto);
         }
 
-
+        /// <summary>
+        /// Get id profile người dùng
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns>Trả về thông tin đăng ký</returns>
         [HttpPut("update-profile/{maNguoiDung}")]
         public async Task<IActionResult> UpdateProfile(string maNguoiDung, [FromForm] UpdateProfileView model)
         {
