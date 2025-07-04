@@ -90,9 +90,9 @@ namespace UltraStrore.Controllers
                     TrangThaiThanhToan = (int)d.TrangThaiHang,
                     HinhThucThanhToan = d.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang ? "COD" : "VNPay",
                     LyDoHuy = d.LyDoHuy,
-                        
+
                     TongTien = d.ChiTietDonHangs.Sum(cd => cd.ThanhTien ?? 0),
-                    
+
                     FinalAmount = d.FinalAmount ?? 0,
                     SanPhams = d.ChiTietDonHangs.Select(cd => new
                     {
@@ -232,8 +232,12 @@ namespace UltraStrore.Controllers
             }
 
             // Kiểm tra số lượng tồn kho
-            foreach (var chiTiet in order.ChiTietDonHangs)
             var originalHinhThucThanhToan = order.TrangThaiHang;
+            // Nếu cần xử lý trong vòng lặp thì viết như sau:
+            foreach (var chiTiet in order.ChiTietDonHangs)
+            {
+                // TODO: xử lý nếu cần
+            }
 
             // Cập nhật trạng thái đơn hàng (tăng lên một cấp)
             order.TrangThaiDonHang = (TrangThaiDonHang)((int)order.TrangThaiDonHang + 1);
@@ -243,7 +247,7 @@ namespace UltraStrore.Controllers
             {
                 order.TrangThaiHang = TrangThaiThanhToan.ThanhToanVNPay;
             }
-            else if(order.TrangThaiDonHang == TrangThaiDonHang.DaGiaoHang && order.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang)
+            else if (order.TrangThaiDonHang == TrangThaiDonHang.DaGiaoHang && order.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang)
             {
                 order.TrangThaiHang = TrangThaiThanhToan.ThanhToanKhiNhanHang;
             }
@@ -258,7 +262,6 @@ namespace UltraStrore.Controllers
                     {
                         if (chiTiet.MaCombo != null)
                         {
-                            // Cập nhật số lượng tồn kho của combo
                             var combo = chiTiet.MaComboNavigation;
                             if (combo != null)
                             {
@@ -266,40 +269,48 @@ namespace UltraStrore.Controllers
                             }
                         }
                     }
-                }
-                _context.DonHangs.Update(order);
-            await _context.SaveChangesAsync();
 
-            return Ok(new { message = "Duyệt đơn thành công" });
+                    _context.DonHangs.Update(order);
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return Ok(new { message = "Duyệt đơn thành công" });
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    return StatusCode(500, new { message = "Đã xảy ra lỗi khi duyệt đơn.", error = ex.Message });
+                }
+            }
         }
 
 
 
-        // PUT: api/orders/cancel/{id}
-        [HttpPut("cancel/{id}")]
-        public async Task<IActionResult> CancelOrder(int id, [FromBody] string lyDoHuy)
-        {
-            var order = await _context.DonHangs.FindAsync(id);
-            if (order == null)
+            // PUT: api/orders/cancel/{id}
+            [HttpPut("cancel/{id}")]
+            public async Task<IActionResult> CancelOrder(int id, [FromBody] string lyDoHuy)
             {
-                return NotFound(new { message = "Đơn hàng không tồn tại" });
+                var order = await _context.DonHangs.FindAsync(id);
+                if (order == null)
+                {
+                    return NotFound(new { message = "Đơn hàng không tồn tại" });
+                }
+
+                if (order.TrangThaiDonHang != TrangThaiDonHang.ChuaXacNhan && order.TrangThaiDonHang != TrangThaiDonHang.DangXuLy)
+                {
+                    return BadRequest(new { message = "Chỉ có thể hủy đơn hàng khi chưa xác nhận hoặc đang xử lý" });
+                }
+
+                if (string.IsNullOrEmpty(lyDoHuy))
+                {
+                    return BadRequest(new { message = "Lý do hủy không được để trống" });
+                }
+
+                order.TrangThaiDonHang = TrangThaiDonHang.DaHuy;
+                order.LyDoHuy = lyDoHuy;
+
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Hủy đơn thành công" });
             }
-
-            if (order.TrangThaiDonHang != TrangThaiDonHang.ChuaXacNhan && order.TrangThaiDonHang != TrangThaiDonHang.DangXuLy)
-            {
-                return BadRequest(new { message = "Chỉ có thể hủy đơn hàng khi chưa xác nhận hoặc đang xử lý" });
-            }
-
-            if (string.IsNullOrEmpty(lyDoHuy))
-            {
-                return BadRequest(new { message = "Lý do hủy không được để trống" });
-            }
-
-            order.TrangThaiDonHang = TrangThaiDonHang.DaHuy;
-            order.LyDoHuy = lyDoHuy;
-
-            await _context.SaveChangesAsync();
-            return Ok(new { message = "Hủy đơn thành công" });
         }
     }
-}

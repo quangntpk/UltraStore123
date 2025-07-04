@@ -391,7 +391,7 @@ namespace UltraStrore.Services
                 }
 
                 var donHang = orderData.Order;
-                donHang.TrangThaiDonHang = TrangThaiDonHang.DangXuLy;
+                donHang.TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan;
                 donHang.TrangThaiHang = TrangThaiThanhToan.ThanhToanVNPay;
                 donHang.DiscountAmount = orderData.DiscountAmount;
                 donHang.ShippingFee = orderData.ShippingFee;

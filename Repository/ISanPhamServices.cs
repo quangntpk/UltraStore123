@@ -14,5 +14,6 @@ namespace UltraStrore.Repository
         Task<APIResponse> CreateSanPham(List<SanPhamCreate> data);
         Task<APIResponse> DeleteSanPham(string? id);
         Task<APIResponse> ActiveSanPham(string? id);
+        Task<List<SanPhamView>> ListSanPhamLQ(string? id);
     }
 }

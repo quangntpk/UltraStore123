@@ -66,11 +66,7 @@ namespace UltraStrore.Services
 
             if (string.IsNullOrEmpty(id))
             {
-                var topList = listsp.OrderByDescending(g => g.SoLuongDaBan).ToList();
-                foreach (var sp in topList.Take(10))
-                {
-                    sp.Hot = true;
-                }
+                var topList = listsp.OrderByDescending(g => g.SoLuongDaBan).ToList();            
                 return topList;
             }
 
@@ -323,5 +319,53 @@ namespace UltraStrore.Services
             return response;
         }
 
+        public async Task<List<SanPhamView>> ListSanPhamLQ(string? id)
+        {
+            List<SanPhamView> listsp = new List<SanPhamView>();
+            var nhomSanPham = _context.SanPhams.GroupBy(s => s.MaSanPham.Substring(0, 6)).ToList();
+
+            foreach (var nhom in nhomSanPham)
+            {
+                var sanPhamDauTien = nhom.First();
+                var HinhAnhSanPhamList = _context.HinhAnhs
+                    .Where(g => g.MaSanPham.Substring(0, 6) == sanPhamDauTien.MaSanPham.Substring(0, 6))
+                    .Select(g => g.Data)
+                    .ToList();
+                var listMauSac = nhom.Select(sp => sp.MaSanPham.Split('_')[1]).Distinct().ToList();
+                var listKichThuoc = nhom.Select(sp => sp.MaSanPham.Split('_')[2]).Distinct().ToList();
+                var SoLuongDaBan = nhom.Sum(sp => sp.SoLuongDaBan);
+                var tongSoLuong = nhom.Sum(sp => sp.SoLuong) - nhom.Sum(sp => sp.SoLuongDaBan);
+                var TenLoai = _context.LoaiSanPhams
+                    .Where(g => g.MaLoaiSanPham == sanPhamDauTien.MaLoaiSanPham)
+                    .Select(g => g.TenLoaiSanPham)
+                    .FirstOrDefault();
+                var ThuongHieu = _context.ThuongHieus
+                    .Where(g => g.MaThuongHieu == sanPhamDauTien.MaThuongHieu)
+                    .Select(g => g.TenThuongHieu)
+                    .FirstOrDefault();
+
+                listsp.Add(new SanPhamView
+                {
+                    ID = sanPhamDauTien.MaSanPham.Substring(0, 6),
+                    Name = sanPhamDauTien.TenSanPham,
+                    MauSac = listMauSac,
+                    KichThuoc = listKichThuoc,
+                    Hinh = HinhAnhSanPhamList,
+                    SoLuong = tongSoLuong ?? 0,
+                    DonGia = sanPhamDauTien.Gia ?? 0,
+                    LoaiSanPham = TenLoai,
+                    ThuongHieu = ThuongHieu,
+                    NgayTao = sanPhamDauTien.NgayTao,
+                    TrangThai = sanPhamDauTien.TrangThai,
+                    ChatLieu = sanPhamDauTien.ChatLieu,
+                    MoTa = sanPhamDauTien.MoTa,
+                    SoLuongDaBan = SoLuongDaBan,
+                    GioiTinh = sanPhamDauTien.GioiTinh == 0 ? "Nam" : "Nữ",
+                    Hot = false
+                });
+            }           
+            var tops = listsp.Where(g => g.ID.Trim() != id.Trim()).OrderByDescending(h=>h.SoLuongDaBan).Take(6).ToList();
+            return tops;
+        }
     }
 }

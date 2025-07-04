@@ -66,5 +66,11 @@ namespace UltraStrore.Controllers
             var data = await this.services.ActiveSanPham(id);
             return Ok();
         }
+        [HttpGet("ListSanPhamLQ")]
+        public async Task<IActionResult> ListSanPhamLQ(string id)
+        {
+            var data = await this.services.ListSanPhamLQ(id);
+            return Ok(data);
+        }
     }
 }
