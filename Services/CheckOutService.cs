@@ -215,11 +215,11 @@ namespace UltraStrore.Services
                     _context.Add(donHang);
                     await _context.SaveChangesAsync();
 
-                    foreach(var chiTiet in chiTietDonHangs)
+                    foreach (var chiTiet in chiTietDonHangs)
                     {
                         chiTiet.MaDonHang = donHang.MaDonHang;
                     }
-                    foreach(var support in donHangSupports)
+                    foreach (var support in donHangSupports)
                     {
                         support.ChiTietGioHang = chiTietDonHangs.FirstOrDefault()?.MaCtdh ?? 0;
                     }
@@ -391,7 +391,7 @@ namespace UltraStrore.Services
                 }
 
                 var donHang = orderData.Order;
-                donHang.TrangThaiDonHang = TrangThaiDonHang.DaThanhToan;
+                donHang.TrangThaiDonHang = TrangThaiDonHang.DangXuLy;
                 donHang.TrangThaiHang = TrangThaiThanhToan.ThanhToanVNPay;
                 donHang.DiscountAmount = orderData.DiscountAmount;
                 donHang.ShippingFee = orderData.ShippingFee;
@@ -403,31 +403,23 @@ namespace UltraStrore.Services
 
                 var chiTietDonHangs = orderData.ChiTietGioHangs.Select(item =>
                 {
-                    MaSanPham = item.MaSanPham.ToString(),
-                    SoLuong = item.SoLuong,
-                    Gia = (int?)item.Gia,
-                    ThanhTien = (int?)item.ThanhTien,
-                    MaCombo = item.MaCombo,
-                    SanPhamMaSanPham = item.MaSanPham.ToString(),
-                    MaDonHang = donHang.MaDonHang
-                }).ToList();
                     if (item.MaSanPham == null)
                     {
                         _logger.LogWarning($"ChiTietGioHangDto có MaSanPham null: {JsonSerializer.Serialize(item)}");
                     }
                     return item;
-                }
-                .Where(item => item.MaSanPham != null)
-                .Select(item => new ChiTietDonHang
-                {
-                    MaSanPham = item.MaSanPham.ToString(),
-                    SoLuong = item.SoLuong,
-                    Gia = (int?)item.Gia,
-                    ThanhTien = (int?)item.ThanhTien,
-                    MaCombo = item.MaCombo,
-                    SanPhamMaSanPham = item.MaSanPham.ToString(),
-                    MaDonHang = donHang.MaDonHang
-                }).ToList();
+                })
+                    .Where(item => item.MaSanPham != null)
+                    .Select(item => new ChiTietDonHang
+                    {
+                        MaSanPham = item.MaSanPham.ToString(),
+                        SoLuong = item.SoLuong,
+                        Gia = (int?)item.Gia,
+                        ThanhTien = (int?)item.ThanhTien,
+                        MaCombo = item.MaCombo,
+                        SanPhamMaSanPham = item.MaSanPham.ToString(),
+                        MaDonHang = donHang.MaDonHang
+                    }).ToList();
 
                 _context.ChiTietDonHangs.AddRange(chiTietDonHangs);
 
