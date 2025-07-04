@@ -205,6 +205,13 @@ namespace UltraStrore.Controllers
 
             // Kiểm tra số lượng tồn kho
             foreach (var chiTiet in order.ChiTietDonHangs)
+            var originalHinhThucThanhToan = order.TrangThaiHang;
+
+            // Cập nhật trạng thái đơn hàng (tăng lên một cấp)
+            order.TrangThaiDonHang = (TrangThaiDonHang)((int)order.TrangThaiDonHang + 1);
+
+            // Nếu đã giao hàng thì đánh dấu là đã thanh toán
+            if (order.TrangThaiDonHang == TrangThaiDonHang.DaGiaoHang && order.TrangThaiHang == TrangThaiThanhToan.ThanhToanVNPay)
             {
                 if (chiTiet.MaCombo != null)
                 {
@@ -260,6 +267,10 @@ namespace UltraStrore.Controllers
                     }
                 }
             }
+            else if(order.TrangThaiDonHang == TrangThaiDonHang.DaGiaoHang && order.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang)
+            {
+                order.TrangThaiHang = TrangThaiThanhToan.ThanhToanKhiNhanHang;
+            }
 
             // Nếu số lượng đủ, cập nhật tồn kho
             using (var transaction = await _context.Database.BeginTransactionAsync())
@@ -276,6 +287,8 @@ namespace UltraStrore.Controllers
                             {
                                 combo.SoLuong -= chiTiet.SoLuong;
                             }
+                _context.DonHangs.Update(order);
+            await _context.SaveChangesAsync();
 
                             // Cập nhật số lượng tồn kho của các sản phẩm trong combo
                             foreach (var chiTietCombo in combo.ChiTietComBos)

@@ -12,7 +12,9 @@
 
     public enum TrangThaiThanhToan
     {
-        ThanhToanKhiNhanHang = 0,
-        ThanhToanVNPay = 1
+        ThanhToanKhiNhanHang = 1,
+        ThanhToanVNPay = 2, 
+        ThanhToanTienMat = 3,
+
     }
 }

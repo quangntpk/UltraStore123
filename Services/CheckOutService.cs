@@ -401,13 +401,30 @@ namespace UltraStrore.Services
                 await _context.SaveChangesAsync();
 
 
-                var chiTietDonHangs = orderData.ChiTietGioHangs.Select(item => new ChiTietDonHang
+                var chiTietDonHangs = orderData.ChiTietGioHangs.Select(item =>
                 {
                     MaSanPham = item.MaSanPham.ToString(),
                     SoLuong = item.SoLuong,
                     Gia = (int?)item.Gia,                
                     ThanhTien = (int?)item.ThanhTien,     
                     MaCombo = item.MaCombo,               
+                    SanPhamMaSanPham = item.MaSanPham.ToString(),
+                    MaDonHang = donHang.MaDonHang
+                }).ToList();
+                    if (item.MaSanPham == null)
+                    {
+                        _logger.LogWarning($"ChiTietGioHangDto có MaSanPham null: {JsonSerializer.Serialize(item)}");
+                    }
+                    return item;
+                }
+                .Where(item => item.MaSanPham != null)
+                .Select(item => new ChiTietDonHang
+                {
+                    MaSanPham = item.MaSanPham.ToString(),
+                    SoLuong = item.SoLuong,
+                    Gia = (int?)item.Gia,
+                    ThanhTien = (int?)item.ThanhTien,
+                    MaCombo = item.MaCombo,
                     SanPhamMaSanPham = item.MaSanPham.ToString(),
                     MaDonHang = donHang.MaDonHang
                 }).ToList();

@@ -36,6 +36,7 @@ namespace UltraStrore.Controllers
             _jwtTokenServices = jwtTokenServices;
         }
 
+
         [HttpPost("DangKy")]
         public async Task<IActionResult> DangKy([FromBody] DangKyView model)
         {
