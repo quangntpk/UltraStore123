@@ -7,6 +7,6 @@
         public decimal Gia { get; set; }
         public decimal ThanhTien { get; set; }
         public int? MaCombo { get; set; }
-        public int MaCtgh { get; set; }
+        public int? MaCtgh { get; set; }
     }
 }

@@ -134,5 +134,50 @@ namespace UltraStrore.Controllers
             var query = HttpContext.Request.Query;
             await _paymentService.ProcessVnPayCallbackAsync(query, HttpContext);
         }
+        [HttpPost("InstantCheckout")]
+        public async Task<IActionResult> InstantCheckout([FromBody] PaymentRequestDto1 request)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new
+                {
+                    Success = false,
+                    Message = "Dữ liệu đầu vào không hợp lệ",
+                    Errors = ModelState.Values.SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                });
+            }
+
+            var response = await _paymentService.InstantCheckout(request, HttpContext);
+
+            if (response.Success && response.OrderId.HasValue)
+            {
+                try
+                {
+                    var order = await _context.DonHangs
+                        .Include(d => d.MaNguoiDungNavigation)
+                        .FirstOrDefaultAsync(d => d.MaDonHang == response.OrderId.Value);
+
+                    if (order != null && order.MaNguoiDungNavigation != null && !string.IsNullOrEmpty(order.MaNguoiDungNavigation.Email))
+                    {
+                        string email = order.MaNguoiDungNavigation.Email;
+                        string statusMessage = "Đơn hàng của bạn đã được đặt thành công và đang chờ xác nhận.";
+
+                        await _orderNotificationService.SendOrderStatusNotificationAsync(
+                            email,
+                            order.MaDonHang,
+                            statusMessage);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[LỖI EMAIL] Không thể gửi email xác nhận đơn hàng: {ex.Message}");
+                }
+
+                return Ok(response);
+            }
+
+            return BadRequest(response);
+        }
     }
 }

@@ -44,7 +44,7 @@ namespace UltraStrore.Data
         public virtual DbSet<KichThuoc> KichThuocs { get; set; } = null!;
         public virtual DbSet<Blogs> Blog { get; set; } = null!;
         public DbSet<PendingOder> PendingOrders { get; set; }
-        public virtual DbSet<DonHangSupport> DonHangSupports { get; set; } = null!; 
+        public virtual DbSet<DonHangSupport> DonHangSupports { get; set; } = null!;
         public virtual DbSet<Blogs> Blogs { get; set; } = null!;
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -195,27 +195,27 @@ namespace UltraStrore.Data
             });
 
             modelBuilder.Entity<ChiTietGioHang>(entity =>
-        {
-            entity.HasKey(e => e.MaCtgh).HasName("PK__CHI_TIET__5AE495EDA6F2A925");
+            {
+                entity.HasKey(e => e.MaCtgh).HasName("PK__CHI_TIET__5AE495EDA6F2A925");
 
-            entity.ToTable("CHI_TIET_GIO_HANG");
+                entity.ToTable("CHI_TIET_GIO_HANG");
 
-            entity.HasIndex(e => e.MaGioHang, "IX_CHI_TIET_GIO_HANG_ma_gio_hang");
+                entity.HasIndex(e => e.MaGioHang, "IX_CHI_TIET_GIO_HANG_ma_gio_hang");
 
-            entity.Property(e => e.MaCtgh).HasColumnName("ma_ctgh");
-            entity.Property(e => e.Gia).HasColumnName("gia");
-            entity.Property(e => e.MaCombo).HasColumnName("ma_combo");
-            entity.Property(e => e.MaGioHang).HasColumnName("ma_gio_hang");
-            entity.Property(e => e.MaSanPham)
-                .HasMaxLength(20)
-                .IsUnicode(false)
-                .HasColumnName("ma_san_pham");
-            entity.Property(e => e.SoLuong).HasColumnName("so_luong");
-            entity.Property(e => e.ThanhTien).HasColumnName("thanh_tien");
-            entity.HasOne(d => d.MaGioHangNavigation).WithMany(p => p.ChiTietGioHangs)
-                .HasForeignKey(d => d.MaGioHang)
-                .HasConstraintName("FK_CHI_TIET_GIO_HANG_GIO_HANG");
-        });
+                entity.Property(e => e.MaCtgh).HasColumnName("ma_ctgh");
+                entity.Property(e => e.Gia).HasColumnName("gia");
+                entity.Property(e => e.MaCombo).HasColumnName("ma_combo");
+                entity.Property(e => e.MaGioHang).HasColumnName("ma_gio_hang");
+                entity.Property(e => e.MaSanPham)
+                    .HasMaxLength(20)
+                    .IsUnicode(false)
+                    .HasColumnName("ma_san_pham");
+                entity.Property(e => e.SoLuong).HasColumnName("so_luong");
+                entity.Property(e => e.ThanhTien).HasColumnName("thanh_tien");
+                entity.HasOne(d => d.MaGioHangNavigation).WithMany(p => p.ChiTietGioHangs)
+                    .HasForeignKey(d => d.MaGioHang)
+                    .HasConstraintName("FK_CHI_TIET_GIO_HANG_GIO_HANG");
+            });
 
             modelBuilder.Entity<ComBoSanPham>(entity =>
             {
@@ -1620,6 +1620,7 @@ namespace UltraStrore.Data
                                 TongGia = 200000,
                                 TrangThai = true,
                                 NgayTao = DateOnly.FromDateTime(DateTime.Now),
+                                Discount = 20,
                             },
                             new ComBoSanPham
                             {
@@ -1631,6 +1632,7 @@ namespace UltraStrore.Data
                                 SoLuong = 50,
                                 TrangThai = true,
                                 NgayTao = DateOnly.FromDateTime(DateTime.Now),
+                                Discount = 20,
                             },
                             new ComBoSanPham
                             {
@@ -1642,7 +1644,7 @@ namespace UltraStrore.Data
                                 TongGia = 500000,
                                 TrangThai = true,
                                 NgayTao = DateOnly.FromDateTime(DateTime.Now),
-
+                                Discount = 20,
                             },
                             new ComBoSanPham
                             {
@@ -1654,6 +1656,7 @@ namespace UltraStrore.Data
                                 TongGia = 220000,
                                 TrangThai = true,
                                 NgayTao = DateOnly.FromDateTime(DateTime.Now),
+                                Discount = 20,
                             },
                             new ComBoSanPham
                             {
@@ -1665,6 +1668,7 @@ namespace UltraStrore.Data
                                 TongGia = 180000,
                                 TrangThai = true,
                                 NgayTao = DateOnly.FromDateTime(DateTime.Now),
+                                Discount = 20,
                             }
 
                             );
@@ -2268,8 +2272,8 @@ namespace UltraStrore.Data
                     ThanhTien = 150000,
                     MaCombo = null
                 }
-            
-          
+
+
                 );
             modelBuilder.Entity<DanhSachDiaChi>().HasData(
                 new DanhSachDiaChi
@@ -2337,8 +2341,8 @@ namespace UltraStrore.Data
                     Tinh = "TP. Hồ Chí Minh",
                     TrangThai = 0
                 }
-        
-        
+
+
             );
             modelBuilder.Entity<Voucher>()
         .ToTable("VOUCHER");

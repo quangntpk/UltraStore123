@@ -270,6 +270,22 @@
   },
   {
     "ContainingType": "UltraStrore.Controllers.CheckOutController",
+    "Method": "InstantCheckout",
+    "RelativePath": "api/CheckOut/InstantCheckout",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "UltraStrore.Models.DTO.PaymentRequestDto1",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "UltraStrore.Controllers.CheckOutController",
     "Method": "ProcessCODPayment",
     "RelativePath": "api/CheckOut/process-payment",
     "HttpMethod": "POST",
@@ -1642,6 +1658,11 @@
       {
         "Name": "id",
         "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "request",
+        "Type": "UltraStrore.Controllers.OrdersController\u002BApproveOrderRequest",
         "IsRequired": true
       }
     ],
