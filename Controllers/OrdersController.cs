@@ -76,7 +76,8 @@ namespace UltraStrore.Controllers
             }
 
             var ordersQuery = await _context.DonHangs
-                .Where(d => d.MaNguoiDung == id)
+                .Where(d => d.MaDonHang == int.Parse(id))
+
                 .Include(d => d.MaNguoiDungNavigation)
                 .Include(d => d.ChiTietDonHangs)
                 .ThenInclude(cd => cd.MaSanPhamNavigation)
@@ -98,6 +99,8 @@ namespace UltraStrore.Controllers
                     LyDoHuy = d.LyDoHuy,
                     TongTien = d.ChiTietDonHangs.Sum(cd => cd.ThanhTien ?? 0),
                     FinalAmount = d.FinalAmount ?? 0,
+                    ShippingFee = d.ShippingFee,
+                    DiscountAmount = d.DiscountAmount ?? 0,
                     SanPhams = d.ChiTietDonHangs.Select(cd => new
                     {
                         MaChiTietDh = cd.MaCtdh,
@@ -120,7 +123,6 @@ namespace UltraStrore.Controllers
                                 SoLuong = ct.SoLuong,
                                 Gia = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.Gia : 0,
                                 ThanhTien = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.Gia * ct.SoLuong : 0,
-                                MaSanPham = ct.MaSanPham
                             })
                         } : null
                     }).ToList(),
@@ -157,6 +159,8 @@ namespace UltraStrore.Controllers
                 d.LyDoHuy,
                 d.TongTien,
                 FinalAmount = d.FinalAmount,
+                ShippingFee = d.ShippingFee,
+                DiscountAmount = d.DiscountAmount,
                 SanPhams = d.SanPhams.Select(cd => new
                 {
                     cd.MaChiTietDh,
@@ -165,23 +169,22 @@ namespace UltraStrore.Controllers
                     cd.SoLuong,
                     cd.Gia,
                     cd.ThanhTien,
-                    HinhAnh = cd.LaCombo
-                        ? _context.ChiTietComBos
-                            .Where(ct => ct.MaComBo == cd.MaCombo)
-                            .Select(ct => ct.MaSanPhamNavigation.HinhAnhs.FirstOrDefault())
-                            .FirstOrDefault()?.Link
-                        : _context.HinhAnhs
-                            .Where(h => h.MaSanPham == cd.MaSanPham)
-                            .FirstOrDefault()?.Link,
+                    cd.MaSanPham,
+                    cd.MaCombo,
+                    HinhAnh = _context.HinhAnhs
+            .Where(h => h.MaSanPham == cd.MaSanPham)
+            .Select(h => h.Link)
+            .FirstOrDefault(),
                     Combo = cd.Combo != null ? new
                     {
                         cd.Combo.TenCombo,
                         cd.Combo.GiaCombo,
                         SanPhamsTrongCombo = cd.Combo.SanPhamsTrongCombo.Select(ct => new
                         {
-                            ct.TenSanPham,
+                            TenSanPham = _context.SanPhams.Where(g => g.MaSanPham.Contains(ct.MaSanPham)).Select(h => h.TenSanPham).FirstOrDefault(),
+                            ct.MaSanPham,
                             ct.SoLuong,
-                            ct.Gia,
+                            Gia = _context.SanPhams.Where(g => g.MaSanPham.Contains(ct.MaSanPham)).Select(h => h.Gia).FirstOrDefault(),
                             ct.ThanhTien,
                             HinhAnh = _context.HinhAnhs
                                 .Where(h => h.MaSanPham == ct.MaSanPham)
