@@ -72,5 +72,11 @@ namespace UltraStrore.Controllers
             var data = await this.services.ListSanPhamLQ(id);
             return Ok(data);
         }
+        [HttpPost("MoTaSanPhamCreate")]
+        public async Task<IActionResult> MoTaSanPhamCreate(List<MoTaSanPhamCreateModel> info)
+        {
+            var data = await this.services.MoTaSanPhamCreate(info);
+            return Ok(data);
+        }
     }
 }

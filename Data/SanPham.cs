@@ -19,6 +19,7 @@ namespace UltraStrore.Data
         public string? MoTa { get; set; }
         public int? GioiTinh { get; set; }
         public int? SoLuongDaBan { get; set; }
+        public int? GiaNhap { get; set; }
         public virtual LoaiSanPham? MaLoaiSanPhamNavigation { get; set; }
         public virtual ThuongHieu? MaThuongHieuNavigation { get; set; }
         public virtual ICollection<ChiTietDonHang> ChiTietDonHangs { get; set; }
