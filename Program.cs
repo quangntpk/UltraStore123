@@ -56,6 +56,8 @@ namespace UltraStrore
             builder.Services.AddScoped<ICheckOutServices, CheckOutService>();
             builder.Services.AddScoped<IVnPayServies, VnPayService>();
             builder.Services.Configure<VnPayConfig>(builder.Configuration.GetSection("VnPay"));
+            builder.Services.AddScoped<IHashTagServices, HashTagServices>();
+
             builder.Services.AddSingleton(sp =>
                 sp.GetRequiredService<IOptions<VnPayConfig>>().Value);
 

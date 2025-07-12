@@ -1,30 +1,31 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System;
+using System.Threading.Tasks;
 using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.EditModels;
 using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
-using System;
-using System.Threading.Tasks;
+using UltraStrore.Services;
 
 namespace UltraStrore.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ThuongHieuController : ControllerBase
+    public class HashTagController : ControllerBase
     {
-        private readonly IThuongHieuServices _thuongHieuServices;
+        private readonly IHashTagServices _hashTagServices;
 
-        public ThuongHieuController(IThuongHieuServices thuongHieuServices)
+        public HashTagController(IHashTagServices hashTagServices)
         {
-            _thuongHieuServices = thuongHieuServices ?? throw new ArgumentNullException(nameof(thuongHieuServices));
+            _hashTagServices = hashTagServices ?? throw new ArgumentNullException(nameof(hashTagServices));
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAllThuongHieu()
+        public async Task<IActionResult> GetAllHashTag()
         {
             try
             {
-                var list = await _thuongHieuServices.GetAllThuongHieuAsync();
+                var list = await _hashTagServices.GetAllHashTagAsync();
                 return Ok(list);
             }
             catch (Exception ex)
@@ -34,12 +35,12 @@ namespace UltraStrore.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetThuongHieu(int id)
+        public async Task<IActionResult> GetHashTag(int id)
         {
             try
             {
-                var thuongHieu = await _thuongHieuServices.GetThuongHieuAsync(id);
-                return Ok(thuongHieu);
+                var hashTag = await _hashTagServices.GetHashTagAsync(id);
+                return Ok(hashTag);
             }
             catch (KeyNotFoundException ex)
             {
@@ -52,15 +53,15 @@ namespace UltraStrore.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateThuongHieu([FromBody] ThuongHieuCreate model)
+        public async Task<IActionResult> CreateHashTag([FromBody] HashTagCreate model)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
             try
             {
-                var createdThuongHieu = await _thuongHieuServices.CreateThuongHieuAsync(model);
-                return CreatedAtAction(nameof(GetThuongHieu), new { id = createdThuongHieu.MaThuongHieu }, createdThuongHieu);
+                var createdHashTag = await _hashTagServices.CreateHashTagAsync(model);
+                return CreatedAtAction(nameof(GetHashTag), new { id = createdHashTag.MaHashTag }, createdHashTag);
             }
             catch (ArgumentException ex)
             {
@@ -77,18 +78,18 @@ namespace UltraStrore.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateThuongHieu(int id, [FromBody] ThuongHieuEdit model)
+        public async Task<IActionResult> UpdateHashTag(int id, [FromBody] HashTagEdit model)
         {
-            if (id != model.MaThuongHieu)
-                return BadRequest("Mã thương hiệu không khớp.");
+            if (id != model.MaHashTag)
+                return BadRequest("Mã hashtag không khớp.");
 
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
             try
             {
-                var updatedThuongHieu = await _thuongHieuServices.UpdateThuongHieuAsync(model);
-                return Ok(updatedThuongHieu);
+                var updatedHashTag = await _hashTagServices.UpdateHashTagAsync(model);
+                return Ok(updatedHashTag);
             }
             catch (KeyNotFoundException ex)
             {
@@ -105,12 +106,12 @@ namespace UltraStrore.Controllers
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteThuongHieu(int id)
+        public async Task<IActionResult> DeleteHashTag(int id)
         {
             try
             {
-                var result = await _thuongHieuServices.DeleteThuongHieuAsync(id);
-                return result ? NoContent() : NotFound("Thương hiệu không tồn tại.");
+                var result = await _hashTagServices.DeleteHashTagAsync(id);
+                return result ? NoContent() : NotFound("Hashtag không tồn tại.");
             }
             catch (InvalidOperationException ex)
             {
@@ -123,11 +124,11 @@ namespace UltraStrore.Controllers
         }
 
         [HttpGet("Search")]
-        public async Task<IActionResult> SearchThuongHieu([FromQuery] string tenThuongHieu)
+        public async Task<IActionResult> SearchHashTag([FromQuery] string tenHashtag)
         {
             try
             {
-                var result = await _thuongHieuServices.SearchThuongHieuAsync(tenThuongHieu);
+                var result = await _hashTagServices.SearchHashTagAsync(tenHashtag);
                 return Ok(result);
             }
             catch (Exception ex)
@@ -137,11 +138,11 @@ namespace UltraStrore.Controllers
         }
 
         [HttpGet("{id}/SanPham")]
-        public async Task<IActionResult> GetSanPhamByThuongHieu(int id)
+        public async Task<IActionResult> GetSanPhamByHashTag(int id)
         {
             try
             {
-                var sanPhams = await _thuongHieuServices.GetSanPhamByThuongHieuAsync(id);
+                var sanPhams = await _hashTagServices.GetSanPhamByHashTagAsync(id);
                 return Ok(sanPhams);
             }
             catch (KeyNotFoundException ex)

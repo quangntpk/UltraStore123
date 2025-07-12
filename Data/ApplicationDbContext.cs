@@ -46,6 +46,8 @@ namespace UltraStrore.Data
         public DbSet<PendingOder> PendingOrders { get; set; }
         public virtual DbSet<DonHangSupport> DonHangSupports { get; set; } = null!;
         public virtual DbSet<Blogs> Blogs { get; set; } = null!;
+        public virtual DbSet<HashTag> HashTags { get; set; } = null!;
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
@@ -456,6 +458,7 @@ namespace UltraStrore.Data
                     .HasColumnName("kich_thuoc");
                 entity.Property(e => e.MaLoaiSanPham).HasColumnName("ma_loai_san_pham");
                 entity.Property(e => e.MaThuongHieu).HasColumnName("ma_thuong_hieu");
+                entity.Property(e => e.MaHashTag).HasColumnName("ma_hash_tag");
                 entity.Property(e => e.MoTa)
                     .HasMaxLength(150)
                     .HasColumnName("mo_ta");

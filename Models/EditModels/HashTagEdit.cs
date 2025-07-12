@@ -2,11 +2,11 @@
 
 namespace UltraStrore.Models.EditModels
 {
-    public class ThuongHieuEdit
+    public class HashTagEdit
     {
         [Required]
-        public int MaThuongHieu { get; set; }
-        public string TenThuongHieu { get; set; }
+        public int? MaHashTag { get; set; }
+        public string? TenHashTag { get; set; }
         public byte[]? HinhAnh { get; set; }
         public int? TrangThai { get; set; }
     }
