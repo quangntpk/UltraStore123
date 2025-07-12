@@ -56,7 +56,7 @@ namespace UltraStrore.Services
                     .Include(c => c.ChiTietGioHangs)
                     .ThenInclude(ct => ct.MaSanPhamNavigation)
                     .Include(c => c.MaNguoiDungNavigation)
-                    .FirstOrDefaultAsync(c => c.MaNguoiDung == request.UserId);
+                    .FirstOrDefaultAsync(c => c.MaNguoiDung==request.UserId);
 
                 if (cart == null)
                 {
@@ -104,10 +104,10 @@ namespace UltraStrore.Services
                 {
                     var chiTietDonHang = new ChiTietDonHang
                     {
-                        MaSanPham = item.IdSanPham + "_" + item.MauSac + "_" + item.KickThuoc,
+                        MaSanPham = item.IdSanPham +"_" +item.MauSac+"_"+item.KickThuoc,
                         SoLuong = item.SoLuongMua,
                         Gia = item.TienSanPham,
-                        ThanhTien = item.TienSanPham * item.SoLuongMua,
+                        ThanhTien = item.TienSanPham*item.SoLuongMua,
                         MaCombo = null,
                         SanPhamMaSanPham = item.IdSanPham,
                     };

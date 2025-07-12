@@ -1,22 +1,28 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Net.WebSockets;
+using System.Text.Json;
 using UltraStrore.Data;
 using UltraStrore.Helper;
 using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.EditModels;
 using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
-
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.IO;
+using System.Reflection.Metadata.Ecma335;
 namespace UltraStrore.Services
 {
     public class SanPhamServices : ISanPhamServices
     {
         private readonly ApplicationDbContext _context;
-        public SanPhamServices(ApplicationDbContext context)
+        private readonly string _dbPath;
+        public SanPhamServices(ApplicationDbContext context, IWebHostEnvironment env)
         {
             _context = context;
+            _dbPath = Path.Combine(env.WebRootPath, "db.json");
         }
         public async Task<List<SanPhamView>> ListSanPham(string id)
         {
@@ -27,7 +33,7 @@ namespace UltraStrore.Services
             {
                 var sanPhamDauTien = nhom.First();
                 var HinhAnhSanPhamList = _context.HinhAnhs
-                    .Where(g => g.MaSanPham.Substring(0, 6) == sanPhamDauTien.MaSanPham.Substring(0, 6))
+                    .Where(g => g.MaSanPham == sanPhamDauTien.MaSanPham.Substring(0, 6))
                     .Select(g => g.Data)
                     .ToList();
                 var listMauSac = nhom.Select(sp => sp.MaSanPham.Split('_')[1]).Distinct().ToList();
@@ -73,11 +79,42 @@ namespace UltraStrore.Services
             return listsp.Where(g => g.ID.Trim() == id.Trim()).ToList();
         }
 
-        public async Task<List<SanPham>> SanPhamByID(string? id)
+        public async Task<List<SanPhamView2>> SanPhamByID(string? id)
         {
 
-            var ListSanPham = _context.SanPhams.Where(g => g.MaSanPham.Contains(id)).ToList();
-            return ListSanPham;
+            List<SanPhamView2>? Result = new List<SanPhamView2>();
+            var ListSanPham = await _context.SanPhams
+                .Include(sp => sp.MaThuongHieuNavigation) 
+                .Include(sp => sp.MaLoaiSanPhamNavigation) 
+                .Where(g => g.MaSanPham.Contains(id))
+                .ToListAsync();
+            if (ListSanPham!=null && ListSanPham.Count()>0)
+            {
+                foreach (var item in ListSanPham)
+                {
+                    Result.Add(new SanPhamView2
+                    {
+                        GiaNhap = item.GiaNhap??0,
+                        MaSanPham = item.MaSanPham ?? "",
+                        TenSanPham = item.TenSanPham ?? null,
+                        SoLuong = item.SoLuong ?? null,
+                        Gia = item.Gia ?? 0,
+                        MaThuongHieu = item.MaThuongHieu ?? null,
+                        MaLoaiSanPham = item.MaLoaiSanPham ?? null,
+                        KichThuoc = item.KichThuoc ?? null,
+                        NgayTao = item.NgayTao ?? null,
+                        TrangThai = item.TrangThai ?? null,
+                        Example = item.Example ?? null,
+                        ChatLieu = item.ChatLieu ?? null,
+                        MoTa = item.MoTa ?? null,
+                        GioiTinh = item.GioiTinh ?? null,
+                        SoLuongDaBan = item.SoLuongDaBan ?? 0,
+                        ThuongHieu = item.MaThuongHieuNavigation.TenThuongHieu ?? null,
+                        LoaiSanPham = item.MaLoaiSanPhamNavigation.TenLoaiSanPham ?? null,
+                    });
+                }
+            }       
+            return Result;
 
         }
         public async Task<List<SanPhamByIDSorted>> SanPhamByIDSorteds(string? id)
@@ -87,7 +124,7 @@ namespace UltraStrore.Services
             foreach (var nhom in nhomSanPham)
             {
                 var sanPhamDauTien = nhom.First();
-                var HinhAnhSanPhamList = _context.HinhAnhs.Where(g => g.MaSanPham.Substring(0, 6) == sanPhamDauTien.MaSanPham.Substring(0, 6)).Select(g => g.TenHinhAnh).ToList();
+                var HinhAnhSanPhamList = _context.HinhAnhs.Where(g => g.MaSanPham == sanPhamDauTien.MaSanPham.Substring(0, 6)).Select(g => g.TenHinhAnh).ToList();
                 var listMauSac = sanPhamDauTien.MaSanPham.Split('_')[1];
                 List<SanPhamEditDetail> detailedit = new List<SanPhamEditDetail>();
                 foreach (var item in nhom)
@@ -99,6 +136,8 @@ namespace UltraStrore.Services
                     else
                         ed.SoLuong = item.SoLuong;
                     ed.Gia = item.Gia ?? 0;
+                    ed.GiaNhap = item.GiaNhap??0;
+                    ed.HinhAnh = _context.HinhAnhs.Where(g => g.MaSanPham == item.MaSanPham).Select(h=>h.Data).FirstOrDefault();
                     detailedit.Add(ed);
                 }
                 var tongSoLuong = nhom.Sum(sp => sp.SoLuong);
@@ -107,6 +146,8 @@ namespace UltraStrore.Services
                 var HinhAnh = _context.HinhAnhs.Where(g => g.MaSanPham.Trim() == sanPhamDauTien.MaSanPham.Substring(0, 6).Trim()).Select(g => g.Data).ToList();
                 listsp.Add(new SanPhamByIDSorted
                 {
+                    TH = sanPhamDauTien.MaThuongHieu,
+                    LSP = sanPhamDauTien.MaLoaiSanPham,
                     ID = sanPhamDauTien.MaSanPham.Substring(0, 13),
                     TenSanPham = sanPhamDauTien.TenSanPham,
                     MauSac = listMauSac,
@@ -115,7 +156,8 @@ namespace UltraStrore.Services
                     Details = detailedit,
                     HinhAnhs = HinhAnh,
                     ChatLieu = sanPhamDauTien.ChatLieu,
-                    MoTa = sanPhamDauTien.MoTa
+                    MoTa = sanPhamDauTien.MoTa,
+                    GioiTinh = sanPhamDauTien.GioiTinh
                 });
             }
             return listsp;
@@ -124,6 +166,7 @@ namespace UltraStrore.Services
         {
             var SanPhamNotEdited = _context.SanPhams.Where(g => g.MaSanPham.Contains(data[0].ID)).ToList();
             List<SanPham> EditCheck = new List<SanPham>();
+            List<HinhAnh> AddHinh = new List<HinhAnh>();
             APIResponse response = new APIResponse();
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -138,6 +181,7 @@ namespace UltraStrore.Services
                         edit.TenSanPham = data[i].TenSanPham.Trim();
                         edit.SoLuong = data[i].Details[j].SoLuong;
                         edit.Gia = data[i].Details[j].Gia;
+                        edit.GiaNhap = data[i].Details[j].GiaNhap;
                         edit.MaThuongHieu = data[i].MaThuongHieu;
                         edit.MaLoaiSanPham = data[i].LoaiSanPham;
                         edit.KichThuoc = data[i].Details[j].KichThuoc.Trim();
@@ -147,6 +191,11 @@ namespace UltraStrore.Services
                         edit.Example = true;
                         edit.ChatLieu = data[i].ChatLieu;
                         EditCheck.Add(edit);
+                        HinhAnh hinh = new HinhAnh();
+                        hinh.MaSanPham = edit.MaSanPham;
+                        hinh.Data = data[i].Details[j].HinhAnh;
+                        hinh.TenHinhAnh = edit.TenSanPham;
+                        AddHinh.Add(hinh);
                     }
                 }
                 foreach (var item in EditCheck)
@@ -163,16 +212,36 @@ namespace UltraStrore.Services
                         else
                             SanPhamEdited.SoLuong = item.SoLuong;
                         SanPhamEdited.Gia = item.Gia;
+                        SanPhamEdited.GiaNhap = item.GiaNhap;
                         SanPhamEdited.MoTa = item.MoTa;
                         SanPhamEdited.Example = item.Example;
                         SanPhamEdited.ChatLieu = item.ChatLieu;
                         _context.SanPhams.Update(SanPhamEdited);
+                        var HinhCheck = _context.HinhAnhs.Where(g => g.MaSanPham == SanPhamEdited.MaSanPham).FirstOrDefault();
+                        if(HinhCheck!=null)
+                        {
+                            var ReplaceOne = AddHinh.Where(g=>g.MaSanPham==HinhCheck.MaSanPham).FirstOrDefault();
+                            if(ReplaceOne.Data!=HinhCheck.Data)
+                            {
+                                HinhCheck.Data = ReplaceOne.Data;
+                                HinhCheck.TenHinhAnh = ReplaceOne.TenHinhAnh;
+                                _context.HinhAnhs.Update(HinhCheck);
+                                AddHinh.Remove(ReplaceOne);
+                            }                          
+                        }    
+                        else
+                        {
+                            var NewOne = AddHinh.Where(g => g.MaSanPham == SanPhamEdited.MaSanPham).FirstOrDefault();
+                            _context.HinhAnhs.Add(NewOne);
+                            AddHinh.Remove(NewOne);
+                        }    
                     }
                     else
                     {
                         _context.SanPhams.Add(item);
                     }
                 }
+                _context.HinhAnhs.AddRange(AddHinh);
                 foreach (var item in SanPhamNotEdited)
                 {
                     bool Found = false;
@@ -190,7 +259,7 @@ namespace UltraStrore.Services
                         _context.SanPhams.Update(item);
                     }
                 }
-                var HinhDelete = _context.HinhAnhs.Where(g => g.MaSanPham.Contains(data[0].ID.Trim())).ToList();
+                var HinhDelete = _context.HinhAnhs.Where(g => g.MaSanPham==data[0].ID.Trim()).ToList();
                 _context.HinhAnhs.RemoveRange(HinhDelete);
                 foreach (var item in data[0].HinhAnhs)
                 {
@@ -238,6 +307,7 @@ namespace UltraStrore.Services
                         sp.TenSanPham = data[i].TenSanPham;
                         sp.MaSanPham = KiHieu.KiHieu.ToString().Trim() + Max.ToString("00000").Trim() + "_" + data[i].MauSac.Trim() + "_" + item.KichThuoc.Trim();
                         sp.Gia = item.Gia;
+                        sp.GiaNhap = item.GiaNhap;
                         sp.SoLuong = item.SoLuong;
                         sp.ChatLieu = data[i].ChatLieu;
                         sp.MaLoaiSanPham = KiHieu.MaLoaiSanPham;
@@ -247,13 +317,20 @@ namespace UltraStrore.Services
                         sp.TrangThai = 1;
                         sp.Example = true;
                         sp.MoTa = data[i].MoTa;
+                        sp.GioiTinh = data[i].GioiTinh;
+                        sp.SoLuongDaBan = 0;
                         _context.SanPhams.Add(sp);
+                        HinhAnh newHA = new HinhAnh();
+                        newHA.TenHinhAnh = data[i].TenSanPham;
+                        newHA.MaSanPham = sp.MaSanPham;
+                        newHA.Data = item.HinhAnh;
+                        _context.HinhAnhs.Add(newHA);
                     }
                 }
                 foreach (var item in data[0].HinhAnhs)
                 {
                     HinhAnh newHA = new HinhAnh();
-                    newHA.TenHinhAnh = data[0].TenSanPham + 1;
+                    newHA.TenHinhAnh = data[0].TenSanPham;
                     newHA.MaSanPham = KiHieu.KiHieu.ToString().Trim() + Max.ToString("00000").Trim();
                     newHA.Data = item;
                     _context.HinhAnhs.Add(newHA);
@@ -367,5 +444,58 @@ namespace UltraStrore.Services
             var tops = listsp.Where(g => g.ID.Trim() != id.Trim()).OrderByDescending(h=>h.SoLuongDaBan).Take(6).ToList();
             return tops;
         }
+
+        public async Task<APIResponse> MoTaSanPhamCreate(List<MoTaSanPhamCreateModel>? info)
+        {
+            APIResponse response = new APIResponse();
+            try
+            {
+                if (info == null || info.Count == 0)
+                {
+                    response.ResponseCode = 400;
+                }
+
+                // Read existing db.json
+                List<MoTaSanPhamCreateModel> existingData = new List<MoTaSanPhamCreateModel>();
+                if (System.IO.File.Exists(_dbPath))
+                {
+                    var jsonContent = await System.IO.File.ReadAllTextAsync(_dbPath);
+                    if (!string.IsNullOrWhiteSpace(jsonContent))
+                    {
+                        try
+                        {
+                            existingData = JsonSerializer.Deserialize<List<MoTaSanPhamCreateModel>>(jsonContent) ?? new List<MoTaSanPhamCreateModel>();
+                        }
+                        catch (JsonException ex)
+                        {
+                            response.ErrorMessage = ex.Message;
+                            response.ResponseCode = 400;
+                        }
+                    }
+                    // If jsonContent is empty or whitespace, existingData remains an empty list
+                }
+                else
+                {
+                    // Create an empty db.json file with an empty array if it doesn't exist
+                    await System.IO.File.WriteAllTextAsync(_dbPath, "[]");
+                }
+
+                // Add the first item from the input array
+                existingData.Add(info[0]);
+
+                // Write back to db.json
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                var updatedJson = JsonSerializer.Serialize(existingData, options);
+                await System.IO.File.WriteAllTextAsync(_dbPath, updatedJson);
+
+                response.ResponseCode = 200;
+            }
+            catch (IOException ex)
+            {
+                response.ErrorMessage = ex.Message;
+                response.ResponseCode = 400;
+            }
+            return response;
+        }  
     }
 }

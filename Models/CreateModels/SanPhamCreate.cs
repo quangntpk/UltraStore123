@@ -9,6 +9,7 @@ namespace UltraStrore.Models.CreateModels
         public string? MoTa { get; set; }
         public string? MauSac { get; set; }
         public string? ChatLieu { get; set; }
+        public int? GioiTinh { get; set; }
         public List<SanPhamEditDetail>? Details { get; set; }
         public List<byte[]>? HinhAnhs { get; set; }
     }

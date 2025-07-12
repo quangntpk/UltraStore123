@@ -1178,6 +1178,7 @@ namespace UltraStrore.Data
                     ChatLieu = "Cotton",
                     SoLuongDaBan = 10,
                     GioiTinh = 0,
+                    GiaNhap = 75000,
                 },
                 new SanPham
                 {
@@ -1194,6 +1195,7 @@ namespace UltraStrore.Data
                     ChatLieu = "Cotton",
                     SoLuongDaBan = 5,
                     GioiTinh = 0,
+                    GiaNhap = 75000,
                 },
                new SanPham
                {
@@ -1210,6 +1212,7 @@ namespace UltraStrore.Data
                    ChatLieu = "Cotton",
                    SoLuongDaBan = 15,
                    GioiTinh = 0,
+                   GiaNhap = 75000,
                },
                 new SanPham
                 {
@@ -1226,6 +1229,7 @@ namespace UltraStrore.Data
                     ChatLieu = "Cotton",
                     SoLuongDaBan = 2,
                     GioiTinh = 0,
+                    GiaNhap = 75000,
                 },
                  new SanPham
                  {
@@ -1242,6 +1246,7 @@ namespace UltraStrore.Data
                      ChatLieu = "Cotton",
                      SoLuongDaBan = 3,
                      GioiTinh = 0,
+                     GiaNhap = 75000
                  },
                   new SanPham
                   {
@@ -1258,6 +1263,7 @@ namespace UltraStrore.Data
                       ChatLieu = "Cotton",
                       SoLuongDaBan = 3,
                       GioiTinh = 0,
+                      GiaNhap = 75000
                   },
                    new SanPham
                    {
@@ -1274,6 +1280,7 @@ namespace UltraStrore.Data
                        ChatLieu = "Cotton",
                        SoLuongDaBan = 5,
                        GioiTinh = 0,
+                       GiaNhap = 75000,
                    },
                     new SanPham
                     {
@@ -1290,6 +1297,7 @@ namespace UltraStrore.Data
                         ChatLieu = "Cotton",
                         SoLuongDaBan = 3,
                         GioiTinh = 1,
+                        GiaNhap = 75000
                     },
                      new SanPham
                      {
@@ -1306,6 +1314,7 @@ namespace UltraStrore.Data
                          ChatLieu = "Cotton",
                          SoLuongDaBan = 2,
                          GioiTinh = 1,
+                         GiaNhap = 75000,
                      },
                       new SanPham
                       {
@@ -1322,6 +1331,7 @@ namespace UltraStrore.Data
                           ChatLieu = "Cotton",
                           SoLuongDaBan = 6,
                           GioiTinh = 1,
+                          GiaNhap = 75000,
                       },
                       new SanPham
                       {
@@ -1338,6 +1348,7 @@ namespace UltraStrore.Data
                           ChatLieu = "Cotton",
                           SoLuongDaBan = 3,
                           GioiTinh = 1,
+                          GiaNhap = 75000,
                       }
                 );
             modelBuilder.Entity<HinhAnh>().HasData(

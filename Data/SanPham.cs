@@ -21,6 +21,7 @@ namespace UltraStrore.Data
         public int? SoLuongDaBan { get; set; }
         public int? MaHashTag { get; set; }
         public virtual HashTag? MaHashTagNavigation { get; set; }
+        public int? GiaNhap { get; set; }
         public virtual LoaiSanPham? MaLoaiSanPhamNavigation { get; set; }
         public virtual ThuongHieu? MaThuongHieuNavigation { get; set; }
         public virtual ICollection<ChiTietDonHang> ChiTietDonHangs { get; set; }
