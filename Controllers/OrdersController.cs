@@ -5,6 +5,7 @@ using UltraStrore.Data;
 using System.Security.Claims;
 
 
+
 namespace UltraStrore.Controllers
 {
     //[Authorize(Roles = "1")]
@@ -26,6 +27,7 @@ namespace UltraStrore.Controllers
         {
             var orders = await _context.DonHangs
                 .Include(d => d.MaNguoiDungNavigation)
+                .Include(d => d.MaNhanVienNavigation)
                 .Include(d => d.ChiTietDonHangs)
                     .ThenInclude(cd => cd.MaSanPhamNavigation)
                 .Include(d => d.ChiTietDonHangs)
@@ -48,9 +50,13 @@ namespace UltraStrore.Controllers
                         : (cd.MaSanPhamNavigation != null ? cd.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại"))
                         .FirstOrDefault(),
 
-                    // Đây là mã người duyệt đơn (nếu có)
+                    // Thông tin nhân viên duyệt đơn
+                    MaNhanVien = d.MaNhanVien,
+                    HoTenNhanVien = d.MaNhanVienNavigation != null ? d.MaNhanVienNavigation.HoTen : null,
+
+                    // Thông tin khách hàng đặt hàng
                     MaNguoiDung = d.MaNguoiDung,
-                    HoTenNguoiDuyet = d.MaNguoiDungNavigation != null ? d.MaNguoiDungNavigation.HoTen : null
+                    HoTenKhachHang = d.MaNguoiDungNavigation != null ? d.MaNguoiDungNavigation.HoTen : null
                 })
                 .AsNoTracking()
                 .ToListAsync();
@@ -70,7 +76,7 @@ namespace UltraStrore.Controllers
             }
 
             var ordersQuery = await _context.DonHangs
-                .Where(d => d.MaDonHang == int.Parse(id))
+                .Where(d => d.MaNguoiDung == id)
                 .Include(d => d.MaNguoiDungNavigation)
                 .Include(d => d.ChiTietDonHangs)
                 .ThenInclude(cd => cd.MaSanPhamNavigation)
@@ -90,9 +96,7 @@ namespace UltraStrore.Controllers
                     TrangThaiThanhToan = (int)d.TrangThaiHang,
                     HinhThucThanhToan = d.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang ? "COD" : "VNPay",
                     LyDoHuy = d.LyDoHuy,
-
                     TongTien = d.ChiTietDonHangs.Sum(cd => cd.ThanhTien ?? 0),
-
                     FinalAmount = d.FinalAmount ?? 0,
                     SanPhams = d.ChiTietDonHangs.Select(cd => new
                     {
@@ -106,19 +110,17 @@ namespace UltraStrore.Controllers
                         ThanhTien = cd.ThanhTien,
                         MaCombo = cd.MaCombo,
                         MaSanPham = cd.MaSanPham,
-
                         Combo = cd.MaCombo != null && cd.MaComboNavigation != null ? new
                         {
                             TenCombo = cd.MaComboNavigation.TenComBo,
                             GiaCombo = cd.MaComboNavigation.TongGia,
                             SanPhamsTrongCombo = cd.MaComboNavigation.ChiTietComBos.Select(ct => new
                             {
-                                TenSanPham = _context.SanPhams.Where(g => g.MaSanPham == ct.MaSanPham).Select(g => g.TenSanPham).FirstOrDefault(),
+                                TenSanPham = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại",
                                 SoLuong = ct.SoLuong,
                                 Gia = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.Gia : 0,
                                 ThanhTien = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.Gia * ct.SoLuong : 0,
-                                MaSanPham = ct.MaSanPham,
-                                MaSanPham1 = _context.DonHangSupports.Where(g => g.MaChiTietCombo == ct.MaChiTietComBo && g.ChiTietGioHang == cd.MaCtdh).Select(g => g.MaSanPham).FirstOrDefault()
+                                MaSanPham = ct.MaSanPham
                             })
                         } : null
                     }).ToList(),
@@ -143,64 +145,91 @@ namespace UltraStrore.Controllers
             {
                 return NotFound(new { message = "Không tìm thấy đơn hàng nào cho người dùng này." });
             }
-            var temp = ordersQuery;
-            //var orders = ordersQuery.Select(d => new
-            //{
-            //    d.MaDonHang,
-            //    d.TenNguoiNhan,
-            //    d.NgayDat,
-            //    d.TrangThaiDonHang,
-            //    d.TrangThaiThanhToan,
-            //    d.HinhThucThanhToan,
-            //    d.LyDoHuy,
-            //    d.TongTien,
-            //    FinalAmount = d.FinalAmount,
-            //    SanPhams = d.SanPhams.Select(cd => new
-            //    {
-            //        cd.MaChiTietDh,
-            //        cd.LaCombo,
-            //        cd.TenSanPham,
-            //        cd.SoLuong,
-            //        cd.Gia,
-            //        cd.ThanhTien,
-            //        cd.MaSanPham,
-            //        HinhAnh = cd.LaCombo
-            //            ? _context.ChiTietComBos
-            //                .Where(ct => ct.MaComBo == cd.MaCombo)
-            //                .Select(ct => ct.MaSanPhamNavigation.HinhAnhs.FirstOrDefault())
-            //                .FirstOrDefault().ToString()
-            //            : _context.HinhAnhs
-            //                .Where(h => h.MaSanPham == cd.MaSanPham)
-            //                .FirstOrDefault().ToString(),
-            //        Combo = cd.Combo != null ? new
-            //        {
-            //            cd.Combo.TenCombo,
-            //            cd.Combo.GiaCombo,
-            //            SanPhamsTrongCombo = cd.Combo.SanPhamsTrongCombo.Select(ct => new
-            //            {
-            //                ct.TenSanPham,
-            //                ct.SoLuong,
-            //                ct.Gia,
-            //                ct.ThanhTien,
-            //                HinhAnh = _context.HinhAnhs
-            //                    .Where(h => h.MaSanPham == ct.MaSanPham)
-            //                    .FirstOrDefault().ToString(),
-            //                ct.MaSanPham1
-            //            })
-            //        } : null
-            //    }).ToList(),
-            //    d.ThongTinNguoiDung,
-            //    d.ThongTinDonHang
-            //}).ToList();
 
-            return Ok(temp);
+            var orders = ordersQuery.Select(d => new
+            {
+                d.MaDonHang,
+                d.TenNguoiNhan,
+                d.NgayDat,
+                d.TrangThaiDonHang,
+                d.TrangThaiThanhToan,
+                d.HinhThucThanhToan,
+                d.LyDoHuy,
+                d.TongTien,
+                FinalAmount = d.FinalAmount,
+                SanPhams = d.SanPhams.Select(cd => new
+                {
+                    cd.MaChiTietDh,
+                    cd.LaCombo,
+                    cd.TenSanPham,
+                    cd.SoLuong,
+                    cd.Gia,
+                    cd.ThanhTien,
+                    HinhAnh = cd.LaCombo
+                        ? _context.ChiTietComBos
+                            .Where(ct => ct.MaComBo == cd.MaCombo)
+                            .Select(ct => ct.MaSanPhamNavigation.HinhAnhs.FirstOrDefault())
+                            .FirstOrDefault()?.Link
+                        : _context.HinhAnhs
+                            .Where(h => h.MaSanPham == cd.MaSanPham)
+                            .FirstOrDefault()?.Link,
+                    Combo = cd.Combo != null ? new
+                    {
+                        cd.Combo.TenCombo,
+                        cd.Combo.GiaCombo,
+                        SanPhamsTrongCombo = cd.Combo.SanPhamsTrongCombo.Select(ct => new
+                        {
+                            ct.TenSanPham,
+                            ct.SoLuong,
+                            ct.Gia,
+                            ct.ThanhTien,
+                            HinhAnh = _context.HinhAnhs
+                                .Where(h => h.MaSanPham == ct.MaSanPham)
+                                .FirstOrDefault()?.Link
+                        })
+                    } : null
+                }).ToList(),
+                d.ThongTinNguoiDung,
+                d.ThongTinDonHang
+            }).ToList();
+
+            return Ok(orders);
         }
 
         [HttpPut("approve/{id}")]
-        public async Task<IActionResult> ApproveOrder(int id)
+        public async Task<IActionResult> ApproveOrder(int id, [FromBody] ApproveOrderRequest request)
         {
+            // Nếu có Authorization, lấy từ token
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            // Nếu không có Authorization, lấy từ request body
+            if (string.IsNullOrEmpty(userId))
+            {
+                userId = request.UserId;
+            }
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest(new { message = "Không thể xác định người duyệt đơn" });
+            }
+
+            // **SỬA: Kiểm tra userId có tồn tại trong bảng NGUOI_DUNG không**
+            // Thêm điều kiện kiểm tra cả MaNguoiDung và các trường khác
+            var userExists = await _context.NguoiDungs.AnyAsync(u =>
+                u.MaNguoiDung == userId ||
+                u.Email == userId ||
+                u.TaiKhoan == userId);
+
+            if (!userExists)
+            {
+                return BadRequest(new { message = $"Người dùng {userId} không tồn tại trong hệ thống" });
+            }
+
+            // **SỬA: Lấy MaNguoiDung thực sự từ database**
+            var actualUserId = await _context.NguoiDungs
+                .Where(u => u.MaNguoiDung == userId || u.Email == userId || u.TaiKhoan == userId)
+                .Select(u => u.MaNguoiDung)
+                .FirstOrDefaultAsync();
 
             var order = await _context.DonHangs
                 .Include(d => d.ChiTietDonHangs)
@@ -210,107 +239,103 @@ namespace UltraStrore.Controllers
             if (order == null)
                 return NotFound(new { message = "Đơn hàng không tồn tại" });
 
-            // Phân quyền: nếu không phải admin thì kiểm tra nhân viên được phép xử lý
-            if (userRole != "1")
-            {
-                if (!string.IsNullOrEmpty(order.MaNhanVien))
-                {
-                    if (order.MaNhanVien != userId)
-                        return Forbid("Đơn hàng đã được xử lý bởi nhân viên khác.");
-                }
-                else
-                {
-                    order.MaNhanVien = userId;
-                }
-            }
+            // Kiểm tra trạng thái hợp lệ để duyệt
+            if (order.TrangThaiDonHang != Data.TrangThaiDonHang.ChuaXacNhan &&
+                order.TrangThaiDonHang != Data.TrangThaiDonHang.DangXuLy &&
+                order.TrangThaiDonHang != Data.TrangThaiDonHang.DangGiaoHang)
 
-            // Chỉ duyệt nếu trạng thái hợp lệ
-            if (order.TrangThaiDonHang != TrangThaiDonHang.ChuaXacNhan &&
-                order.TrangThaiDonHang != TrangThaiDonHang.DangXuLy &&
-                order.TrangThaiDonHang != TrangThaiDonHang.DangGiaoHang)
             {
                 return BadRequest(new { message = "Không thể duyệt đơn hàng ở trạng thái này" });
             }
 
-            // Kiểm tra số lượng tồn kho
-            var originalHinhThucThanhToan = order.TrangThaiHang;
-            // Nếu cần xử lý trong vòng lặp thì viết như sau:
-            foreach (var chiTiet in order.ChiTietDonHangs)
+            // **SỬA: Sử dụng actualUserId thay vì userId**
+            // Nếu đơn hàng chưa có nhân viên xử lý (bước 1: chưa xác nhận)
+            if (string.IsNullOrEmpty(order.MaNhanVien))
             {
-                // TODO: xử lý nếu cần
+                // Gán nhân viên hiện tại làm người xử lý
+                order.MaNhanVien = actualUserId;
+            }
+            else
+            {
+                // Kiểm tra xem có phải nhân viên được gán xử lý không
+                if (order.MaNhanVien != actualUserId)
+                {
+                    return BadRequest(new { message = "Đơn hàng đã được gán cho nhân viên khác xử lý." });
+                }
             }
 
             // Cập nhật trạng thái đơn hàng (tăng lên một cấp)
-            order.TrangThaiDonHang = (TrangThaiDonHang)((int)order.TrangThaiDonHang + 1);
+            order.TrangThaiDonHang = (Data.TrangThaiDonHang)((int)order.TrangThaiDonHang + 1);
 
             // Nếu đã giao hàng thì đánh dấu là đã thanh toán
-            if (order.TrangThaiDonHang == TrangThaiDonHang.DaGiaoHang && order.TrangThaiHang == TrangThaiThanhToan.ThanhToanVNPay)
+            if (order.TrangThaiDonHang == Data.TrangThaiDonHang.DaGiaoHang)
             {
-                order.TrangThaiHang = TrangThaiThanhToan.ThanhToanVNPay;
-            }
-            else if (order.TrangThaiDonHang == TrangThaiDonHang.DaGiaoHang && order.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang)
-            {
-                order.TrangThaiHang = TrangThaiThanhToan.ThanhToanKhiNhanHang;
+                order.TrangThaiHang = Data.TrangThaiThanhToan.ThanhToanVNPay;
             }
 
-            _context.DonHangs.Update(order);
-            // Nếu số lượng đủ, cập nhật tồn kho
-            using (var transaction = await _context.Database.BeginTransactionAsync())
+            try
             {
-                try
-                {
-                    foreach (var chiTiet in order.ChiTietDonHangs)
-                    {
-                        if (chiTiet.MaCombo != null)
-                        {
-                            var combo = chiTiet.MaComboNavigation;
-                            if (combo != null)
-                            {
-                                combo.SoLuong -= chiTiet.SoLuong;
-                            }
-                        }
-                    }
-
-                    _context.DonHangs.Update(order);
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-
-                    return Ok(new { message = "Duyệt đơn thành công" });
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync();
-                    return StatusCode(500, new { message = "Đã xảy ra lỗi khi duyệt đơn.", error = ex.Message });
-                }
+                _context.DonHangs.Update(order);
+                await _context.SaveChangesAsync();
+                return Ok(new { message = "Duyệt đơn thành công", assignedStaff = actualUserId });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = $"Lỗi khi lưu dữ liệu: {ex.Message}" });
             }
         }
 
-            // PUT: api/orders/cancel/{id}
-            [HttpPut("cancel/{id}")]
-            public async Task<IActionResult> CancelOrder(int id, [FromBody] string lyDoHuy)
+        // Thêm class request
+        public class ApproveOrderRequest
+        {
+            public string UserId { get; set; }
+        }
+
+
+
+        public enum TrangThaiDonHang
+        {
+            ChuaXacNhan = 0,
+            DangXuLy = 1,
+            DangGiaoHang = 2,
+            DaGiaoHang = 3,
+            DaHuy = 4  // **ĐẢM BẢO giá trị này = 4**
+        }
+
+        // **KIỂM TRA: Trong method CancelOrder, đảm bảo SaveChanges được gọi**
+        [HttpPut("cancel/{id}")]
+        public async Task<IActionResult> CancelOrder(int id, [FromBody] string lyDoHuy)
+        {
+            var order = await _context.DonHangs.FindAsync(id);
+            if (order == null)
             {
-                var order = await _context.DonHangs.FindAsync(id);
-                if (order == null)
-                {
-                    return NotFound(new { message = "Đơn hàng không tồn tại" });
-                }
+                return NotFound(new { message = "Đơn hàng không tồn tại" });
+            }
 
-                if (order.TrangThaiDonHang != TrangThaiDonHang.ChuaXacNhan && order.TrangThaiDonHang != TrangThaiDonHang.DangXuLy)
-                {
-                    return BadRequest(new { message = "Chỉ có thể hủy đơn hàng khi chưa xác nhận hoặc đang xử lý" });
-                }
+            if (order.TrangThaiDonHang != Data.TrangThaiDonHang.ChuaXacNhan &&
+                 order.TrangThaiDonHang != Data.TrangThaiDonHang.DangXuLy)
+            {
+                return BadRequest(new { message = "Chỉ có thể hủy đơn hàng khi chưa xác nhận hoặc đang xử lý" });
+            }
 
-                if (string.IsNullOrEmpty(lyDoHuy))
-                {
-                    return BadRequest(new { message = "Lý do hủy không được để trống" });
-                }
+            if (string.IsNullOrEmpty(lyDoHuy))
+            {
+                return BadRequest(new { message = "Lý do hủy không được để trống" });
+            }
 
-                order.TrangThaiDonHang = TrangThaiDonHang.DaHuy;
-                order.LyDoHuy = lyDoHuy;
+            order.TrangThaiDonHang = Data.TrangThaiDonHang.DaHuy;
+            order.LyDoHuy = lyDoHuy;
 
+            try
+            {
+                _context.DonHangs.Update(order); // **THÊM dòng này nếu chưa có**
                 await _context.SaveChangesAsync();
                 return Ok(new { message = "Hủy đơn thành công" });
             }
-
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = $"Lỗi khi hủy đơn: {ex.Message}" });
+            }
         }
     }
+}

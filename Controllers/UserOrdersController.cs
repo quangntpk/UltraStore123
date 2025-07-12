@@ -4,12 +4,14 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using UltraStrore.Data;
 using UltraStrore.Helper;
+using System.Security.Claims;
+using System.ComponentModel.DataAnnotations;
 
 namespace UltraStrore.Controllers
 {
     [Route("api/user/orders")]
     [ApiController]
-    [Authorize]
+    //[Authorize]
     public class UserOrdersController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
@@ -23,11 +25,15 @@ namespace UltraStrore.Controllers
         [HttpGet]
         public async Task<IActionResult> GetUserOrders()
         {
-            // Lấy MaNguoiDung từ token (thay thế ND00013)
-            string maNguoiDung = User.FindFirst("MaNguoiDung")?.Value ?? "ND00013";
+            // Lấy user ID từ token thay vì hardcode
+            var currentUserId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return Unauthorized(new { message = "Không thể xác thực người dùng. Vui lòng đăng nhập lại." });
+            }
 
             var orders = await _context.DonHangs
-                .Where(d => d.MaNguoiDung == maNguoiDung)
+                .Where(d => d.MaNguoiDung == currentUserId)
                 .Include(d => d.ChiTietDonHangs)
                 .ThenInclude(cd => cd.MaSanPhamNavigation)
                 .ThenInclude(sp => sp.HinhAnhs)
@@ -36,6 +42,7 @@ namespace UltraStrore.Controllers
                 .ThenInclude(c => c.ChiTietComBos)
                 .ThenInclude(ct => ct.MaSanPhamNavigation)
                 .ThenInclude(sp => sp.HinhAnhs)
+                .OrderByDescending(d => d.NgayDat)
                 .Select(d => new
                 {
                     Id = "ORD-" + d.MaDonHang.ToString("D5"),
@@ -48,21 +55,15 @@ namespace UltraStrore.Controllers
                     FinalAmount = d.FinalAmount,
                     DiscountAmount = d.DiscountAmount,
                     ShippingFee = d.ShippingFee,
+                    // Rút gọn Items để tránh quá dài
                     Items = d.ChiTietDonHangs.Select(cd => new
                     {
                         Id = cd.MaCtdh,
-                        Name = cd.MaCombo != null
-                            ? cd.MaComboNavigation != null ? cd.MaComboNavigation.TenComBo : "Combo không tồn tại"
-                            : cd.MaSanPhamNavigation != null ? cd.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại",
+                        Name = cd.MaCombo != null ? cd.MaComboNavigation.TenComBo : cd.MaSanPhamNavigation.TenSanPham,
                         Quantity = cd.SoLuong,
                         Price = cd.Gia,
-                        Color = cd.MaCombo == null ? ExtractColorFromProductCode(cd.MaSanPham) : null,
-                        Size = cd.MaCombo == null ? ExtractSizeFromProductCode(cd.MaSanPham) : null,
                         ProductCode = cd.MaSanPham,
-                        ComboCode = cd.MaCombo,
-                        Image = cd.MaCombo != null
-                            ? GetImageFromCombo(cd.MaCombo)
-                            : GetImageFromSanPham(cd.MaSanPham)
+                        ComboCode = cd.MaCombo
                     }).ToList(),
                     TenNguoiNhan = d.TenNguoiNhan,
                     HinhThucThanhToan = d.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang ? "COD" : "VNPay",
@@ -177,31 +178,27 @@ namespace UltraStrore.Controllers
         [HttpGet("search")]
         public async Task<IActionResult> SearchUserOrders([FromQuery] string query)
         {
-            var claims = User.FindAll(ClaimTypes.NameIdentifier).ToList();
-            var maNguoiDung = claims.FirstOrDefault(c => c.Value.StartsWith("ND") || c.Value.StartsWith("KH") || c.Value.StartsWith("AD"))?.Value;
-            if (string.IsNullOrEmpty(maNguoiDung))
+            var currentUserId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(currentUserId))
             {
-                return Unauthorized(new { message = "Không tìm thấy thông tin người dùng trong token." });
+                return Unauthorized(new { message = "Không thể xác thực người dùng. Vui lòng đăng nhập lại." });
             }
 
             if (string.IsNullOrEmpty(query))
             {
-                return await GetUserOrders(); // Nếu không có query, trả về tất cả đơn hàng
+                return await GetUserOrders();
             }
 
             var orders = await _context.DonHangs
-                .Where(d => d.MaNguoiDung == maNguoiDung &&
+                .Where(d => d.MaNguoiDung == currentUserId &&
                             (d.MaDonHang.ToString().Contains(query) ||
                              (d.TenNguoiNhan != null && d.TenNguoiNhan.Contains(query)) ||
                              (d.Sdt != null && d.Sdt.Contains(query))))
                 .Include(d => d.ChiTietDonHangs)
                 .ThenInclude(cd => cd.MaSanPhamNavigation)
-                .ThenInclude(sp => sp.HinhAnhs)
                 .Include(d => d.ChiTietDonHangs)
                 .ThenInclude(cd => cd.MaComboNavigation)
-                .ThenInclude(c => c.ChiTietComBos)
-                .ThenInclude(ct => ct.MaSanPhamNavigation)
-                .ThenInclude(sp => sp.HinhAnhs)
+                .OrderByDescending(d => d.NgayDat)
                 .Select(d => new
                 {
                     Id = d.MaDonHang,
@@ -212,32 +209,6 @@ namespace UltraStrore.Controllers
                              d.TrangThaiDonHang == TrangThaiDonHang.DaGiaoHang ? "completed" : "canceled",
                     Total = d.ChiTietDonHangs.Sum(cd => cd.ThanhTien ?? 0),
                     FinalAmount = d.FinalAmount,
-                    DiscountAmount = d.DiscountAmount,
-                    ShippingFee = d.ShippingFee,
-                    Items = d.ChiTietDonHangs.Select(cd => new
-                    {
-                        Id = cd.MaCtdh,
-                        Name = cd.MaCombo != null
-                            ? cd.MaComboNavigation != null ? cd.MaComboNavigation.TenComBo : "Combo không tồn tại"
-                            : cd.MaSanPhamNavigation != null ? cd.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại",
-                        Quantity = cd.SoLuong,
-                        Price = cd.Gia,
-                        Color = cd.MaCombo == null ? ExtractColorFromProductCode(cd.MaSanPham) : null,
-                        Size = cd.MaCombo == null ? ExtractSizeFromProductCode(cd.MaSanPham) : null,
-                        ColorHex = cd.MaCombo == null ? ExtractColorHexFromProductCode(cd.MaSanPham) : null,
-                        ProductCode = cd.MaSanPham,
-                        Image = cd.MaCombo != null
-                            ? cd.MaComboNavigation != null && cd.MaComboNavigation.ChiTietComBos.Any()
-                                ? cd.MaComboNavigation.ChiTietComBos
-                                    .Select(ct => ct.MaSanPhamNavigation != null && ct.MaSanPhamNavigation.HinhAnhs.Any()
-                                        ? ct.MaSanPhamNavigation.HinhAnhs.FirstOrDefault().Link
-                                        : "/placeholder.svg")
-                                    .FirstOrDefault() ?? "/placeholder.svg"
-                                : "/placeholder.svg"
-                            : cd.MaSanPhamNavigation != null && cd.MaSanPhamNavigation.HinhAnhs.Any()
-                                ? cd.MaSanPhamNavigation.HinhAnhs.FirstOrDefault().Link
-                                : "/placeholder.svg"
-                    }).ToList(),
                     TenNguoiNhan = d.TenNguoiNhan,
                     HinhThucThanhToan = d.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang ? "COD" : "VNPay",
                     LyDoHuy = d.LyDoHuy,
@@ -245,7 +216,7 @@ namespace UltraStrore.Controllers
                 })
                 .ToListAsync();
 
-            if (orders == null || !orders.Any())
+            if (!orders.Any())
             {
                 return NotFound(new { message = "Không tìm thấy đơn hàng nào khớp với tiêu chí tìm kiếm." });
             }
@@ -255,92 +226,148 @@ namespace UltraStrore.Controllers
 
         // PUT: api/user/orders/cancel/{id}
         [HttpPut("cancel/{id}")]
-        public async Task<IActionResult> CancelOrder(int id, [FromBody] string lyDoHuy)
+        public async Task<IActionResult> CancelOrder(int id, [FromBody] CancelOrderRequest request)
         {
-            string maNguoiDung = User.FindFirst("MaNguoiDung")?.Value;
-            if (string.IsNullOrEmpty(maNguoiDung))
-            {
-                return Unauthorized(new { message = "Không xác định được người dùng từ token." });
-            }
-
-            var order = await _context.DonHangs
-              .Include(d => d.MaNguoiDungNavigation)
-              .FirstOrDefaultAsync(d => d.MaDonHang == id && d.MaNguoiDung == maNguoiDung);
-
-            if (order == null)
-            {
-                return NotFound(new { message = "Đơn hàng không tồn tại hoặc không thuộc về bạn" });
-            }
-
-            if (order.TrangThaiDonHang != TrangThaiDonHang.ChuaXacNhan && order.TrangThaiDonHang != TrangThaiDonHang.DangXuLy)
-            {
-                return BadRequest(new { message = "Chỉ có thể hủy đơn hàng khi chưa xác nhận hoặc đang xử lý" });
-            }
-
-            var user = await _context.NguoiDungs.FindAsync(order.MaNguoiDung);
-            if (user == null)
-            {
-                return NotFound(new { message = "Không tìm thấy thông tin người dùng" });
-            }
-
-            // Kiểm tra xem tài khoản có bị khóa không
-            if (user.LockoutEndDate != null && user.LockoutEndDate > DateTime.Now)
-            {
-                return BadRequest(new
-                {
-                    message = $"Tài khoản của bạn bị khóa đến {user.LockoutEndDate.Value.ToString("dd/MM/yyyy HH:mm:ss")}",
-                    isAccountLocked = true,
-                    lockoutMessage = $"Tài khoản của bạn bị khóa đến {user.LockoutEndDate.Value.ToString("dd/MM/yyyy HH:mm:ss")}"
-                });
-            }
-
-            if (string.IsNullOrEmpty(lyDoHuy))
-            {
-                return BadRequest(new { message = "Lý do hủy không được để trống" });
-            }
-
-            // Cập nhật đơn hàng
-            order.TrangThaiDonHang = TrangThaiDonHang.DaHuy;
-            order.LyDoHuy = lyDoHuy;
-
-            // Tăng số lần hủy
-            user.CancelConunt = (user.CancelConunt ?? 0) + 1;
-
-            // Khóa tài khoản nếu hủy quá 3 lần
-            bool willBeLocked = user.CancelConunt > 3;
-            if (willBeLocked)
-            {
-                user.LockoutEndDate = DateTime.Now.AddDays(3);
-                user.TrangThai = 1; // Bị khóa
-            }
-
             try
             {
-                await _context.SaveChangesAsync();
-
-                if (willBeLocked)
+                var currentUserId = GetCurrentUserId();
+                if (string.IsNullOrEmpty(currentUserId))
                 {
-                    return Ok(new
+                    return Unauthorized(new { message = "Không thể xác thực người dùng. Vui lòng đăng nhập lại." });
+                }
+
+                if (string.IsNullOrWhiteSpace(request?.LyDoHuy))
+                {
+                    return BadRequest(new { message = "Lý do hủy không được để trống" });
+                }
+
+                if (request.LyDoHuy.Length > 500)
+                {
+                    return BadRequest(new { message = "Lý do hủy không được quá 500 ký tự" });
+                }
+
+                var order = await _context.DonHangs.FindAsync(id);
+                if (order == null)
+                {
+                    return NotFound(new { message = "Đơn hàng không tồn tại" });
+                }
+
+                if (order.MaNguoiDung != currentUserId)
+                {
+                    return StatusCode(403, new { message = "Bạn không có quyền hủy đơn hàng này" });
+                }
+
+                if (order.TrangThaiDonHang == Data.TrangThaiDonHang.DaHuy)
+                {
+                    return BadRequest(new { message = "Đơn hàng này đã được hủy trước đó" });
+                }
+
+                if (order.TrangThaiDonHang != Data.TrangThaiDonHang.ChuaXacNhan &&
+                    order.TrangThaiDonHang != Data.TrangThaiDonHang.DangXuLy)
+                {
+                    return BadRequest(new { message = "Chỉ có thể hủy đơn hàng khi chưa xác nhận hoặc đang xử lý" });
+                }
+
+                var nguoiDung = await _context.NguoiDungs.FindAsync(currentUserId);
+                if (nguoiDung == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy thông tin người dùng" });
+                }
+
+                // Kiểm tra nếu tài khoản đang bị khóa
+                if (nguoiDung.LockoutEndDate.HasValue && nguoiDung.LockoutEndDate.Value > DateTime.Now)
+                {
+                    return BadRequest(new
                     {
-                        message = "Đơn hàng đã được hủy. Tài khoản của bạn đã bị khóa do hủy đơn hàng quá 3 lần.",
+                        message = "Tài khoản của bạn đang bị khóa do hủy đơn hàng quá nhiều lần",
                         isAccountLocked = true,
-                        lockoutMessage = $"Tài khoản của bạn đã bị khóa đến {user.LockoutEndDate.Value.ToString("dd/MM/yyyy HH:mm:ss")}"
+                        lockoutMessage = $"Tài khoản sẽ được mở khóa vào {nguoiDung.LockoutEndDate.Value:dd/MM/yyyy HH:mm}"
                     });
                 }
-                else
+
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
                 {
+                    // Cập nhật trạng thái đơn hàng
+                    order.TrangThaiDonHang = Data.TrangThaiDonHang.DaHuy;
+                    order.LyDoHuy = request.LyDoHuy.Trim();
+
+                    // Tăng số lần hủy đơn hàng
+                    nguoiDung.CancelConunt = (nguoiDung.CancelConunt ?? 0) + 1;
+
+                    // Kiểm tra nếu đã hủy >= 3 lần thì khóa tài khoản
+                    bool isAccountLocked = false;
+                    string lockoutMessage = "";
+
+                    if (nguoiDung.CancelConunt >= 3)
+                    {
+                        nguoiDung.LockoutEndDate = DateTime.Now.AddDays(3);
+                        nguoiDung.TrangThai = 1;
+                        isAccountLocked = true;
+                        lockoutMessage = $"Tài khoản đã bị khóa 3 ngày do hủy đơn hàng quá 3 lần. Sẽ được mở khóa vào {nguoiDung.LockoutEndDate.Value:dd/MM/yyyy HH:mm}";
+                    }
+
+                    _context.DonHangs.Update(order);
+                    _context.NguoiDungs.Update(nguoiDung);
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    // SỬA: Luôn trả về thông báo thành công
                     return Ok(new
                     {
-                        message = "Hủy đơn thành công",
-                        isAccountLocked = false,
-                        cancelCount = user.CancelConunt
+                        message = isAccountLocked ?
+                            "Đơn hàng đã được hủy thành công. Tài khoản đã bị khóa do hủy đơn hàng quá 3 lần." :
+                            $"Hủy đơn thành công. Bạn đã hủy {nguoiDung.CancelConunt} lần.",
+                        isAccountLocked = isAccountLocked,
+                        lockoutMessage = lockoutMessage,
+                        remainingCancellations = isAccountLocked ? 0 : Math.Max(0, 3 - nguoiDung.CancelConunt.Value)
                     });
+                }
+                catch (Exception)
+                {
+                    await transaction.RollbackAsync();
+                    throw;
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Có lỗi xảy ra khi hủy đơn hàng", error = ex.Message });
+                return BadRequest(new { message = $"Lỗi khi hủy đơn: {ex.Message}" });
             }
+        }
+
+        // Helper method để lấy current user ID
+        private string GetCurrentUserId()
+        {
+            // Thử lấy từ các claim types khác nhau
+            var claims = HttpContext.User?.Claims?.ToList();
+            if (claims == null || !claims.Any()) return null;
+
+            // Ưu tiên lấy MaNguoiDung trước
+            var userId = claims.FirstOrDefault(c => c.Type == "MaNguoiDung")?.Value;
+
+            // Nếu không có thì thử các claim khác
+            if (string.IsNullOrEmpty(userId))
+            {
+                userId = claims.FirstOrDefault(c => c.Value.StartsWith("ND") || c.Value.StartsWith("KH") || c.Value.StartsWith("AD"))?.Value;
+            }
+
+            // Fallback về các claim standard
+            if (string.IsNullOrEmpty(userId))
+            {
+                userId = claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value ??
+                         claims.FirstOrDefault(c => c.Type == "nameid")?.Value ??
+                         claims.FirstOrDefault(c => c.Type == "sub")?.Value ??
+                         claims.FirstOrDefault(c => c.Type == "userId")?.Value ??
+                         claims.FirstOrDefault(c => c.Type == "id")?.Value;
+            }
+
+            // Nếu vẫn không có, thử lấy từ Identity.Name
+            if (string.IsNullOrEmpty(userId))
+            {
+                userId = HttpContext.User?.Identity?.Name;
+            }
+
+            return userId;
         }
 
         // GET: api/user/orders/bill/{orderId}
@@ -493,5 +520,13 @@ namespace UltraStrore.Controllers
                     ? $"data:image/jpeg;base64,{Convert.ToBase64String(image.Data)}"
                     : "/placeholder.svg";
         }
+        public class CancelOrderRequest
+        {
+            [Required(ErrorMessage = "Lý do hủy không được để trống")]
+            [StringLength(500, ErrorMessage = "Lý do hủy không được quá 500 ký tự")]
+            public string LyDoHuy { get; set; }
+        }
+
+
     }
 }
