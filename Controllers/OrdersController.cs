@@ -4,8 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using UltraStrore.Data;
 using System.Security.Claims;
 
-
-
 namespace UltraStrore.Controllers
 {
     //[Authorize(Roles = "1")]
@@ -21,50 +19,104 @@ namespace UltraStrore.Controllers
             _context = context;
         }
 
-
         [HttpGet]
         public async Task<IActionResult> GetOrders()
         {
+            // Lấy tất cả sản phẩm một lần để tránh N+1 query problem
+            var allSanPhams = await _context.SanPhams
+                .Include(sp => sp.HinhAnhs)
+                .AsNoTracking()
+                .ToListAsync();
+
             var orders = await _context.DonHangs
                 .Include(d => d.MaNguoiDungNavigation)
                 .Include(d => d.MaNhanVienNavigation)
                 .Include(d => d.ChiTietDonHangs)
                     .ThenInclude(cd => cd.MaSanPhamNavigation)
+                    .ThenInclude(sp => sp.HinhAnhs)
                 .Include(d => d.ChiTietDonHangs)
                     .ThenInclude(cd => cd.MaComboNavigation)
-                .Select(d => new
-                {
-                    MaDonHang = d.MaDonHang,
-                    TenNguoiNhan = d.TenNguoiNhan,
-                    NgayDat = d.NgayDat != null ? d.NgayDat.Value.ToString("dd/MM/yyyy") : "",
-                    TrangThaiDonHang = (int)d.TrangThaiDonHang,
-                    TrangThaiThanhToan = (int)d.TrangThaiHang,
-                    HinhThucThanhToan = d.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang ? "COD" : "VNPay",
-                    LyDoHuy = d.LyDoHuy,
-                    TongTien = d.ChiTietDonHangs.Sum(cd => cd.ThanhTien ?? 0),
-                    FinalAmount = d.FinalAmount,
-
-                    // Lấy tên sản phẩm hoặc combo đầu tiên
-                    TenSanPhamHoacCombo = d.ChiTietDonHangs.Select(cd => cd.MaCombo != null
-                        ? (cd.MaComboNavigation != null ? cd.MaComboNavigation.TenComBo : "Combo không tồn tại")
-                        : (cd.MaSanPhamNavigation != null ? cd.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại"))
-                        .FirstOrDefault(),
-
-                    // Thông tin nhân viên duyệt đơn
-                    MaNhanVien = d.MaNhanVien,
-                    HoTenNhanVien = d.MaNhanVienNavigation != null ? d.MaNhanVienNavigation.HoTen : null,
-
-                    // Thông tin khách hàng đặt hàng
-                    MaNguoiDung = d.MaNguoiDung,
-                    HoTenKhachHang = d.MaNguoiDungNavigation != null ? d.MaNguoiDungNavigation.HoTen : null
-                })
+                    .ThenInclude(c => c.ChiTietComBos)
+                    .ThenInclude(ct => ct.MaSanPhamNavigation)
+                    .ThenInclude(sp => sp.HinhAnhs)
                 .AsNoTracking()
                 .ToListAsync();
 
-            return Ok(orders);
+            var result = orders.Select(d => new
+            {
+                MaDonHang = d.MaDonHang,
+                TenNguoiNhan = d.TenNguoiNhan,
+                NgayDat = d.NgayDat != null ? d.NgayDat.Value.ToString("dd/MM/yyyy") : "",
+                TrangThaiDonHang = (int)d.TrangThaiDonHang,
+                TrangThaiThanhToan = (int)d.TrangThaiHang,
+                HinhThucThanhToan = d.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang ? "COD" : "VNPay",
+                LyDoHuy = d.LyDoHuy,
+                TongTien = d.ChiTietDonHangs.Sum(cd => cd.ThanhTien ?? 0),
+                FinalAmount = d.FinalAmount,
+
+                // Lấy tên sản phẩm hoặc combo đầu tiên
+                TenSanPhamHoacCombo = d.ChiTietDonHangs.Select(cd => cd.MaCombo != null
+                    ? (cd.MaComboNavigation != null ? cd.MaComboNavigation.TenComBo : "Combo không tồn tại")
+                    : (cd.MaSanPhamNavigation != null ? cd.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại"))
+                    .FirstOrDefault(),
+
+                // Thông tin nhân viên duyệt đơn
+                MaNhanVien = d.MaNhanVien,
+                HoTenNhanVien = d.MaNhanVienNavigation != null ? d.MaNhanVienNavigation.HoTen : null,
+
+                // Thông tin khách hàng đặt hàng
+                MaNguoiDung = d.MaNguoiDung,
+                HoTenKhachHang = d.MaNguoiDungNavigation != null ? d.MaNguoiDungNavigation.HoTen : null,
+
+                // Chi tiết sản phẩm cho admin
+                ChiTietSanPhams = d.ChiTietDonHangs.Select(cd => new
+                {
+                    MaChiTietDh = cd.MaCtdh,
+                    LaCombo = cd.MaCombo != null,
+                    TenSanPham = cd.MaCombo != null
+        ? (cd.MaComboNavigation != null ? cd.MaComboNavigation.TenComBo : "Combo không tồn tại")
+        : (cd.MaSanPhamNavigation != null ? cd.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại"),
+                    SoLuong = cd.SoLuong,
+                    Gia = cd.Gia,
+                    ThanhTien = cd.ThanhTien,
+                    MaCombo = cd.MaCombo,
+                    MaSanPham = cd.MaSanPham, // ĐẢM BẢO field này được trả về
+
+                    // Thêm thông tin màu sắc và kích thước parsed từ MaSanPham
+                    MauSac = cd.MaSanPham != null ? ParseColorFromProductId(cd.MaSanPham) : null,
+                    KichThuoc = cd.MaSanPham != null ? ParseSizeFromProductId(cd.MaSanPham) : null,
+
+                    // Hình ảnh sản phẩm - FIXED logic
+                    HinhAnh = cd.MaCombo != null
+        ? (cd.MaComboNavigation != null && cd.MaComboNavigation.ChiTietComBos.Any()
+            ? GetImageByProductId(cd.MaComboNavigation.ChiTietComBos.FirstOrDefault().MaSanPham, allSanPhams)
+            : null)
+        : GetImageByProductId(cd.MaSanPham, allSanPhams),
+
+                    // Chi tiết combo (nếu là combo)
+                    Combo = cd.MaCombo != null && cd.MaComboNavigation != null ? new
+                    {
+                        TenCombo = cd.MaComboNavigation.TenComBo,
+                        GiaCombo = cd.MaComboNavigation.TongGia,
+                        SanPhamsTrongCombo = cd.MaComboNavigation.ChiTietComBos.Select(ct => new
+                        {
+                            TenSanPham = GetProductNameByCode(ct.MaSanPham, allSanPhams),
+                            SoLuong = ct.SoLuong,
+                            Gia = GetProductPriceByCode(ct.MaSanPham, allSanPhams),
+                            ThanhTien = GetProductPriceByCode(ct.MaSanPham, allSanPhams) * ct.SoLuong,
+                            MaSanPham = _context.DonHangSupports.Where(g => g.MaChiTietCombo == ct.MaChiTietComBo && g.ChiTietGioHang == cd.MaCtdh).Select(g => g.MaSanPham).FirstOrDefault(),
+                            // FIXED: Thêm màu sắc và kích thước cho sản phẩm trong combo
+                            // Dùng FindMatchingProductInOrder để tìm sản phẩm phù hợp trong đơn hàng
+                            MauSac = FindMatchingProductInOrder(cd.MaSanPham, ct.MaSanPham, "color"),
+                            KichThuoc = FindMatchingProductInOrder(cd.MaSanPham, ct.MaSanPham, "size"),
+                            HinhAnh = GetImageByProductId(ct.MaSanPham, allSanPhams)
+                        }).ToList()
+                    } : null
+                }).ToList()
+            }).ToList();
+
+            return Ok(result);
         }
-
-
 
         // GET: api/orders/{id}
         [HttpGet("{id}")]
@@ -74,6 +126,12 @@ namespace UltraStrore.Controllers
             {
                 return BadRequest(new { message = "ID người dùng không hợp lệ." });
             }
+
+            // Load all products for efficient lookup
+            var allSanPhams = await _context.SanPhams
+                .Include(sp => sp.HinhAnhs)
+                .AsNoTracking()
+                .ToListAsync();
 
             var ordersQuery = await _context.DonHangs
                 .Where(d => d.MaNguoiDung == id)
@@ -91,7 +149,7 @@ namespace UltraStrore.Controllers
                 {
                     MaDonHang = d.MaDonHang,
                     TenNguoiNhan = d.TenNguoiNhan,
-                    NgayDat = d.NgayDat != null ? d.NgayDat.Value.ToString("dd/MM/yyyy") : DateTime.UtcNow.ToString("dd/MM/yyyy"), // Sử dụng ngày hiện tại nếu null
+                    NgayDat = d.NgayDat != null ? d.NgayDat.Value.ToString("dd/MM/yyyy") : DateTime.UtcNow.ToString("dd/MM/yyyy"),
                     TrangThaiDonHang = (int)d.TrangThaiDonHang,
                     TrangThaiThanhToan = (int)d.TrangThaiHang,
                     HinhThucThanhToan = d.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang ? "COD" : "VNPay",
@@ -110,17 +168,23 @@ namespace UltraStrore.Controllers
                         ThanhTien = cd.ThanhTien,
                         MaCombo = cd.MaCombo,
                         MaSanPham = cd.MaSanPham,
+                        MauSac = ParseColorFromProductId(cd.MaSanPham),
+                        KichThuoc = ParseSizeFromProductId(cd.MaSanPham),
+                        HinhAnh = GetImageByProductId(cd.MaSanPham, allSanPhams),
                         Combo = cd.MaCombo != null && cd.MaComboNavigation != null ? new
                         {
                             TenCombo = cd.MaComboNavigation.TenComBo,
                             GiaCombo = cd.MaComboNavigation.TongGia,
                             SanPhamsTrongCombo = cd.MaComboNavigation.ChiTietComBos.Select(ct => new
                             {
-                                TenSanPham = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại",
+                                TenSanPham = GetProductNameByCode(ct.MaSanPham, allSanPhams),
                                 SoLuong = ct.SoLuong,
-                                Gia = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.Gia : 0,
-                                ThanhTien = ct.MaSanPhamNavigation != null ? ct.MaSanPhamNavigation.Gia * ct.SoLuong : 0,
-                                MaSanPham = ct.MaSanPham
+                                Gia = GetProductPriceByCode(ct.MaSanPham, allSanPhams),
+                                ThanhTien = GetProductPriceByCode(ct.MaSanPham, allSanPhams) * ct.SoLuong,
+                                MaSanPham = _context.DonHangSupports.Where(g=>g.MaChiTietCombo==ct.MaChiTietComBo&&g.ChiTietGioHang==cd.MaCtdh).Select(g=>g.MaSanPham).FirstOrDefault(),
+                                MauSac = FindMatchingProductInOrder(cd.MaSanPham, ct.MaSanPham, "color"),
+                                KichThuoc = FindMatchingProductInOrder(cd.MaSanPham, ct.MaSanPham, "size"),
+                                HinhAnh = GetImageByProductId(ct.MaSanPham, allSanPhams)
                             })
                         } : null
                     }).ToList(),
@@ -146,54 +210,7 @@ namespace UltraStrore.Controllers
                 return NotFound(new { message = "Không tìm thấy đơn hàng nào cho người dùng này." });
             }
 
-            var orders = ordersQuery.Select(d => new
-            {
-                d.MaDonHang,
-                d.TenNguoiNhan,
-                d.NgayDat,
-                d.TrangThaiDonHang,
-                d.TrangThaiThanhToan,
-                d.HinhThucThanhToan,
-                d.LyDoHuy,
-                d.TongTien,
-                FinalAmount = d.FinalAmount,
-                SanPhams = d.SanPhams.Select(cd => new
-                {
-                    cd.MaChiTietDh,
-                    cd.LaCombo,
-                    cd.TenSanPham,
-                    cd.SoLuong,
-                    cd.Gia,
-                    cd.ThanhTien,
-                    HinhAnh = cd.LaCombo
-                        ? _context.ChiTietComBos
-                            .Where(ct => ct.MaComBo == cd.MaCombo)
-                            .Select(ct => ct.MaSanPhamNavigation.HinhAnhs.FirstOrDefault())
-                            .FirstOrDefault()?.Link
-                        : _context.HinhAnhs
-                            .Where(h => h.MaSanPham == cd.MaSanPham)
-                            .FirstOrDefault()?.Link,
-                    Combo = cd.Combo != null ? new
-                    {
-                        cd.Combo.TenCombo,
-                        cd.Combo.GiaCombo,
-                        SanPhamsTrongCombo = cd.Combo.SanPhamsTrongCombo.Select(ct => new
-                        {
-                            ct.TenSanPham,
-                            ct.SoLuong,
-                            ct.Gia,
-                            ct.ThanhTien,
-                            HinhAnh = _context.HinhAnhs
-                                .Where(h => h.MaSanPham == ct.MaSanPham)
-                                .FirstOrDefault()?.Link
-                        })
-                    } : null
-                }).ToList(),
-                d.ThongTinNguoiDung,
-                d.ThongTinDonHang
-            }).ToList();
-
-            return Ok(orders);
+            return Ok(ordersQuery);
         }
 
         [HttpPut("approve/{id}")]
@@ -291,8 +308,6 @@ namespace UltraStrore.Controllers
             public string UserId { get; set; }
         }
 
-
-
         public enum TrangThaiDonHang
         {
             ChuaXacNhan = 0,
@@ -301,8 +316,150 @@ namespace UltraStrore.Controllers
             DaGiaoHang = 3,
             DaHuy = 4  // **ĐẢM BẢO giá trị này = 4**
         }
+        // GET: api/orders/cancelled
+        [HttpGet("cancelled")]
+        public async Task<IActionResult> GetCancelledOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            if (page <= 0) page = 1;
+            if (pageSize <= 0 || pageSize > 100) pageSize = 10;
 
-        // **KIỂM TRA: Trong method CancelOrder, đảm bảo SaveChanges được gọi**
+            // Lấy tất cả sản phẩm một lần để tránh N+1 query problem
+            var allSanPhams = await _context.SanPhams
+                .Include(sp => sp.HinhAnhs)
+                .AsNoTracking()
+                .ToListAsync();
+
+            // Đếm tổng số đơn hàng đã hủy
+            var totalCancelledOrders = await _context.DonHangs
+                .Where(d => d.TrangThaiDonHang == Data.TrangThaiDonHang.DaHuy)
+                .CountAsync();
+
+            // Lấy danh sách đơn hàng đã hủy với phân trang
+            var cancelledOrders = await _context.DonHangs
+                .Where(d => d.TrangThaiDonHang == Data.TrangThaiDonHang.DaHuy)
+                .Include(d => d.MaNguoiDungNavigation)
+                .Include(d => d.MaNhanVienNavigation)
+                .Include(d => d.ChiTietDonHangs)
+                    .ThenInclude(cd => cd.MaSanPhamNavigation)
+                    .ThenInclude(sp => sp.HinhAnhs)
+                .Include(d => d.ChiTietDonHangs)
+                    .ThenInclude(cd => cd.MaComboNavigation)
+                    .ThenInclude(c => c.ChiTietComBos)
+                    .ThenInclude(ct => ct.MaSanPhamNavigation)
+                    .ThenInclude(sp => sp.HinhAnhs)
+                .OrderByDescending(d => d.NgayDat)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .AsNoTracking()
+                .ToListAsync();
+
+            var result = cancelledOrders.Select(d => new
+            {
+                MaDonHang = d.MaDonHang,
+                TenNguoiNhan = d.TenNguoiNhan,
+                NgayDat = d.NgayDat != null ? d.NgayDat.Value.ToString("dd/MM/yyyy HH:mm") : "",
+                TrangThaiDonHang = (int)d.TrangThaiDonHang,
+                TrangThaiThanhToan = (int)d.TrangThaiHang,
+                HinhThucThanhToan = d.TrangThaiHang == TrangThaiThanhToan.ThanhToanKhiNhanHang ? "COD" : "VNPay",
+                LyDoHuy = d.LyDoHuy,
+                TongTien = d.ChiTietDonHangs.Sum(cd => cd.ThanhTien ?? 0),
+                FinalAmount = d.FinalAmount,
+
+                // Lấy tên sản phẩm hoặc combo đầu tiên
+                TenSanPhamHoacCombo = d.ChiTietDonHangs.Select(cd => cd.MaCombo != null
+                    ? (cd.MaComboNavigation != null ? cd.MaComboNavigation.TenComBo : "Combo không tồn tại")
+                    : (cd.MaSanPhamNavigation != null ? cd.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại"))
+                    .FirstOrDefault(),
+
+                // Tổng số sản phẩm trong đơn hàng
+                TongSoSanPham = d.ChiTietDonHangs.Sum(cd => cd.SoLuong ?? 0),
+
+                // Thông tin nhân viên xử lý (nếu có)
+                MaNhanVien = d.MaNhanVien,
+                HoTenNhanVien = d.MaNhanVienNavigation != null ? d.MaNhanVienNavigation.HoTen : "Chưa có nhân viên xử lý",
+
+                // Thông tin khách hàng đặt hàng
+                MaNguoiDung = d.MaNguoiDung,
+                HoTenKhachHang = d.MaNguoiDungNavigation != null ? d.MaNguoiDungNavigation.HoTen : "Khách hàng không tồn tại",
+
+                // Thông tin liên hệ
+                DiaChi = d.DiaChi,
+                SoDienThoai = d.Sdt,
+
+                // Chi tiết sản phẩm trong đơn hàng đã hủy
+                ChiTietSanPhams = d.ChiTietDonHangs.Select(cd => new
+                {
+                    MaChiTietDh = cd.MaCtdh,
+                    LaCombo = cd.MaCombo != null,
+                    TenSanPham = cd.MaCombo != null
+                        ? (cd.MaComboNavigation != null ? cd.MaComboNavigation.TenComBo : "Combo không tồn tại")
+                        : (cd.MaSanPhamNavigation != null ? cd.MaSanPhamNavigation.TenSanPham : "Sản phẩm không tồn tại"),
+                    SoLuong = cd.SoLuong,
+                    Gia = cd.Gia,
+                    ThanhTien = cd.ThanhTien,
+                    MaCombo = cd.MaCombo,
+                    MaSanPham = cd.MaSanPham,
+
+                    // Thông tin màu sắc và kích thước
+                    MauSac = cd.MaSanPham != null ? ParseColorFromProductId(cd.MaSanPham) : null,
+                    KichThuoc = cd.MaSanPham != null ? ParseSizeFromProductId(cd.MaSanPham) : null,
+
+                    // Hình ảnh sản phẩm
+                    HinhAnh = cd.MaCombo != null
+                        ? (cd.MaComboNavigation != null && cd.MaComboNavigation.ChiTietComBos.Any()
+                            ? GetImageByProductId(cd.MaComboNavigation.ChiTietComBos.FirstOrDefault().MaSanPham, allSanPhams)
+                            : null)
+                        : GetImageByProductId(cd.MaSanPham, allSanPhams),
+
+                    // Chi tiết combo (nếu là combo)
+                    Combo = cd.MaCombo != null && cd.MaComboNavigation != null ? new
+                    {
+                        TenCombo = cd.MaComboNavigation.TenComBo,
+                        GiaCombo = cd.MaComboNavigation.TongGia,
+                        SanPhamsTrongCombo = cd.MaComboNavigation.ChiTietComBos.Select(ct => new
+                        {
+                            TenSanPham = GetProductNameByCode(ct.MaSanPham, allSanPhams),
+                            SoLuong = ct.SoLuong,
+                            Gia = GetProductPriceByCode(ct.MaSanPham, allSanPhams),
+                            ThanhTien = GetProductPriceByCode(ct.MaSanPham, allSanPhams) * ct.SoLuong,
+                            MaSanPham = ct.MaSanPham,
+                            MauSac = FindMatchingProductInOrder(cd.MaSanPham, ct.MaSanPham, "color"),
+                            KichThuoc = FindMatchingProductInOrder(cd.MaSanPham, ct.MaSanPham, "size"),
+                            HinhAnh = GetImageByProductId(ct.MaSanPham, allSanPhams)
+                        }).ToList()
+                    } : null
+                }).ToList()
+            }).ToList();
+
+            // Tính toán thông tin phân trang
+            var totalPages = (int)Math.Ceiling((double)totalCancelledOrders / pageSize);
+            var hasNextPage = page < totalPages;
+            var hasPreviousPage = page > 1;
+
+            var response = new
+            {
+                Data = result,
+                Pagination = new
+                {
+                    CurrentPage = page,
+                    PageSize = pageSize,
+                    TotalRecords = totalCancelledOrders,
+                    TotalPages = totalPages,
+                    HasNextPage = hasNextPage,
+                    HasPreviousPage = hasPreviousPage
+                },
+                Summary = new
+                {
+                    TotalCancelledOrders = totalCancelledOrders,
+                    TotalCancelledAmount = result.Sum(r => r.TongTien),
+                    TotalFinalAmount = result.Sum(r => r.FinalAmount ?? 0)
+                }
+            };
+
+            return Ok(response);
+        }
+
+
         [HttpPut("cancel/{id}")]
         public async Task<IActionResult> CancelOrder(int id, [FromBody] string lyDoHuy)
         {
@@ -336,6 +493,233 @@ namespace UltraStrore.Controllers
             {
                 return BadRequest(new { message = $"Lỗi khi hủy đơn: {ex.Message}" });
             }
+        }
+
+        private string ParseColorFromProductId(string productId)
+        {
+            if (string.IsNullOrEmpty(productId)) return null;
+
+            var parts = productId.Split('_');
+            if (parts.Length >= 2)
+            {
+                var colorCode = parts[1].ToLower();
+                var colorMap = new Dictionary<string, string>
+                {
+                    {"ff0000", "Đỏ"},
+                    {"0000ff", "Xanh dương"},
+                    {"00ff00", "Xanh lá"},
+                    {"ffffff", "Trắng"},
+                    {"000000", "Đen"},
+                    {"ff00ff", "Hồng"},
+                    {"0c06f5", "Xanh navy"},
+                    {"ffff00", "Vàng"},
+                    {"ffa500", "Cam"},
+                    {"800080", "Tím"},
+                    {"a52a2a", "Nâu"},
+                    {"808080", "Xám"},
+                    {"c0c0c0", "Bạc"},
+                    {"ffc0cb", "Hồng nhạt"}
+                };
+                return colorMap.ContainsKey(colorCode) ? colorMap[colorCode] : $"#{colorCode}";
+            }
+            return null;
+        }
+
+        private string ParseSizeFromProductId(string productId)
+        {
+            if (string.IsNullOrEmpty(productId)) return null;
+
+            var parts = productId.Split('_');
+            if (parts.Length >= 3)
+            {
+                var sizeCode = parts[2];
+                var sizeMap = new Dictionary<string, string>
+                {
+                    {"S", "S"},
+                    {"M", "M"},
+                    {"L", "L"},
+                    {"XL", "XL"},
+                    {"XXL", "XXL"},
+                    {"XXXL", "XXXL"},
+                    {"SA", "S"},
+                    {"MA", "M"},
+                    {"LA", "L"},
+                    {"XLA", "XL"},
+                    {"XXLA", "XXL"},
+                    {"XXXLA", "XXXL"}
+                };
+                return sizeMap.ContainsKey(sizeCode) ? sizeMap[sizeCode] : sizeCode;
+            }
+            return null;
+        }
+
+        // IMPROVED METHOD: Tìm sản phẩm phù hợp trong đơn hàng dựa trên base product code
+        private string FindMatchingProductInOrder(string orderProductId, string baseProductId, string attributeType)
+        {
+            if (string.IsNullOrEmpty(orderProductId) || string.IsNullOrEmpty(baseProductId))
+                return null;
+
+            // Lấy base code của sản phẩm trong combo (VD: A00001 từ A00001)
+            var baseProductCode = baseProductId.Contains("_") ? baseProductId.Split('_')[0] : baseProductId;
+
+            // Parse order product ID để tìm tất cả các sản phẩm có trong đó
+            // orderProductId có thể chứa nhiều sản phẩm như: "Q00001_000000_XL" hoặc phức tạp hơn
+
+            // Tách orderProductId thành các phần
+            var orderParts = orderProductId.Split('_');
+
+            // Tìm vị trí của baseProductCode trong orderProductId
+            for (int i = 0; i < orderParts.Length; i++)
+            {
+                if (orderParts[i] == baseProductCode)
+                {
+                    // Tìm thấy base product code, bây giờ tìm color và size
+                    if (attributeType == "color" && i + 1 < orderParts.Length)
+                    {
+                        // Color nằm ngay sau product code
+                        var colorCode = orderParts[i + 1].ToLower();
+                        return GetColorNameFromCode(colorCode);
+                    }
+                    else if (attributeType == "size" && i + 2 < orderParts.Length)
+                    {
+                        // Size nằm sau color
+                        var sizeCode = orderParts[i + 2];
+                        return GetSizeNameFromCode(sizeCode);
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private string GetColorNameFromCode(string colorCode)
+        {
+            var colorMap = new Dictionary<string, string>
+    {
+        {"ff0000", "Đỏ"},
+        {"0000ff", "Xanh dương"},
+        {"00ff00", "Xanh lá"},
+        {"ffffff", "Trắng"},
+        {"000000", "Đen"},
+        {"ff00ff", "Hồng"},
+        {"0c06f5", "Xanh navy"},
+        {"ffff00", "Vàng"},
+        {"ffa500", "Cam"},
+        {"800080", "Tím"},
+        {"a52a2a", "Nâu"},
+        {"808080", "Xám"},
+        {"c0c0c0", "Bạc"},
+        {"ffc0cb", "Hồng nhạt"}
+    };
+            return colorMap.ContainsKey(colorCode) ? colorMap[colorCode] : $"#{colorCode}";
+        }
+
+        private string GetSizeNameFromCode(string sizeCode)
+        {
+            var sizeMap = new Dictionary<string, string>
+    {
+        {"S", "S"},
+        {"M", "M"},
+        {"L", "L"},
+        {"XL", "XL"},
+        {"XXL", "XXL"},
+        {"XXXL", "XXXL"},
+        {"SA", "S"},
+        {"MA", "M"},
+        {"LA", "L"},
+        {"XLA", "XL"},
+        {"XXLA", "XXL"},
+        {"XXXLA", "XXXL"}
+    };
+            return sizeMap.ContainsKey(sizeCode) ? sizeMap[sizeCode] : sizeCode;
+        }
+
+        // DEPRECATED: Keep for backward compatibility but not used anymore
+        private string GetProductColorFromOrder(string orderProductId, string baseProductId)
+        {
+            return FindMatchingProductInOrder(orderProductId, baseProductId, "color");
+        }
+
+        // DEPRECATED: Keep for backward compatibility but not used anymore
+        private string GetProductSizeFromOrder(string orderProductId, string baseProductId)
+        {
+            return FindMatchingProductInOrder(orderProductId, baseProductId, "size");
+        }
+
+        // FIXED: Enhanced image lookup method - Changed parameter type
+        private string GetImageByProductId(string productId, List<SanPham> allSanPhams = null)
+        {
+            if (string.IsNullOrEmpty(productId)) return null;
+
+            // Method 1: Direct lookup by exact product ID
+            var exactMatch = _context.HinhAnhs
+                .Where(ha => ha.MaSanPham == productId)
+                .Select(ha => ha.Link)
+                .FirstOrDefault();
+
+            if (!string.IsNullOrEmpty(exactMatch))
+                return exactMatch;
+
+            // Method 2: Lookup by base product code (lấy phần đầu trước dấu _)
+            var baseProductId = productId.Contains("_") ? productId.Split('_')[0] : productId;
+
+            // Tìm trong database theo base product code
+            var baseMatch = _context.HinhAnhs
+                .Where(ha => ha.MaSanPham.StartsWith(baseProductId + "_") || ha.MaSanPham == baseProductId)
+                .Select(ha => ha.Link)
+                .FirstOrDefault();
+
+            if (!string.IsNullOrEmpty(baseMatch))
+                return baseMatch;
+
+            // Method 3: Use preloaded data if available
+            if (allSanPhams != null)
+            {
+                var productWithImage = allSanPhams.FirstOrDefault(sp =>
+                    sp.MaSanPham == productId ||
+                    sp.MaSanPham == baseProductId ||
+                    sp.MaSanPham.StartsWith(baseProductId + "_"));
+
+                return productWithImage?.HinhAnhs?.FirstOrDefault()?.Link;
+            }
+
+            return null;
+        }
+
+        // FIXED: Get product name by product code - Changed parameter type
+        private string GetProductNameByCode(string productCode, List<SanPham> allSanPhams)
+        {
+            if (string.IsNullOrEmpty(productCode) || allSanPhams == null)
+                return "Sản phẩm không tồn tại";
+
+            // Lấy base product code (phần trước dấu _ đầu tiên)
+            var baseProductId = productCode.Contains("_") ? productCode.Split('_')[0] : productCode;
+
+            // Tìm sản phẩm theo base code
+            var product = allSanPhams.FirstOrDefault(sp =>
+                sp.MaSanPham == productCode ||
+                sp.MaSanPham == baseProductId ||
+                sp.MaSanPham.StartsWith(baseProductId + "_"));
+
+            return product?.TenSanPham ?? "Sản phẩm không tồn tại";
+        }
+
+        // FIXED: Get product price by product code - Changed parameter type
+        private decimal GetProductPriceByCode(string productCode, List<SanPham> allSanPhams)
+        {
+            if (string.IsNullOrEmpty(productCode) || allSanPhams == null)
+                return 0;
+
+            // Lấy base product code
+            var baseProductId = productCode.Contains("_") ? productCode.Split('_')[0] : productCode;
+
+            // Tìm sản phẩm theo base code
+            var product = allSanPhams.FirstOrDefault(sp =>
+                sp.MaSanPham == productCode ||
+                sp.MaSanPham == baseProductId ||
+                sp.MaSanPham.StartsWith(baseProductId + "_"));
+
+            return product?.Gia ?? 0;
         }
     }
 }
