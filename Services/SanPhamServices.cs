@@ -17,6 +17,7 @@ namespace UltraStrore.Services
 {
     public class SanPhamServices : ISanPhamServices
     {
+        private static List<MoTaSanPhamCreateModel> _tempMoTaData = new List<MoTaSanPhamCreateModel>();
         private readonly ApplicationDbContext _context;
         private readonly string _dbPath;
         public SanPhamServices(ApplicationDbContext context, IWebHostEnvironment env)
@@ -48,7 +49,7 @@ namespace UltraStrore.Services
                     .Where(g => g.MaThuongHieu == sanPhamDauTien.MaThuongHieu)
                     .Select(g => g.TenThuongHieu)
                     .FirstOrDefault();
-
+                int GiaBan = nhom.Where(g => g.Gia.HasValue).OrderBy(g => g.Gia).Select(g => g.Gia.Value).FirstOrDefault();
                 listsp.Add(new SanPhamView
                 {
                     ID = sanPhamDauTien.MaSanPham.Substring(0, 6),
@@ -57,7 +58,7 @@ namespace UltraStrore.Services
                     KichThuoc = listKichThuoc,
                     Hinh = HinhAnhSanPhamList,
                     SoLuong = tongSoLuong ?? 0,
-                    DonGia = sanPhamDauTien.Gia ?? 0,
+                    DonGia = GiaBan,
                     LoaiSanPham = TenLoai,
                     ThuongHieu = ThuongHieu,
                     NgayTao = sanPhamDauTien.NgayTao,
@@ -144,6 +145,8 @@ namespace UltraStrore.Services
                 var MaLoai = _context.LoaiSanPhams.Where(g => g.MaLoaiSanPham == sanPhamDauTien.MaLoaiSanPham).Select(g => g.TenLoaiSanPham).FirstOrDefault();
                 var ThuongHieu = _context.ThuongHieus.Where(g => g.MaThuongHieu == sanPhamDauTien.MaThuongHieu).Select(g => g.TenThuongHieu).FirstOrDefault();
                 var HinhAnh = _context.HinhAnhs.Where(g => g.MaSanPham.Trim() == sanPhamDauTien.MaSanPham.Substring(0, 6).Trim()).Select(g => g.Data).ToList();
+                string json = File.ReadAllText(_dbPath); var FullChiTiet= JsonSerializer.Deserialize<List<MoTaSanPhamCreateModel>>(json);
+                var MoTaCT = FullChiTiet.Where(g => g.MaSanPham == id.Substring(0, 6)).FirstOrDefault();
                 listsp.Add(new SanPhamByIDSorted
                 {
                     TH = sanPhamDauTien.MaThuongHieu,
@@ -157,7 +160,8 @@ namespace UltraStrore.Services
                     HinhAnhs = HinhAnh,
                     ChatLieu = sanPhamDauTien.ChatLieu,
                     MoTa = sanPhamDauTien.MoTa,
-                    GioiTinh = sanPhamDauTien.GioiTinh
+                    GioiTinh = sanPhamDauTien.GioiTinh,
+                    MoTaChiTiet = MoTaCT,
                 });
             }
             return listsp;
@@ -169,6 +173,52 @@ namespace UltraStrore.Services
             List<HinhAnh> AddHinh = new List<HinhAnh>();
             APIResponse response = new APIResponse();
             using var transaction = await _context.Database.BeginTransactionAsync();
+            List<MoTaSanPhamCreateModel> existingData = new List<MoTaSanPhamCreateModel>();
+            if (System.IO.File.Exists(_dbPath))
+            {
+                var jsonContent = await System.IO.File.ReadAllTextAsync(_dbPath);
+                if (!string.IsNullOrWhiteSpace(jsonContent))
+                {
+                    try
+                    {
+                        existingData = JsonSerializer.Deserialize<List<MoTaSanPhamCreateModel>>(jsonContent) ?? new List<MoTaSanPhamCreateModel>();
+                    }
+                    catch (JsonException ex)
+                    {
+                        response.ErrorMessage = ex.Message;
+                        response.ResponseCode = 400;
+                        return response;
+                    }
+                }
+            }
+            else
+            {
+                await System.IO.File.WriteAllTextAsync(_dbPath, "[]");
+            }
+            string maSanPham = data[0].ID.Substring(0, 6);
+            var temp = _tempMoTaData;
+            existingData.RemoveAll(x => x.MaSanPham.Trim() == maSanPham.Trim());
+
+            // Save temporary MoTa data to db.json with MaSanPham and IdMoTa
+            int maxIdMoTa = existingData.Any() ? existingData.Max(x => int.Parse(x.IdMoTa)) : 0;
+            foreach (var moTa in _tempMoTaData)
+            {
+                if(moTa!=null)
+                {
+                    moTa.MaSanPham = maSanPham;
+                    moTa.IdMoTa = (maxIdMoTa + 1).ToString();
+                    existingData.Add(moTa);
+                    maxIdMoTa++;
+                }    
+            }
+            // Write updated data to db.json
+            var options = new JsonSerializerOptions { WriteIndented = true };
+            var updatedJson = JsonSerializer.Serialize(existingData, options);
+            await System.IO.File.WriteAllTextAsync(_dbPath, updatedJson);
+            _tempMoTaData.Clear();
+
+
+
             try
             {
                 for (int i = 0; i < data.Count(); i++)
@@ -289,52 +339,102 @@ namespace UltraStrore.Services
                 .Select(g => g.MaSanPham.Substring(1, 5))
                 .OrderByDescending(x => x)
                 .FirstOrDefault();
-            var KiHieu = _context.LoaiSanPhams.Where(g => g.MaLoaiSanPham == data[0].LoaiSanPham).FirstOrDefault();
+            var KiHieu = _context.LoaiSanPhams
+                .Where(g => g.MaLoaiSanPham == data[0].LoaiSanPham)
+                .FirstOrDefault();
             int Max = 0;
             if (!string.IsNullOrEmpty(SanPhamCungLoaiMax) && int.TryParse(SanPhamCungLoaiMax, out int parsedMax))
             {
                 Max = parsedMax + 1;
             }
+
             APIResponse response = new APIResponse();
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                List<MoTaSanPhamCreateModel> existingData = new List<MoTaSanPhamCreateModel>();
+                if (System.IO.File.Exists(_dbPath))
+                {
+                    var jsonContent = await System.IO.File.ReadAllTextAsync(_dbPath);
+                    if (!string.IsNullOrWhiteSpace(jsonContent))
+                    {
+                        try
+                        {
+                            existingData = JsonSerializer.Deserialize<List<MoTaSanPhamCreateModel>>(jsonContent) ?? new List<MoTaSanPhamCreateModel>();
+                        }
+                        catch (JsonException ex)
+                        {
+                            response.ErrorMessage = ex.Message;
+                            response.ResponseCode = 400;
+                            return response;
+                        }
+                    }
+                }
+                else
+                {
+                    await System.IO.File.WriteAllTextAsync(_dbPath, "[]");
+                }
+                string maSanPham = KiHieu.KiHieu.ToString().Trim() + Max.ToString("00000").Trim();
+
+                // Save temporary MoTa data to db.json with MaSanPham and IdMoTa
+                int maxIdMoTa = existingData.Any() ? existingData.Max(x => int.Parse(x.IdMoTa)) : 0;
+                foreach (var moTa in _tempMoTaData)
+                {
+                    moTa.MaSanPham = maSanPham;
+                    moTa.IdMoTa = (maxIdMoTa+1).ToString();
+                    existingData.Add(moTa);
+                }
+
+                // Write to db.json
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                var updatedJson = JsonSerializer.Serialize(existingData, options);
+                await System.IO.File.WriteAllTextAsync(_dbPath, updatedJson);
+                _tempMoTaData.Clear();
                 for (int i = 0; i < data.Count(); i++)
                 {
                     foreach (var item in data[i].Details)
                     {
-                        SanPham sp = new SanPham();
-                        sp.TenSanPham = data[i].TenSanPham;
-                        sp.MaSanPham = KiHieu.KiHieu.ToString().Trim() + Max.ToString("00000").Trim() + "_" + data[i].MauSac.Trim() + "_" + item.KichThuoc.Trim();
-                        sp.Gia = item.Gia;
-                        sp.GiaNhap = item.GiaNhap;
-                        sp.SoLuong = item.SoLuong;
-                        sp.ChatLieu = data[i].ChatLieu;
-                        sp.MaLoaiSanPham = KiHieu.MaLoaiSanPham;
-                        sp.MaThuongHieu = data[i].MaThuongHieu;
-                        sp.KichThuoc = item.KichThuoc;
-                        sp.NgayTao = DateOnly.FromDateTime(DateTime.Now);
-                        sp.TrangThai = 1;
-                        sp.Example = true;
-                        sp.MoTa = data[i].MoTa;
-                        sp.GioiTinh = data[i].GioiTinh;
-                        sp.SoLuongDaBan = 0;
+                        SanPham sp = new SanPham
+                        {
+                            TenSanPham = data[i].TenSanPham,
+                            MaSanPham = maSanPham + "_" + data[i].MauSac.Trim() + "_" + item.KichThuoc.Trim(),
+                            Gia = item.Gia,
+                            GiaNhap = item.GiaNhap,
+                            SoLuong = item.SoLuong,
+                            ChatLieu = data[i].ChatLieu,
+                            MaLoaiSanPham = KiHieu.MaLoaiSanPham,
+                            MaThuongHieu = data[i].MaThuongHieu,
+                            KichThuoc = item.KichThuoc,
+                            NgayTao = DateOnly.FromDateTime(DateTime.Now),
+                            TrangThai = 1,
+                            Example = true,
+                            MoTa = data[i].MoTa,
+                            GioiTinh = data[i].GioiTinh,
+                            SoLuongDaBan = 0
+                        };
                         _context.SanPhams.Add(sp);
-                        HinhAnh newHA = new HinhAnh();
-                        newHA.TenHinhAnh = data[i].TenSanPham;
-                        newHA.MaSanPham = sp.MaSanPham;
-                        newHA.Data = item.HinhAnh;
+
+                        HinhAnh newHA = new HinhAnh
+                        {
+                            TenHinhAnh = data[i].TenSanPham,
+                            MaSanPham = sp.MaSanPham,
+                            Data = item.HinhAnh
+                        };
                         _context.HinhAnhs.Add(newHA);
                     }
                 }
+
                 foreach (var item in data[0].HinhAnhs)
                 {
-                    HinhAnh newHA = new HinhAnh();
-                    newHA.TenHinhAnh = data[0].TenSanPham;
-                    newHA.MaSanPham = KiHieu.KiHieu.ToString().Trim() + Max.ToString("00000").Trim();
-                    newHA.Data = item;
+                    HinhAnh newHA = new HinhAnh
+                    {
+                        TenHinhAnh = data[0].TenSanPham,
+                        MaSanPham = maSanPham,
+                        Data = item
+                    };
                     _context.HinhAnhs.Add(newHA);
                 }
+
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 response.ResponseCode = 200;
@@ -453,49 +553,21 @@ namespace UltraStrore.Services
                 if (info == null || info.Count == 0)
                 {
                     response.ResponseCode = 400;
+                    response.ErrorMessage = "No data provided";
+                    return response;
                 }
 
-                // Read existing db.json
-                List<MoTaSanPhamCreateModel> existingData = new List<MoTaSanPhamCreateModel>();
-                if (System.IO.File.Exists(_dbPath))
-                {
-                    var jsonContent = await System.IO.File.ReadAllTextAsync(_dbPath);
-                    if (!string.IsNullOrWhiteSpace(jsonContent))
-                    {
-                        try
-                        {
-                            existingData = JsonSerializer.Deserialize<List<MoTaSanPhamCreateModel>>(jsonContent) ?? new List<MoTaSanPhamCreateModel>();
-                        }
-                        catch (JsonException ex)
-                        {
-                            response.ErrorMessage = ex.Message;
-                            response.ResponseCode = 400;
-                        }
-                    }
-                    // If jsonContent is empty or whitespace, existingData remains an empty list
-                }
-                else
-                {
-                    // Create an empty db.json file with an empty array if it doesn't exist
-                    await System.IO.File.WriteAllTextAsync(_dbPath, "[]");
-                }
-
-                // Add the first item from the input array
-                existingData.Add(info[0]);
-
-                // Write back to db.json
-                var options = new JsonSerializerOptions { WriteIndented = true };
-                var updatedJson = JsonSerializer.Serialize(existingData, options);
-                await System.IO.File.WriteAllTextAsync(_dbPath, updatedJson);
+                // Store data in temporary memory
+                _tempMoTaData.AddRange(info);
 
                 response.ResponseCode = 200;
             }
-            catch (IOException ex)
+            catch (Exception ex)
             {
                 response.ErrorMessage = ex.Message;
                 response.ResponseCode = 400;
             }
             return response;
-        }  
+        }
     }
 }

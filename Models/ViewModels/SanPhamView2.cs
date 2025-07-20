@@ -1,4 +1,6 @@
-﻿namespace UltraStrore.Models.ViewModels
+﻿using UltraStrore.Models.CreateModels;
+
+namespace UltraStrore.Models.ViewModels
 {
     public class SanPhamView2
     {
@@ -19,5 +21,6 @@
         public int? SoLuongDaBan { get; set; }
         public string? ThuongHieu { get; set; }
         public string? LoaiSanPham { get; set; }
+        public MoTaSanPhamCreateModel? MoTaChiTiet { get; set; }
     }
 }
