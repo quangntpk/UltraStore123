@@ -134,7 +134,7 @@ namespace UltraStrore.Controllers
                 .ToListAsync();
 
             var ordersQuery = await _context.DonHangs
-                .Where(d => d.MaDonHang == int.Parse(id))
+                .Where(d => d.MaNguoiDung == id)
                 .Include(d => d.MaNguoiDungNavigation)
                 .Include(d => d.ChiTietDonHangs)
                 .ThenInclude(cd => cd.MaSanPhamNavigation)
@@ -181,7 +181,7 @@ namespace UltraStrore.Controllers
                                 SoLuong = ct.SoLuong,
                                 Gia = GetProductPriceByCode(ct.MaSanPham, allSanPhams),
                                 ThanhTien = GetProductPriceByCode(ct.MaSanPham, allSanPhams) * ct.SoLuong,
-                                MaSanPham = _context.DonHangSupports.Where(g=>g.MaChiTietCombo==ct.MaChiTietComBo&&g.ChiTietGioHang==cd.MaCtdh).Select(g=>g.MaSanPham).FirstOrDefault(),
+                                MaSanPham = _context.DonHangSupports.Where(g => g.MaChiTietCombo == ct.MaChiTietComBo && g.ChiTietGioHang == cd.MaCtdh).Select(g => g.MaSanPham).FirstOrDefault(),
                                 MauSac = FindMatchingProductInOrder(cd.MaSanPham, ct.MaSanPham, "color"),
                                 KichThuoc = FindMatchingProductInOrder(cd.MaSanPham, ct.MaSanPham, "size"),
                                 HinhAnh = GetImageByProductId(ct.MaSanPham, allSanPhams)
@@ -209,7 +209,6 @@ namespace UltraStrore.Controllers
             {
                 return NotFound(new { message = "Không tìm thấy đơn hàng nào cho người dùng này." });
             }
-            var temp = ordersQuery;
 
             return Ok(ordersQuery);
         }
