@@ -569,7 +569,7 @@ namespace UltraStrore.Services
             user.VaiTro = model.VaiTro ?? user.VaiTro;
             user.TrangThai = model.TrangThai ?? user.TrangThai;
             user.GioiTinh = model.GioiTinh ?? user.GioiTinh;
-            user.LockoutEndDate = model.LockoutEndDate ?? user.LockoutEndDate;
+            user.LockoutEndDate = model.LockoutEndDate;
 
             if (model.HinhAnhFile != null && model.HinhAnhFile.Length > 0)
             {
