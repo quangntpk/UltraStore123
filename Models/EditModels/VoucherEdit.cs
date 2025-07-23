@@ -10,7 +10,9 @@
         public DateTime? NgayKetThuc { get; set; }
         public string? HinhAnh { get; set; }
         public decimal? DieuKien { get; set; }
-        public int? SoLuong { get; set; }
+        public decimal? GiamTien { get; set; }
+        public int? LoaiVoucher { get; set; }
+        public decimal? GiaTriToiDa { get; set; }
 
         public int? TrangThai { get; set; }
     }

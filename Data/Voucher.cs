@@ -15,8 +15,10 @@ namespace UltraStrore.Data
         public DateTime? NgayKetThuc { get; set; }
         public byte[]? HinhAnh { get; set; }
         public decimal? DieuKien { get; set; }
-        public int? SoLuong { get; set; }
+     
+        public int? LoaiVoucher { get; set; } // 0: Giảm giá theo phần trăm, 1: Giảm giá theo số tiền, 2: Miễn phí vận chuyển
 
+        public decimal? GiaTriToiDa { get; set; }
         public int? TrangThai { get; set; }
 
         public virtual ICollection<Coupon> Coupons { get; set; }

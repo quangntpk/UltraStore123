@@ -33,8 +33,9 @@ public class VoucherServices : IVoucherServices
                 NgayKetThuc = v.NgayKetThuc,
                 HinhAnh = v.HinhAnh != null && v.HinhAnh.Length > 0 ? Convert.ToBase64String(v.HinhAnh) : null,
                 DieuKien = v.DieuKien,
-                SoLuong = v.SoLuong,
                 TrangThai = v.TrangThai,
+                LoaiVoucher = v.LoaiVoucher,
+                GiaTriToiDa = v.GiaTriToiDa,
                 Coupons = _context.Coupons
                     .Where(c => c.MaVoucher == v.MaVoucher)
                     .Select(c => new CouponView
@@ -42,7 +43,8 @@ public class VoucherServices : IVoucherServices
                         ID = c.ID,
                         MaNhap = c.MaNhap,
                         TrangThai = c.TrangThai,
-                        MaVoucher = c.MaVoucher
+                        MaVoucher = c.MaVoucher,
+                        MaNguoiDung = c.MaNguoiDung
                     })
                     .ToList()
             })
@@ -93,7 +95,6 @@ public class VoucherServices : IVoucherServices
             if (voucher.TrangThai != 0
                 || voucher.NgayBatDau > now
                 || voucher.NgayKetThuc < now
-                || voucher.SoLuong <= 0
                 || originalAmount < (voucher.DieuKien ?? 0))
             {
                 return new ValidateCouponResponse
@@ -144,7 +145,8 @@ public class VoucherServices : IVoucherServices
             NgayBatDau = voucher.NgayBatDau,
             NgayKetThuc = voucher.NgayKetThuc,
             DieuKien = voucher.DieuKien,
-            SoLuong = voucher.SoLuong,
+            LoaiVoucher = voucher.LoaiVoucher,
+            GiaTriToiDa = voucher.GiaTriToiDa,
             TrangThai = 0,
             HinhAnh = !string.IsNullOrEmpty(voucher.HinhAnh) ? Convert.FromBase64String(voucher.HinhAnh) : null
         };
@@ -161,7 +163,9 @@ public class VoucherServices : IVoucherServices
             {
                 MaNhap = maNhap,
                 TrangThai = 0,
-                MaVoucher = newVoucher.MaVoucher
+                MaVoucher = newVoucher.MaVoucher,
+                MaNguoiDung = null
+
             };
             _context.Coupons.Add(coupon);
         }
@@ -178,8 +182,10 @@ public class VoucherServices : IVoucherServices
             NgayKetThuc = newVoucher.NgayKetThuc,
             HinhAnh = newVoucher.HinhAnh != null ? Convert.ToBase64String(newVoucher.HinhAnh) : null, // Sửa lỗi cú pháp và logic
             DieuKien = newVoucher.DieuKien,
-            SoLuong = newVoucher.SoLuong,
             TrangThai = newVoucher.TrangThai,
+            LoaiVoucher = newVoucher.LoaiVoucher,
+
+            GiaTriToiDa = newVoucher.GiaTriToiDa,
             Coupons = _context.Coupons
                 .Where(c => c.MaVoucher == newVoucher.MaVoucher)
                 .Select(c => new CouponView
@@ -187,7 +193,8 @@ public class VoucherServices : IVoucherServices
                     ID = c.ID,
                     MaNhap = c.MaNhap,
                     TrangThai = c.TrangThai,
-                    MaVoucher = c.MaVoucher
+                    MaVoucher = c.MaVoucher,
+                    MaNguoiDung = c.MaNguoiDung
                 })
                 .ToList()
         };
@@ -209,8 +216,10 @@ public class VoucherServices : IVoucherServices
         existingVoucher.NgayBatDau = voucher.NgayBatDau.Value;
         existingVoucher.NgayKetThuc = voucher.NgayKetThuc.Value;
         existingVoucher.DieuKien = voucher.DieuKien.Value;
-        existingVoucher.SoLuong = voucher.SoLuong.Value;
         existingVoucher.TrangThai = voucher.TrangThai.Value;
+        existingVoucher.LoaiVoucher = voucher.LoaiVoucher.Value;
+        existingVoucher.GiaTriToiDa = voucher.GiaTriToiDa.Value;
+
 
         // Xử lý hình ảnh
         if (!string.IsNullOrEmpty(voucher.HinhAnh))
@@ -230,8 +239,10 @@ public class VoucherServices : IVoucherServices
             NgayKetThuc = existingVoucher.NgayKetThuc,
             HinhAnh = existingVoucher.HinhAnh != null ? Convert.ToBase64String(existingVoucher.HinhAnh) : null,
             DieuKien = existingVoucher.DieuKien,
-            SoLuong = existingVoucher.SoLuong,
             TrangThai = existingVoucher.TrangThai,
+            LoaiVoucher = existingVoucher.LoaiVoucher,
+
+            GiaTriToiDa = existingVoucher.GiaTriToiDa,
         };
     }
 
@@ -255,5 +266,29 @@ public class VoucherServices : IVoucherServices
         await _context.SaveChangesAsync();
 
         return true;
+    }
+
+    public async Task<bool> UpdateCoupon(int couponId, string maNguoiDung)
+    {
+        try
+        {
+            var coupon = await _context.Coupons
+                .FirstOrDefaultAsync(c => c.ID == couponId && c.TrangThai == 0);
+
+            if (coupon == null)
+            {
+                return false; // Coupon không tồn tại hoặc đã được sử dụng
+            }
+
+            coupon.MaNguoiDung = maNguoiDung;
+            coupon.TrangThai = 2; // Đổi trạng thái thành 2 (đã lưu cho người dùng)
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 }

@@ -174,7 +174,6 @@ namespace UltraStrore.Services
                         if (coupon != null)
                         {
                             coupon.TrangThai = 1;
-                            coupon.MaVoucherNavigation.SoLuong -= 1;
                         }
                     }
 
@@ -230,13 +229,13 @@ namespace UltraStrore.Services
                         var coupon = await _context.Coupons
                             .Include(c => c.MaVoucherNavigation)
                             .FirstOrDefaultAsync(c => c.MaNhap == request.CouponCode);
-                        if (coupon == null || coupon.MaVoucherNavigation.SoLuong <= 0)
+                        if (coupon == null)
                         {
                             await transaction.RollbackAsync();
                             return new PaymentResponse { Success = false, Message = "Mã coupon không hợp lệ hoặc đã hết lượt sử dụng" };
                         }
                         coupon.TrangThai = 1;
-                        coupon.MaVoucherNavigation.SoLuong -= 1;
+
                     }
                     await transaction.CommitAsync();
                     return new PaymentResponse
@@ -475,7 +474,6 @@ namespace UltraStrore.Services
                         if (coupon != null)
                         {
                             coupon.TrangThai = 1;
-                            coupon.MaVoucherNavigation.SoLuong -= 1;
                         }
                     }
 
@@ -504,13 +502,13 @@ namespace UltraStrore.Services
                         var coupon = await _context.Coupons
                             .Include(c => c.MaVoucherNavigation)
                             .FirstOrDefaultAsync(c => c.MaNhap == request.CouponCode);
-                        if (coupon == null || coupon.MaVoucherNavigation.SoLuong <= 0)
+                        if (coupon == null )
                         {
                             await transaction.RollbackAsync();
                             return new PaymentResponse { Success = false, Message = "Mã coupon không hợp lệ hoặc đã hết lượt sử dụng" };
                         }
                         coupon.TrangThai = 1;
-                        coupon.MaVoucherNavigation.SoLuong -= 1;
+             
                     }
                     _context.ChiTietGioHangs.RemoveRange(cart.ChiTietGioHangs);
                     _context.GioHangs.Remove(cart);
@@ -701,7 +699,6 @@ namespace UltraStrore.Services
                     if (coupon != null)
                     {
                         coupon.TrangThai = 1;
-                        coupon.MaVoucherNavigation.SoLuong -= 1;
                     }
                 }
 
