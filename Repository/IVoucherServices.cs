@@ -14,6 +14,7 @@ namespace UltraStrore.Repository
         Task<VoucherView> EditVoucher(VoucherEdit voucher);
 
         Task<bool> DeleteVoucher(int maVoucher);
+        Task<bool> UpdateCoupon(int couponId, string maNguoiDung);
         Task<ValidateCouponResponse> ValidateCoupon(string code, int cartId);
     }
 }

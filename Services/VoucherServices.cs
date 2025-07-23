@@ -35,7 +35,6 @@ public class VoucherServices : IVoucherServices
                 DieuKien = v.DieuKien,
                 TrangThai = v.TrangThai,
                 LoaiVoucher = v.LoaiVoucher,
-                GiamTien = v.GiamTien,
                 GiaTriToiDa = v.GiaTriToiDa,
                 Coupons = _context.Coupons
                     .Where(c => c.MaVoucher == v.MaVoucher)
@@ -44,7 +43,8 @@ public class VoucherServices : IVoucherServices
                         ID = c.ID,
                         MaNhap = c.MaNhap,
                         TrangThai = c.TrangThai,
-                        MaVoucher = c.MaVoucher
+                        MaVoucher = c.MaVoucher,
+                        MaNguoiDung = c.MaNguoiDung
                     })
                     .ToList()
             })
@@ -146,7 +146,6 @@ public class VoucherServices : IVoucherServices
             NgayKetThuc = voucher.NgayKetThuc,
             DieuKien = voucher.DieuKien,
             LoaiVoucher = voucher.LoaiVoucher,
-            GiamTien = voucher.GiamTien,
             GiaTriToiDa = voucher.GiaTriToiDa,
             TrangThai = 0,
             HinhAnh = !string.IsNullOrEmpty(voucher.HinhAnh) ? Convert.FromBase64String(voucher.HinhAnh) : null
@@ -164,7 +163,9 @@ public class VoucherServices : IVoucherServices
             {
                 MaNhap = maNhap,
                 TrangThai = 0,
-                MaVoucher = newVoucher.MaVoucher
+                MaVoucher = newVoucher.MaVoucher,
+                MaNguoiDung = null
+
             };
             _context.Coupons.Add(coupon);
         }
@@ -183,7 +184,7 @@ public class VoucherServices : IVoucherServices
             DieuKien = newVoucher.DieuKien,
             TrangThai = newVoucher.TrangThai,
             LoaiVoucher = newVoucher.LoaiVoucher,
-            GiamTien = newVoucher.GiamTien,
+
             GiaTriToiDa = newVoucher.GiaTriToiDa,
             Coupons = _context.Coupons
                 .Where(c => c.MaVoucher == newVoucher.MaVoucher)
@@ -192,7 +193,8 @@ public class VoucherServices : IVoucherServices
                     ID = c.ID,
                     MaNhap = c.MaNhap,
                     TrangThai = c.TrangThai,
-                    MaVoucher = c.MaVoucher
+                    MaVoucher = c.MaVoucher,
+                    MaNguoiDung = c.MaNguoiDung
                 })
                 .ToList()
         };
@@ -216,7 +218,6 @@ public class VoucherServices : IVoucherServices
         existingVoucher.DieuKien = voucher.DieuKien.Value;
         existingVoucher.TrangThai = voucher.TrangThai.Value;
         existingVoucher.LoaiVoucher = voucher.LoaiVoucher.Value;
-        existingVoucher.GiamTien = voucher.GiamTien.Value;
         existingVoucher.GiaTriToiDa = voucher.GiaTriToiDa.Value;
 
 
@@ -240,7 +241,7 @@ public class VoucherServices : IVoucherServices
             DieuKien = existingVoucher.DieuKien,
             TrangThai = existingVoucher.TrangThai,
             LoaiVoucher = existingVoucher.LoaiVoucher,
-            GiamTien = existingVoucher.GiamTien,
+
             GiaTriToiDa = existingVoucher.GiaTriToiDa,
         };
     }
@@ -265,5 +266,29 @@ public class VoucherServices : IVoucherServices
         await _context.SaveChangesAsync();
 
         return true;
+    }
+
+    public async Task<bool> UpdateCoupon(int couponId, string maNguoiDung)
+    {
+        try
+        {
+            var coupon = await _context.Coupons
+                .FirstOrDefaultAsync(c => c.ID == couponId && c.TrangThai == 0);
+
+            if (coupon == null)
+            {
+                return false; // Coupon không tồn tại hoặc đã được sử dụng
+            }
+
+            coupon.MaNguoiDung = maNguoiDung;
+            coupon.TrangThai = 2; // Đổi trạng thái thành 2 (đã lưu cho người dùng)
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 }

@@ -2400,7 +2400,7 @@ namespace UltraStrore.Data
                            {
                                MaVoucher = 2,
                                TenVoucher = "Voucher mùa Hạ",
-                               GiamTien = 50000,
+                               GiaTri = 50000,
                                MoTa = "Voucher hót hít có hạn nha các bạn yêu!",
                                NgayBatDau = DateTime.Now,
                                NgayKetThuc = new DateTime(2025, 12, 12),

@@ -104,5 +104,37 @@ namespace UltraStrore.Controllers
             }
         }
 
+        [HttpPut("Coupon/{couponId}")]
+        public async Task<ActionResult> UpdateCoupon(int couponId, [FromBody] UpdateCouponRequest request)
+        {
+            if (!ModelState.IsValid || request.MaNguoiDung == null)
+            {
+                return BadRequest("Dữ liệu không hợp lệ hoặc thiếu mã người dùng.");
+            }
+
+            try
+            {
+                var result = await _voucherServices.UpdateCoupon(couponId, request.MaNguoiDung);
+                if (result)
+                {
+                    return Ok(new { Message = "Lưu mã coupon thành công." });
+                }
+                else
+                {
+                    return NotFound("Không tìm thấy coupon hoặc coupon đã được sử dụng.");
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi server: {ex.Message}");
+            }
+        }
+
+        // Model cho request body
+        public class UpdateCouponRequest
+        {
+            public string MaNguoiDung { get; set; }
+        }
+
     }
 }
