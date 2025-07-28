@@ -1,4 +1,5 @@
 ﻿using UltraStrore.Data;
+using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.EditModels;
 
 namespace UltraStrore.Models.ViewModels
@@ -17,5 +18,7 @@ namespace UltraStrore.Models.ViewModels
         public int? GioiTinh { get; set; }
         public List<SanPhamEditDetail>? Details { get; set; }
         public List<byte[]>? HinhAnhs { get; set; }
+        public MoTaSanPhamCreateModel? MoTaChiTiet { get; set; }
+        public List<DetailHashTagSP>? ListHashTag { get; set; }
     }
 }

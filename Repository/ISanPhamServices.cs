@@ -10,11 +10,12 @@ namespace UltraStrore.Repository
         Task<List<SanPhamView>> ListSanPham(string? id);
         Task<List<SanPhamView2>> SanPhamByID(string? id);
         Task<List<SanPhamByIDSorted>> SanPhamByIDSorteds(string? id);
-        Task<APIResponse> EditSanPham(List<SanPhamEdit> data);
-        Task<APIResponse> CreateSanPham(List<SanPhamCreate> data);
+        Task<APIResponse> EditSanPham(FullInfoSanPhamEdit info);
+        Task<APIResponse> CreateSanPham(FullCreateSanPham info);
         Task<APIResponse> DeleteSanPham(string? id);
         Task<APIResponse> ActiveSanPham(string? id);
         Task<List<SanPhamView>> ListSanPhamLQ(string? id);
         Task<APIResponse> MoTaSanPhamCreate(List<MoTaSanPhamCreateModel>? info);
+        Task<List<ProductByDateReport>> ReportByDate(SelectDateProductView? info);
     }
 }

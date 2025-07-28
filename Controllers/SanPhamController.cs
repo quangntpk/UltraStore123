@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using UltraStrore.Data.Temp;
 using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.EditModels;
+using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
 
 namespace UltraStrore.Controllers
@@ -43,13 +44,13 @@ namespace UltraStrore.Controllers
             return Ok(data);
         }
         [HttpPost("EditSanPham")]
-        public async Task<IActionResult> EditSanPham([FromBody]List<SanPhamEdit> info)
+        public async Task<IActionResult> EditSanPham([FromBody]FullInfoSanPhamEdit info)
         {
             var data = await this.services.EditSanPham(info);
             return Ok(data);
         }
         [HttpPost("CreateSanPham")]
-        public async Task<IActionResult> CreateSanPham([FromBody] List<SanPhamCreate> info)
+        public async Task<IActionResult> CreateSanPham(FullCreateSanPham? info)
         {
             var data = await this.services.CreateSanPham(info);
             return Ok(data);
@@ -76,6 +77,12 @@ namespace UltraStrore.Controllers
         public async Task<IActionResult> MoTaSanPhamCreate(List<MoTaSanPhamCreateModel> info)
         {
             var data = await this.services.MoTaSanPhamCreate(info);
+            return Ok(data);
+        }
+        [HttpPost("ReportByDate")]
+        public async Task<IActionResult> ReportByDate(SelectDateProductView? info)
+        {
+            var data = await this.services.ReportByDate(info);
             return Ok(data);
         }
     }

@@ -19,5 +19,6 @@
         public int? SoLuongDaBan { get; set; }
         public string? ThuongHieu { get; set; }
         public string? LoaiSanPham { get; set; }
+        public List<DetailHashTagSP> ListHashTag { get; set; }
     }
 }

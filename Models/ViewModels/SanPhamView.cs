@@ -18,5 +18,6 @@
         public int? SoLuongDaBan { get; set; }
         public string? GioiTinh { get; set; }
         public bool? Hot { get; set; }
+        public List<DetailHashTagSP>? ListHashTag { get; set; }
     }
 }
