@@ -75,7 +75,7 @@ public class VoucherServices : IVoucherServices
 
             var coupon = await _context.Coupons
                 .Include(c => c.MaVoucherNavigation)
-                .FirstOrDefaultAsync(c => c.MaNhap == code && c.TrangThai == 0);
+                .FirstOrDefaultAsync(c => c.MaNhap == code && (c.TrangThai == 0 || c.TrangThai == 2));
 
             if (coupon == null)
             {
@@ -90,7 +90,7 @@ public class VoucherServices : IVoucherServices
             var now = DateTime.Now;
 
             if (voucher == null
-                || voucher.TrangThai != 0
+                ||( voucher.TrangThai != 0 && voucher.TrangThai != 2)
                 || voucher.NgayBatDau > now
                 || voucher.NgayKetThuc < now
                 || originalAmount < (voucher.DieuKien ?? 0))
