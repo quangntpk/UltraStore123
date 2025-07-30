@@ -87,17 +87,48 @@ public class VoucherServices : IVoucherServices
             var voucher = coupon.MaVoucherNavigation;
             var now = DateTime.Now;
 
-            if (voucher == null
-                || voucher.TrangThai != 0
-                || voucher.NgayBatDau > now
-                || voucher.NgayKetThuc < now
-                || voucher.SoLuong <= 0
-                || originalAmount < (voucher.DieuKien ?? 0))
+            if (voucher == null)
             {
                 return new ValidateCouponResponse
                 {
                     Success = false,
-                    Message = "Mã giảm giá không hợp lệ, đã hết hạn, hoặc không đủ điều kiện"
+                    Message = "Mã giảm giá không hợp lệ"
+                };
+            }
+
+            if(voucher.TrangThai != 0)
+            {
+                return new ValidateCouponResponse
+                {
+                    Success = false,
+                    Message = "Mã giảm giá đã được sử dụng"
+                };
+            }
+
+            if (voucher.NgayBatDau > now)
+            {
+                return new ValidateCouponResponse
+                {
+                    Success = false,
+                    Message = "Mã giảm giá chưa bắt đầu"
+                };
+            }
+
+            if (voucher.NgayKetThuc < now)
+            {
+                return new ValidateCouponResponse
+                {
+                    Success = false,
+                    Message = "Mã giảm giá đã hết hạn"
+                };
+            }
+
+            if(originalAmount < (voucher.DieuKien ?? 0))
+            {
+                return new ValidateCouponResponse
+                {
+                    Success = false,
+                    Message = "Tổng tiền không đủ điều kiện để sử dụng mã giảm giá"
                 };
             }
 
@@ -192,15 +223,9 @@ public class VoucherServices : IVoucherServices
                     decimal discountPercentage = (decimal)(voucher.GiaTri ?? 0);
                     discountAmount = originalAmount * (discountPercentage / 100);
                     decimal maxDiscount = voucher.GiaTriToiDa ?? 0;
-                    if (finalAmount > maxDiscount)
+                    if (discountAmount > maxDiscount)
                     {
-                        return new ValidateCouponResponse
-                        {
-                            Success = false,
-                            Message = "Mã giảm giá không thể áp dụng vì không đủ điều kiện",
-                            DiscountAmount = 0,
-                            FinalAmount = originalAmount,
-                        };
+                        discountAmount = maxDiscount;
                     }
                     finalAmount = originalAmount - discountAmount;
                     break;
@@ -208,15 +233,9 @@ public class VoucherServices : IVoucherServices
                 case 1:
                     discountAmount = (decimal)(voucher.GiaTri ?? 0);
                     decimal maxDiscountFixed = voucher.GiaTriToiDa ?? 0;
-                    if (finalAmount > maxDiscountFixed)
+                    if (discountAmount > maxDiscountFixed)
                     {
-                        return new ValidateCouponResponse
-                        {
-                            Success = false,
-                            Message = "Mã giảm giá không thể áp dụng vì không đủ điều kiện",
-                            DiscountAmount = 0,
-                            FinalAmount = originalAmount,
-                        };
+                        discountAmount  = maxDiscountFixed;
                     }
                     finalAmount = originalAmount - discountAmount;
                     break;
