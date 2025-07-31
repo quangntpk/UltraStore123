@@ -101,8 +101,7 @@ public class NewsletterController : ControllerBase
                                     <!-- Footer -->
                                     <tr>
                                         <td style='background-color: #f8f8f8; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; padding: 20px; text-align: center;'>
-                                            <p style='font-size: 14px; color: #666666; margin: 0 0 8px;'>Nếu bạn không muốn nhận thêm email, hãy <a href='http://localhost:8080' style='color: #6B46C1; text-decoration: underline;'>hủy đăng ký</a>.</p>
-                                            <p style='font-size: 14px; color: #666666; margin: 0;'>© 2025 FashionHub. All rights reserved.</p>
+                                            <p style='font-size: 14px; color: #666666; margin: 0;'>© 2025 FashionHub. Mọi quyền được bảo lưu.</p>
                                         </td>
                                     </tr>
                                 </table>
