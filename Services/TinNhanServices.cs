@@ -1,14 +1,15 @@
 ﻿using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using UltraStrore.Data;
 using UltraStrore.Hubs;
 using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace UltraStrore.Services
 {
@@ -16,11 +17,13 @@ namespace UltraStrore.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly IHubContext<ChatHub> _hub;
+        private readonly IWebHostEnvironment _environment;
 
-        public TinNhanServices(ApplicationDbContext context, IHubContext<ChatHub> hub)
+        public TinNhanServices(ApplicationDbContext context, IHubContext<ChatHub> hub, IWebHostEnvironment environment)
         {
             _context = context;
             _hub = hub;
+            _environment = environment;
         }
 
         public async Task<TinNhanView> GuiTinNhanAsync(TinNhanCreate model)
@@ -28,11 +31,27 @@ namespace UltraStrore.Services
             string? tepDinhKemUrl = null;
             if (model.TepTin != null)
             {
-                var fileName = $"{Guid.NewGuid()}_{model.TepTin.FileName}";
-                var path = Path.Combine("wwwroot/uploads/chat", fileName);
-                await using var stream = new FileStream(path, FileMode.Create);
-                await model.TepTin.CopyToAsync(stream);
-                tepDinhKemUrl = $"/uploads/chat/{fileName}";
+                try
+                {
+                    var fileName = $"{Guid.NewGuid()}_{model.TepTin.FileName}";
+                    var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", "chat");
+                    var path = Path.Combine(uploadsFolder, fileName);
+
+                    if (!Directory.Exists(uploadsFolder))
+                    {
+                        Directory.CreateDirectory(uploadsFolder);
+                    }
+
+                    await using var stream = new FileStream(path, FileMode.Create);
+                    await model.TepTin.CopyToAsync(stream);
+
+                    tepDinhKemUrl = $"/uploads/chat/{fileName}";
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Lỗi khi lưu tệp: {ex.Message}");
+                    throw;
+                }
             }
 
             var tinNhan = new TinNhan
@@ -56,7 +75,7 @@ namespace UltraStrore.Services
                 NguoiNhanId = tinNhan.NguoiNhanId,
                 NoiDung = tinNhan.NoiDung,
                 KieuTinNhan = tinNhan.KieuTinNhan,
-                TepDinhKemUrl = tinNhan.TepDinhKemUrl,
+                TepDinhKemUrl = tepDinhKemUrl,
                 NgayTao = tinNhan.NgayTao ?? DateTime.MinValue,
                 TrangThai = tinNhan.TrangThai
             };
