@@ -62,6 +62,8 @@ namespace UltraStrore
             builder.Services.AddScoped<IHashTagServices, HashTagServices>();
             builder.Services.AddScoped<IOpenAIServices, OpenAIServices>();
             builder.Services.Configure<OpenAISettings>(builder.Configuration.GetSection("OpenAI"));
+            builder.Services.Configure<GoogleApisSettings>(builder.Configuration.GetSection("GoogleApis"));
+            builder.Services.AddHttpClient<IGoogleApisServices, GoogleApisServices>();
 
 
             builder.Services.AddSingleton(sp =>
