@@ -29,6 +29,13 @@ namespace UltraStrore
                     throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
             builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
             builder.Services.AddScoped<IGHNService, GHNService>();
+            builder.Services.AddHttpClient<IGHNService, GHNService>(client =>
+            {
+                client.BaseAddress = new Uri("https://dev-online-gateway.ghn.vn/shiip/public-api/");
+                client.DefaultRequestHeaders.Add("User-Agent", "UltraStrore-App/1.0");
+                client.Timeout = TimeSpan.FromSeconds(30);
+            });
+
             builder.Services.AddHttpClient();
 
             builder.Services.AddScoped<IOrderNotificationService, OrderNotificationService>();
