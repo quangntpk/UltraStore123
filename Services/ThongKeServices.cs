@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using UltraStrore.Data;
 using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;

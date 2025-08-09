@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System;
 using System.Threading.Tasks;
 using UltraStrore.Models.CreateModels;
@@ -9,6 +10,7 @@ using UltraStrore.Services;
 
 namespace UltraStrore.Controllers
 {
+    [Authorize(Roles = "admin,staff")]
     [Route("api/[controller]")]
     [ApiController]
     public class HashTagController : ControllerBase

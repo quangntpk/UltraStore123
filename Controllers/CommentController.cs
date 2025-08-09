@@ -1,16 +1,18 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using UltraStrore.Data;
-using UltraStrore.Models.ViewModels;
-using UltraStrore.Repository;
-using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using UltraStrore.Data;
 using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.EditModels;
+using UltraStrore.Models.ViewModels;
+using UltraStrore.Repository;
 using UltraStrore.Services;
 
 namespace UltraStrore.Controllers
 {
+
     [Route("api/[controller]")]
     [ApiController]
     public class CommentController : ControllerBase
@@ -46,7 +48,6 @@ namespace UltraStrore.Controllers
             var addedBinhLuan = await _commetServices.AddBinhLuan(binhLuan);
             return CreatedAtAction(nameof(ListBinhLuan), new { ma = addedBinhLuan.MaSanPham }, addedBinhLuan);
         }
-
         // Sửa bình luận
         [HttpPut("update/{maBinhLuan}")]
         public async Task<ActionResult<BinhLuanView>> UpdateBinhLuan(int maBinhLuan, [FromBody] BinhLuanEdit binhLuan)
@@ -78,6 +79,7 @@ namespace UltraStrore.Controllers
             return Ok("Xóa bình luận thành công.");
         }
 
+        [Authorize(Roles = "admin,staff")]
         [HttpPut("approve/{maBinhLuan}")]
         public async Task<ActionResult> ApproveBinhLuan(int maBinhLuan)
         {
@@ -90,6 +92,7 @@ namespace UltraStrore.Controllers
             return Ok("Duyệt bình luận thành công.");
         }
 
+        [Authorize(Roles = "admin,staff")]
         [HttpPut("unapprove/{maBinhLuan}")]
         public async Task<ActionResult> UnapproveBinhLuan(int maBinhLuan)
         {

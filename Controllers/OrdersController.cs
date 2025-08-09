@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace UltraStrore.Controllers
 {
-    //[Authorize(Roles = "1")]
+    [Authorize(Roles = "admin,staff")]
     [Route("api/[controller]")]
     [ApiController]
     public class OrdersController : ControllerBase
@@ -19,9 +19,11 @@ namespace UltraStrore.Controllers
             _context = context;
         }
 
+
         [HttpGet]
         public async Task<IActionResult> GetOrders()
         {
+
             // Lấy tất cả sản phẩm một lần để tránh N+1 query problem
             var allSanPhams = await _context.SanPhams
                 .Include(sp => sp.HinhAnhs)

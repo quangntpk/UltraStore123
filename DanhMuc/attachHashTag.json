@@ -9,19 +9,6 @@
     ]
   },
   {
-    "IDSanPham": "A00002",
-    "ListHashTag": [
-      {
-        "ID": 1,
-        "Name": "2025"
-      },
-      {
-        "ID": 2,
-        "Name": "2024"
-      }
-    ]
-  },
-  {
     "IDSanPham": "Q00001",
     "ListHashTag": [
       {
@@ -45,6 +32,19 @@
   },
   {
     "IDSanPham": "A00004",
+    "ListHashTag": [
+      {
+        "ID": 1,
+        "Name": "2025"
+      },
+      {
+        "ID": 2,
+        "Name": "2024"
+      }
+    ]
+  },
+  {
+    "IDSanPham": "A00002",
     "ListHashTag": [
       {
         "ID": 1,

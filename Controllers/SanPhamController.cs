@@ -43,24 +43,28 @@ namespace UltraStrore.Controllers
             var data = await this.services.SanPhamByIDSorteds(id);
             return Ok(data);
         }
+        [Authorize(Roles = "admin,staff")]
         [HttpPost("EditSanPham")]
         public async Task<IActionResult> EditSanPham([FromBody]FullInfoSanPhamEdit info)
         {
             var data = await this.services.EditSanPham(info);
             return Ok(data);
         }
+        [Authorize(Roles = "admin,staff")]
         [HttpPost("CreateSanPham")]
         public async Task<IActionResult> CreateSanPham(FullCreateSanPham? info)
         {
             var data = await this.services.CreateSanPham(info);
             return Ok(data);
         }
+        [Authorize(Roles = "admin,staff")]
         [HttpGet("DeleteSanPham")]
         public async Task<IActionResult> DeleteSanPham(string id)
         {
             var data = await this.services.DeleteSanPham(id);
             return Ok();
         }
+        [Authorize(Roles = "admin,staff")]
         [HttpGet("ActiveSanPham")]
         public async Task<IActionResult> ActiveSanPham(string id)
         {
