@@ -21,16 +21,20 @@ namespace UltraStrore.Services
         private readonly ILogger<CheckOutService> _logger;
         private readonly VnPayConfig _vnpayConfig;
         private readonly IVnPayServies _vnPayService;
+        private readonly IOrderNotificationService _orderNotificationService;
         public static bool InstantBuy = false;
         public static DonHang donHangTemp;
         public static List<ChiTietDonHang> chiTietDonHangTemp;
         public static List<DonHangSupport> donHangSupportsTemp;
-        public CheckOutService(ApplicationDbContext context, ILogger<CheckOutService> logger, VnPayConfig vnpayConfig, IVnPayServies vnPayService)
+
+
+        public CheckOutService(ApplicationDbContext context, ILogger<CheckOutService> logger, VnPayConfig vnpayConfig, IVnPayServies vnPayService,IOrderNotificationService orderNotificationService)
         {
             _context = context;
             _logger = logger;
             _vnpayConfig = vnpayConfig;
             _vnPayService = vnPayService;
+            _orderNotificationService = orderNotificationService;
         }
         public async Task<PaymentResponse> InstantCheckout(PaymentRequestDto1 request, HttpContext httpContext)
         {
@@ -760,12 +764,15 @@ namespace UltraStrore.Services
         }
 
 
-        public async Task ProcessVnPayCallbackAsync(IQueryCollection query, HttpContext httpContext)
+        public async Task<PaymentResponse> ProcessVnPayCallbackAsync(IQueryCollection query, HttpContext httpContext)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
+                Console.WriteLine("[DEBUG] Starting VNPay callback processing...");
+
                 var vnPayResponse = _vnPayService.PaymentExecute(query);
+                Console.WriteLine($"[DEBUG] VNPay response: Success={vnPayResponse.Success}, Code={vnPayResponse.VnPayResponseCode}");
 
                 if (!vnPayResponse.Success)
                 {
@@ -782,18 +789,34 @@ namespace UltraStrore.Services
                     };
 
                     message = System.Text.RegularExpressions.Regex.Replace(message, "[^\\x00-\\x7F]", "");
+                    Console.WriteLine($"[ERROR] VNPay payment failed: {message}");
+
                     httpContext.Response.Redirect(
                         $"http://localhost:8080/PaymentFail?status=failed&message={Uri.EscapeDataString(message)}"
                     );
-                    return;
+
+                    // ✅ RETURN FAILED RESPONSE
+                    return new PaymentResponse
+                    {
+                        Success = false,
+                        Message = message,
+                        TransactionId = vnPayResponse.TransactionId
+                    };
                 }
 
                 var tempOrderId = vnPayResponse.OrderId;
+                Console.WriteLine($"[DEBUG] Processing temp order ID: {tempOrderId}");
                 var pendingOrder = await _context.PendingOrders.FirstOrDefaultAsync(c => c.TempOrderId == tempOrderId);
                 if (pendingOrder == null)
                 {
+                    Console.WriteLine($"[ERROR] Pending order not found: {tempOrderId}");
                     httpContext.Response.Redirect("http://localhost:8080/PaymentFail?status=failed&message=Khong tim thay ma don hang tam thoi");
-                    return;
+                    return new PaymentResponse
+                    {
+                        Success = false,
+                        Message = "Không tìm thấy mã đơn hàng tạm thời",
+                        TransactionId = vnPayResponse.TransactionId
+                    };
                 }
 
                 var orderData = System.Text.Json.JsonSerializer.Deserialize<PendingVnPayOrder>(pendingOrder.OrderData,
@@ -805,8 +828,14 @@ namespace UltraStrore.Services
 
                 if (orderData.TempOrderId != tempOrderId)
                 {
+                    Console.WriteLine($"[ERROR] Temp order ID mismatch: {orderData.TempOrderId} vs {tempOrderId}");
                     httpContext.Response.Redirect("http://localhost:8080/PaymentFail?status=failed&message=Ma don hang tam thoi khong khop");
-                    return;
+                    return new PaymentResponse
+                    {
+                        Success = false,
+                        Message = "Mã đơn hàng tạm thời không khớp",
+                        TransactionId = vnPayResponse.TransactionId
+                    };
                 }
 
                 // Validate stock before processing
@@ -903,6 +932,41 @@ namespace UltraStrore.Services
                     }
                 }
 
+                Console.WriteLine("[DEBUG] Creating final order...");
+
+                var donHang = orderData.Order;
+                donHang.TrangThaiDonHang = TrangThaiDonHang.DangXuLy;
+                donHang.TrangThaiHang = TrangThaiThanhToan.ThanhToanVNPay;
+                donHang.DiscountAmount = orderData.DiscountAmount;
+                donHang.ShippingFee = orderData.ShippingFee;
+                donHang.FinalAmount = orderData.FinalAmount;
+
+                _context.DonHangs.Add(donHang);
+                await _context.SaveChangesAsync();
+
+                Console.WriteLine($"[DEBUG] Order created with ID: {donHang.MaDonHang}");
+
+                var chiTietDonHangs = orderData.ChiTietGioHangs
+                        .Select(item =>
+                        {
+                            if (item.MaSanPham == null)
+                            {
+                                _logger.LogWarning($"ChiTietGioHangDto có MaSanPham null: {JsonSerializer.Serialize(item)}");
+                            }
+                            return item;
+                        })
+                        .Where(item => item.MaSanPham != null)
+                        .Select(item => new ChiTietDonHang
+                        {
+                            MaSanPham = item.MaSanPham.ToString(),
+                            SoLuong = item.SoLuong,
+                            Gia = (int?)item.Gia,
+                            ThanhTien = (int?)item.ThanhTien,
+                            MaCombo = item.MaCombo,
+                            SanPhamMaSanPham = item.MaSanPham.ToString(),
+                            MaDonHang = donHangTemp.MaDonHang
+                        }).ToList();
+                    _context.ChiTietDonHangs.AddRange(chiTietDonHangs);
                 if (InstantBuy)
                 {
                     donHangTemp.ChiTietDonHangs[0].SanPhamMaSanPham = donHangTemp.ChiTietDonHangs[0].MaSanPham;
@@ -934,6 +998,7 @@ namespace UltraStrore.Services
 
                 if (!string.IsNullOrEmpty(orderData.CouponCode))
                 {
+                    Console.WriteLine($"[DEBUG] Processing coupon: {orderData.CouponCode}");
                     var coupon = await _context.Coupons
                         .Include(c => c.MaVoucherNavigation)
                         .FirstOrDefaultAsync(c => c.MaNhap == orderData.CouponCode);
@@ -950,6 +1015,7 @@ namespace UltraStrore.Services
 
                 if (cart != null && !InstantBuy)
                 {
+                    Console.WriteLine($"[DEBUG] Removing cart: {cartId}");
                     _context.ChiTietGioHangs.RemoveRange(cart.ChiTietGioHangs);
                     _context.GioHangs.Remove(cart);
                 }
@@ -958,18 +1024,78 @@ namespace UltraStrore.Services
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                var redirectUrl = $"http://localhost:8080/PaymentSuccess?status=success&orderId={donHangTemp.MaDonHang}&transactionId={vnPayResponse.TransactionId}";
-                Console.WriteLine($"Redirecting to: {redirectUrl}");
+                // ✅ THÊM PHẦN GỬI EMAIL CHO VNPAY
+                try
+                {
+                    // Lấy thông tin đơn hàng với user
+                    var orderWithUser = await _context.DonHangs
+                        .Include(d => d.MaNguoiDungNavigation)
+                        .FirstOrDefaultAsync(d => d.MaDonHang == donHang.MaDonHang);
+
+                    if (orderWithUser != null && orderWithUser.MaNguoiDungNavigation != null &&
+                        !string.IsNullOrEmpty(orderWithUser.MaNguoiDungNavigation.Email))
+                    {
+                        string email = orderWithUser.MaNguoiDungNavigation.Email;
+                        string statusMessage = "Đơn hàng của bạn đã được thanh toán thành công qua VNPay và đang được xử lý.";
+
+                        _logger.LogInformation($"[VNPAY EMAIL] Sending email to: {email} for order: {donHang.MaDonHang}");
+
+                        await _orderNotificationService.SendOrderStatusNotificationAsync(
+                            email,
+                            donHang.MaDonHang,
+                            statusMessage);
+
+                        _logger.LogInformation($"[VNPAY EMAIL] Email sent successfully for order: {donHang.MaDonHang}");
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"[VNPAY EMAIL] Không thể gửi email - không tìm thấy thông tin user hoặc email cho đơn hàng: {donHang.MaDonHang}");
+                    }
+                }
+                catch (Exception emailEx)
+                {
+                    _logger.LogError(emailEx, $"[VNPAY EMAIL] Lỗi khi gửi email xác nhận đơn hàng VNPay: {donHang.MaDonHang}");
+                    // Không throw lỗi để không ảnh hưởng đến flow chính
+                }
+                Console.WriteLine($"[SUCCESS] VNPay payment processed successfully for order {donHang.MaDonHang}");
+
+                var redirectUrl = $"http://localhost:8080/PaymentSuccess?status=success&orderId={donHang.MaDonHang}&transactionId={vnPayResponse.TransactionId}";
+                Console.WriteLine($"[DEBUG] Redirecting to: {redirectUrl}");
+
                 httpContext.Response.Redirect(redirectUrl);
+
+                // ✅ RETURN SUCCESS RESPONSE WITH ALL REQUIRED DATA
+                return new PaymentResponse
+                {
+                    Success = true,
+                    OrderId = donHang.MaDonHang,
+                    Message = "VNPay payment successful",
+                    TransactionId = vnPayResponse.TransactionId,
+                    FinalAmount = orderData.FinalAmount,
+                    OriginalAmount = orderData.OriginalAmount,
+                    DiscountAmount = orderData.DiscountAmount,
+                    ShippingFee = orderData.ShippingFee
+                };
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
                 _logger.LogError(ex, "Lỗi khi xử lý callback VNPay");
+                Console.WriteLine($"[ERROR] VNPay callback processing failed: {ex.Message}");
+                Console.WriteLine($"[ERROR] Stack trace: {ex.StackTrace}");
+
                 string errorMessage = "Loi khi xu ly callback VNPay";
                 httpContext.Response.Redirect(
                     $"http://localhost:8080/PaymentFail?status=failed&message={Uri.EscapeDataString(errorMessage)}"
                 );
+
+                // ✅ RETURN ERROR RESPONSE
+                return new PaymentResponse
+                {
+                    Success = false,
+                    Message = errorMessage,
+                    TransactionId = ""
+                };
             }
         }
     }
