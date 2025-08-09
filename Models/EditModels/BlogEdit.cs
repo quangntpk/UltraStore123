@@ -18,7 +18,7 @@
 
         public byte[]? HinhAnh { get; set; }
         public string? MoTaHinhAnh { get; set; } // alt text
-
+        public string? ChuDe { get; set; }
         public bool IsPublished { get; set; }
 
         public List<string>? Tags { get; set; }
