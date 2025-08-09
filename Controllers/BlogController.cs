@@ -107,5 +107,46 @@ namespace UltraStrore.Controllers
                 return StatusCode(500, $"Lỗi server: {ex.Message}");
             }
         }
+        [HttpPost("{maBlog}/like")]
+        public async Task<ActionResult<BlogView>> LikeBlog(int maBlog, [FromBody] string maNguoiDung)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(maNguoiDung))
+                    return BadRequest("User ID cannot be empty");
+
+                var blog = await _blogServices.LikeBlog(maBlog, maNguoiDung);
+                return Ok(blog);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi server: {ex.Message}");
+            }
+        }
+
+        [HttpPost("{maBlog}/unlike")]
+        public async Task<ActionResult<BlogView>> UnlikeBlog(int maBlog, [FromBody] string maNguoiDung)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(maNguoiDung))
+                    return BadRequest("User ID cannot be empty");
+
+                var blog = await _blogServices.UnlikeBlog(maBlog, maNguoiDung);
+                return Ok(blog);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi server: {ex.Message}");
+            }
+        }
     }
 }

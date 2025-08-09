@@ -22,10 +22,20 @@ namespace UltraStrore
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            builder.Services.AddControllers();
+            builder.Services.AddHttpClient();
+            builder.Services.AddHttpContextAccessor();
             var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ??
                     throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
             builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
             builder.Services.AddScoped<IGHNService, GHNService>();
+            builder.Services.AddHttpClient<IGHNService, GHNService>(client =>
+            {
+                client.BaseAddress = new Uri("https://dev-online-gateway.ghn.vn/shiip/public-api/");
+                client.DefaultRequestHeaders.Add("User-Agent", "UltraStrore-App/1.0");
+                client.Timeout = TimeSpan.FromSeconds(30);
+            });
+
             builder.Services.AddHttpClient();
 
             builder.Services.AddScoped<IOrderNotificationService, OrderNotificationService>();
@@ -57,6 +67,13 @@ namespace UltraStrore
             builder.Services.AddScoped<ICheckOutServices, CheckOutService>();
             builder.Services.AddScoped<IVnPayServies, VnPayService>();
             builder.Services.Configure<VnPayConfig>(builder.Configuration.GetSection("VnPay"));
+            builder.Services.AddScoped<IHashTagServices, HashTagServices>();
+            builder.Services.AddScoped<IOpenAIServices, OpenAIServices>();
+            builder.Services.Configure<OpenAISettings>(builder.Configuration.GetSection("OpenAI"));
+            builder.Services.Configure<GoogleApisSettings>(builder.Configuration.GetSection("GoogleApis"));
+            builder.Services.AddHttpClient<IGoogleApisServices, GoogleApisServices>();
+
+
             builder.Services.AddSingleton(sp =>
                 sp.GetRequiredService<IOptions<VnPayConfig>>().Value);
 
@@ -169,6 +186,19 @@ namespace UltraStrore
                 app.UseSwaggerUI();
             }
             app.UseRouting();
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(
+        Path.Combine(builder.Environment.WebRootPath, "uploads", "chat")),
+                RequestPath = "/uploads/chat",
+                OnPrepareResponse = ctx =>
+                {
+                    ctx.Context.Response.Headers.Append("Access-Control-Allow-Origin", ctx.Context.Request.Headers["Origin"]);
+                    ctx.Context.Response.Headers.Append("Access-Control-Allow-Methods", "GET");
+                    ctx.Context.Response.Headers.Append("Access-Control-Allow-Headers", "Authorization");
+                }
+            });
 
             app.UseHttpsRedirection();
 

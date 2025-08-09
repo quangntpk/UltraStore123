@@ -1,11 +1,1 @@
-{
-  "Version": 1,
-  "Hash": "MR6df9RYji3f0ZhlKJDYmUt8M9Se1xt0HxPQFuJErDk=",
-  "Source": "UltraStrore",
-  "BasePath": "_content/UltraStrore",
-  "Mode": "Default",
-  "ManifestType": "Build",
-  "ReferencedProjectsConfiguration": [],
-  "DiscoveryPatterns": [],
-  "Assets": []
-}
+{"Version":1,"Hash":"5GLFSVE6gtGpCd7hxCsl9E18ZgkMLHObU8XOkTSstzA=","Source":"UltraStrore","BasePath":"_content/UltraStrore","Mode":"Default","ManifestType":"Build","ReferencedProjectsConfiguration":[],"DiscoveryPatterns":[],"Assets":[],"Endpoints":[]}

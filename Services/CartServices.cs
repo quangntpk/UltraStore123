@@ -116,8 +116,11 @@ namespace UltraStrore.Services
                                 if (check.MaSanPham!=null && check.MaSanPham.Trim() == MaSanPham.Trim())
                                 {
                                     check.SoLuong += info.SoLuong;
+                                    _context.ChiTietGioHangs.Update(check);
                                     response.ResponseCode = 201;
                                     response.Result = "Thêm sản phẩm vào giỏ hàng thành công";
+                                    await _context.SaveChangesAsync();
+                                    await transaction.CommitAsync();
                                     return response;
                                 }
                             }

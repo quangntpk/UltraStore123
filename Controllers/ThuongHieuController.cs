@@ -22,8 +22,15 @@ namespace UltraStrore.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAllThuongHieu()
         {
-            var list = await _thuongHieuServices.GetAllThuongHieuAsync();
-            return Ok(list);
+            try
+            {
+                var list = await _thuongHieuServices.GetAllThuongHieuAsync();
+                return Ok(list);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi máy chủ: {ex.Message}");
+            }
         }
 
         [HttpGet("{id}")]
@@ -34,9 +41,13 @@ namespace UltraStrore.Controllers
                 var thuongHieu = await _thuongHieuServices.GetThuongHieuAsync(id);
                 return Ok(thuongHieu);
             }
-            catch (KeyNotFoundException)
+            catch (KeyNotFoundException ex)
             {
-                return NotFound("Thương hiệu không tồn tại.");
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi máy chủ: {ex.Message}");
             }
         }
 
@@ -55,6 +66,14 @@ namespace UltraStrore.Controllers
             {
                 return BadRequest(ex.Message);
             }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi máy chủ: {ex.Message}");
+            }
         }
 
         [HttpPut("{id}")]
@@ -71,24 +90,50 @@ namespace UltraStrore.Controllers
                 var updatedThuongHieu = await _thuongHieuServices.UpdateThuongHieuAsync(model);
                 return Ok(updatedThuongHieu);
             }
-            catch (KeyNotFoundException)
+            catch (KeyNotFoundException ex)
             {
-                return NotFound("Thương hiệu không tồn tại.");
+                return NotFound(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi máy chủ: {ex.Message}");
             }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteThuongHieu(int id)
         {
-            var result = await _thuongHieuServices.DeleteThuongHieuAsync(id);
-            return result ? NoContent() : NotFound("Thương hiệu không tồn tại.");
+            try
+            {
+                var result = await _thuongHieuServices.DeleteThuongHieuAsync(id);
+                return result ? NoContent() : NotFound("Thương hiệu không tồn tại.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi máy chủ: {ex.Message}");
+            }
         }
 
         [HttpGet("Search")]
         public async Task<IActionResult> SearchThuongHieu([FromQuery] string tenThuongHieu)
         {
-            var result = await _thuongHieuServices.SearchThuongHieuAsync(tenThuongHieu);
-            return Ok(result);
+            try
+            {
+                var result = await _thuongHieuServices.SearchThuongHieuAsync(tenThuongHieu);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi máy chủ: {ex.Message}");
+            }
         }
 
         [HttpGet("{id}/SanPham")]
@@ -99,9 +144,13 @@ namespace UltraStrore.Controllers
                 var sanPhams = await _thuongHieuServices.GetSanPhamByThuongHieuAsync(id);
                 return Ok(sanPhams);
             }
-            catch (KeyNotFoundException)
+            catch (KeyNotFoundException ex)
             {
-                return NotFound("Thương hiệu không tồn tại.");
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi máy chủ: {ex.Message}");
             }
         }
     }

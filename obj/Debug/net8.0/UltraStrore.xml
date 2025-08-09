@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>UltraStrore</name>
+    </assembly>
+    <members>
+        <member name="M:UltraStrore.Controllers.UpdateProfileController.GetCurrentUserProfile">
+            <summary>
+            Lấy danh sách profile người dùng 
+            </summary>
+            <param name="model"></param>
+            <returns>Trả về thông tin đăng ký</returns>
+        </member>
+        <member name="M:UltraStrore.Controllers.UpdateProfileController.UpdateProfile(System.String,UltraStrore.Models.ViewModels.UpdateProfileView)">
+            <summary>
+            Get id profile người dùng
+            </summary>
+            <param name="model"></param>
+            <returns>Trả về thông tin đăng ký</returns>
+        </member>
+        <member name="T:UltraStrore.Migrations.hhh">
+            <inheritdoc />
+        </member>
+        <member name="M:UltraStrore.Migrations.hhh.Up(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:UltraStrore.Migrations.hhh.Down(Microsoft.EntityFrameworkCore.Migrations.MigrationBuilder)">
+            <inheritdoc />
+        </member>
+        <member name="M:UltraStrore.Migrations.hhh.BuildTargetModel(Microsoft.EntityFrameworkCore.ModelBuilder)">
+            <inheritdoc />
+        </member>
+    </members>
+</doc>
