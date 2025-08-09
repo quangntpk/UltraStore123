@@ -3,7 +3,6 @@ using UltraStrore.Data;
 using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.EditModels;
 using UltraStrore.Models.ViewModels;
-using UltraStrore.Repository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -37,6 +36,7 @@ namespace UltraStrore.Repository
                     MetaDescription = b.MetaDescription,
                     HinhAnh = b.HinhAnh,
                     MoTaHinhAnh = b.MoTaHinhAnh,
+                    ChuDe = b.ChuDe,
                     IsPublished = b.IsPublished,
                     Tags = b.Tags,
                     Likes = b.Likes,
@@ -59,6 +59,7 @@ namespace UltraStrore.Repository
                 MetaDescription = blogCreate.MetaDescription,
                 HinhAnh = blogCreate.HinhAnh,
                 MoTaHinhAnh = blogCreate.MoTaHinhAnh,
+                ChuDe = blogCreate.ChuDe,
                 IsPublished = blogCreate.IsPublished,
                 Tags = blogCreate.Tags,
                 Likes = 0,
@@ -82,6 +83,7 @@ namespace UltraStrore.Repository
                 MetaDescription = blog.MetaDescription,
                 HinhAnh = blog.HinhAnh,
                 MoTaHinhAnh = blog.MoTaHinhAnh,
+                ChuDe = blog.ChuDe,
                 IsPublished = blog.IsPublished,
                 Tags = blog.Tags,
                 Likes = blog.Likes,
@@ -104,6 +106,7 @@ namespace UltraStrore.Repository
             blog.MetaDescription = blogEdit.MetaDescription ?? blog.MetaDescription;
             blog.HinhAnh = blogEdit.HinhAnh ?? blog.HinhAnh;
             blog.MoTaHinhAnh = blogEdit.MoTaHinhAnh ?? blog.MoTaHinhAnh;
+            blog.ChuDe = blogEdit.ChuDe ?? blog.ChuDe;
             blog.IsPublished = blogEdit.IsPublished;
             blog.Tags = blogEdit.Tags ?? blog.Tags;
 
@@ -124,6 +127,7 @@ namespace UltraStrore.Repository
                 MetaDescription = blog.MetaDescription,
                 HinhAnh = blog.HinhAnh,
                 MoTaHinhAnh = blog.MoTaHinhAnh,
+                ChuDe = blog.ChuDe,
                 IsPublished = blog.IsPublished,
                 Tags = blog.Tags,
                 Likes = blog.Likes,
@@ -162,6 +166,7 @@ namespace UltraStrore.Repository
                 MetaDescription = blog.MetaDescription,
                 HinhAnh = blog.HinhAnh,
                 MoTaHinhAnh = blog.MoTaHinhAnh,
+                ChuDe = blog.ChuDe,
                 IsPublished = blog.IsPublished,
                 Tags = blog.Tags,
                 Likes = blog.Likes,
@@ -192,6 +197,7 @@ namespace UltraStrore.Repository
                 MetaDescription = blog.MetaDescription,
                 HinhAnh = blog.HinhAnh,
                 MoTaHinhAnh = blog.MoTaHinhAnh,
+                ChuDe = blog.ChuDe,
                 IsPublished = blog.IsPublished,
                 Tags = blog.Tags,
                 Likes = blog.Likes,
@@ -233,6 +239,7 @@ namespace UltraStrore.Repository
                 MetaDescription = blog.MetaDescription,
                 HinhAnh = blog.HinhAnh,
                 MoTaHinhAnh = blog.MoTaHinhAnh,
+                ChuDe = blog.ChuDe,
                 IsPublished = blog.IsPublished,
                 Tags = blog.Tags,
                 Likes = blog.Likes,
@@ -271,6 +278,7 @@ namespace UltraStrore.Repository
                 MetaDescription = blog.MetaDescription,
                 HinhAnh = blog.HinhAnh,
                 MoTaHinhAnh = blog.MoTaHinhAnh,
+                ChuDe = blog.ChuDe,
                 IsPublished = blog.IsPublished,
                 Tags = blog.Tags,
                 Likes = blog.Likes,
