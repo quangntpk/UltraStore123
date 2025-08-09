@@ -12,13 +12,17 @@ namespace UltraStrore.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly ISanPhamServices _sanphamServices;
-        public ComboServices(ApplicationDbContext context, ISanPhamServices sanPhamServices)
+        private readonly IKhuyenMaiServices _serviceKM;
+        public ComboServices(ApplicationDbContext context, ISanPhamServices sanPhamServices, IKhuyenMaiServices services)
         {
             _context = context;
             _sanphamServices = sanPhamServices;
+            _serviceKM = services;
         }
         public async Task<List<ComboAdminView>> ComboViews(int? id)
         {
+            var KhuyenMaiView = (await _serviceKM.ListKhuyenMaiAdmin(null)).ToList();
+            int KhuyenMaiChung = KhuyenMaiView.Where(g => g.PercentChung.HasValue).OrderByDescending(g => g.PercentChung).Select(g => g.PercentChung).FirstOrDefault() ?? 0;
             List<ComboAdminView> list = new List<ComboAdminView>();
             var data = id == null
                 ? _context.ComBoSanPhams.ToList()
@@ -60,6 +64,20 @@ namespace UltraStrore.Services
                     cbv.TrangThai = false;
                 cbv.SoLuong = item.SoLuong ?? 0;
                 cbv.NgayTao = item.NgayTao;
+                int MaxKM = 0;
+                var KhuyenMaiRieng = KhuyenMaiView.Where(g => !g.PercentChung.HasValue).ToList();
+                foreach (var KM in KhuyenMaiRieng)
+                {
+                    foreach (var dis in KM.DanhSachKhuyenMai)
+                    {
+                        if (dis.IdCombo.HasValue && dis.IdCombo == cbv.MaCombo)
+                        {
+                            if (dis.Percent > MaxKM)
+                                MaxKM = dis.Percent ?? MaxKM;
+                        }
+                    }
+                }
+                cbv.KhuyenMaiMax = KhuyenMaiChung > MaxKM ? KhuyenMaiChung : MaxKM;
                 list.Add(cbv);
             }
             return list;

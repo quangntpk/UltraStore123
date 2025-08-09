@@ -13,5 +13,6 @@ namespace UltraStrore.Models.ViewModels
         public bool TrangThai { get; set ; }
         public int SoLuong { get; set; }
         public DateOnly? NgayTao { get; set; }
+        public int KhuyenMaiMax { get; set; }
     }
 }

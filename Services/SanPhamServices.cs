@@ -23,19 +23,24 @@ namespace UltraStrore.Services
         private readonly ApplicationDbContext _context;
         private readonly string _dbPath;
         private readonly string _htPath;
-        public SanPhamServices(ApplicationDbContext context, IWebHostEnvironment env)
+        private readonly IKhuyenMaiServices _serviceKM;
+        public SanPhamServices(ApplicationDbContext context, IWebHostEnvironment env, IKhuyenMaiServices services)
         {
             _context = context;
             _dbPath = Path.Combine(env.WebRootPath, "db.json");
             _htPath = Path.Combine(Directory.GetCurrentDirectory(), "DanhMuc", "attachHashTag.json");
+            _serviceKM = services;
         }
         public async Task<List<SanPhamView>> ListSanPham(string id)
         {
+            var KhuyenMaiView = (await _serviceKM.ListKhuyenMaiAdmin(null)).ToList();
+            int KhuyenMaiChung = KhuyenMaiView.Where(g => g.PercentChung.HasValue).OrderByDescending(g => g.PercentChung).Select(g => g.PercentChung).FirstOrDefault()??0;
             List<SanPhamView> listsp = new List<SanPhamView>();
             var nhomSanPham = _context.SanPhams.GroupBy(s => s.MaSanPham.Substring(0, 6)).ToList();
             string hashtag = File.ReadAllText(_htPath); var FullHashTag = JsonSerializer.Deserialize<List<HashTagSp>>(hashtag);
             foreach (var nhom in nhomSanPham)
             {
+               
                 var sanPhamDauTien = nhom.First();
                 var HinhAnhSanPhamList = _context.HinhAnhs
                     .Where(g => g.MaSanPham == sanPhamDauTien.MaSanPham.Substring(0, 6))
@@ -55,6 +60,19 @@ namespace UltraStrore.Services
                     .FirstOrDefault();
                 int GiaBan = nhom.Where(g => g.Gia.HasValue).OrderBy(g => g.Gia).Select(g => g.Gia.Value).FirstOrDefault();
                 var ListHashTag = FullHashTag.Where(g=> sanPhamDauTien.MaSanPham.Contains(g.IDSanPham.Trim())).SelectMany(g => g.ListHashTag).ToList();
+                int MaxKM = 0;
+                var KhuyenMaiRieng = KhuyenMaiView.Where(g => !g.PercentChung.HasValue).ToList();
+                foreach (var KM in KhuyenMaiRieng)
+                {
+                    foreach (var dis in KM.DanhSachKhuyenMai)
+                    {
+                        if (dis.IdSanPham!=null && dis.IdSanPham.Trim() == sanPhamDauTien.MaSanPham.Substring(0,6).Trim())
+                        {
+                            if (dis.Percent > MaxKM)
+                                MaxKM = dis.Percent??MaxKM;
+                        }    
+                    }
+                }
                 listsp.Add(new SanPhamView
                 {
                     ID = sanPhamDauTien.MaSanPham.Substring(0, 6),
@@ -76,8 +94,9 @@ namespace UltraStrore.Services
                     : sanPhamDauTien.GioiTinh == 1
                         ? "Nữ"
                         : "Unisex",
-                    Hot = SoLuongDaBan>10?true:false,
+                    Hot = SoLuongDaBan > 10 ? true : false,
                     ListHashTag = ListHashTag,
+                    KhuyenMaiMax = KhuyenMaiChung > MaxKM ? KhuyenMaiChung : MaxKM
                 });
             }
 
@@ -133,6 +152,8 @@ namespace UltraStrore.Services
         }
         public async Task<List<SanPhamByIDSorted>> SanPhamByIDSorteds(string? id)
         {
+            var KhuyenMaiView = (await _serviceKM.ListKhuyenMaiAdmin(null)).ToList();
+            int KhuyenMaiChung = KhuyenMaiView.Where(g => g.PercentChung.HasValue).OrderByDescending(g => g.PercentChung).Select(g => g.PercentChung).FirstOrDefault() ?? 0;
             List<SanPhamByIDSorted> listsp = new List<SanPhamByIDSorted>();
             var nhomSanPham = _context.SanPhams.Where(g => g.MaSanPham.Contains(id)).GroupBy(s => s.MaSanPham.Substring(0, 13)).ToList();
             foreach (var nhom in nhomSanPham)
@@ -163,6 +184,19 @@ namespace UltraStrore.Services
                 List<DetailHashTagSP> DHTSP = new List<DetailHashTagSP>();
                 DHTSP = FullHashTag.Where(g=>sanPhamDauTien.MaSanPham.Contains(g.IDSanPham)).SelectMany(g => g.ListHashTag).ToList();
                 var MoTaCT = FullChiTiet.Where(g => g.MaSanPham == id.Substring(0, 6)).FirstOrDefault();
+                int MaxKM = 0;
+                var KhuyenMaiRieng = KhuyenMaiView.Where(g => !g.PercentChung.HasValue).ToList();
+                foreach (var KM in KhuyenMaiRieng)
+                {
+                    foreach (var dis in KM.DanhSachKhuyenMai)
+                    {
+                        if (dis.IdSanPham!=null && dis.IdSanPham.Trim() == sanPhamDauTien.MaSanPham.Substring(0, 6).Trim())
+                        {
+                            if (dis.Percent > MaxKM)
+                                MaxKM = dis.Percent ?? MaxKM;
+                        }
+                    }
+                }
                 listsp.Add(new SanPhamByIDSorted
                 {
                     TH = sanPhamDauTien.MaThuongHieu,
@@ -179,6 +213,7 @@ namespace UltraStrore.Services
                     GioiTinh = sanPhamDauTien.GioiTinh,
                     MoTaChiTiet = MoTaCT,
                     ListHashTag = DHTSP,
+                    KhuyenMaiMax = KhuyenMaiChung > MaxKM ? KhuyenMaiChung : MaxKM
                 });
             }
             return listsp;
@@ -450,7 +485,6 @@ namespace UltraStrore.Services
                     IDSanPham = maSanPham,
                     ListHashTag = info.ListHashTag
                 });
-                // Save temporary MoTa data to db.json with MaSanPham and IdMoTa
                 int maxIdMoTa = existingData.Any() ? existingData.Max(x => int.Parse(x.IdMoTa)) : 0;
                 foreach (var moTa in _tempMoTaData)
                 {
@@ -575,14 +609,17 @@ namespace UltraStrore.Services
 
         public async Task<List<SanPhamView>> ListSanPhamLQ(string? id)
         {
+            var KhuyenMaiView = (await _serviceKM.ListKhuyenMaiAdmin(null)).ToList();
+            int KhuyenMaiChung = KhuyenMaiView.Where(g => g.PercentChung.HasValue).OrderByDescending(g => g.PercentChung).Select(g => g.PercentChung).FirstOrDefault() ?? 0;
             List<SanPhamView> listsp = new List<SanPhamView>();
             var nhomSanPham = _context.SanPhams.GroupBy(s => s.MaSanPham.Substring(0, 6)).ToList();
-
+            string hashtag = File.ReadAllText(_htPath); var FullHashTag = JsonSerializer.Deserialize<List<HashTagSp>>(hashtag);
             foreach (var nhom in nhomSanPham)
             {
+
                 var sanPhamDauTien = nhom.First();
                 var HinhAnhSanPhamList = _context.HinhAnhs
-                    .Where(g => g.MaSanPham.Substring(0, 6) == sanPhamDauTien.MaSanPham.Substring(0, 6))
+                    .Where(g => g.MaSanPham == sanPhamDauTien.MaSanPham.Substring(0, 6))
                     .Select(g => g.Data)
                     .ToList();
                 var listMauSac = nhom.Select(sp => sp.MaSanPham.Split('_')[1]).Distinct().ToList();
@@ -597,7 +634,21 @@ namespace UltraStrore.Services
                     .Where(g => g.MaThuongHieu == sanPhamDauTien.MaThuongHieu)
                     .Select(g => g.TenThuongHieu)
                     .FirstOrDefault();
-
+                int GiaBan = nhom.Where(g => g.Gia.HasValue).OrderBy(g => g.Gia).Select(g => g.Gia.Value).FirstOrDefault();
+                var ListHashTag = FullHashTag.Where(g => sanPhamDauTien.MaSanPham.Contains(g.IDSanPham.Trim())).SelectMany(g => g.ListHashTag).ToList();
+                int MaxKM = 0;
+                var KhuyenMaiRieng = KhuyenMaiView.Where(g => !g.PercentChung.HasValue).ToList();
+                foreach (var KM in KhuyenMaiRieng)
+                {
+                    foreach (var dis in KM.DanhSachKhuyenMai)
+                    {
+                        if (dis.IdSanPham!=null && dis.IdSanPham.Trim() == sanPhamDauTien.MaSanPham.Substring(0, 6).Trim())
+                        {
+                            if (dis.Percent > MaxKM)
+                                MaxKM = dis.Percent ?? MaxKM;
+                        }
+                    }
+                }
                 listsp.Add(new SanPhamView
                 {
                     ID = sanPhamDauTien.MaSanPham.Substring(0, 6),
@@ -606,7 +657,7 @@ namespace UltraStrore.Services
                     KichThuoc = listKichThuoc,
                     Hinh = HinhAnhSanPhamList,
                     SoLuong = tongSoLuong ?? 0,
-                    DonGia = sanPhamDauTien.Gia ?? 0,
+                    DonGia = GiaBan,
                     LoaiSanPham = TenLoai,
                     ThuongHieu = ThuongHieu,
                     NgayTao = sanPhamDauTien.NgayTao,
@@ -614,9 +665,21 @@ namespace UltraStrore.Services
                     ChatLieu = sanPhamDauTien.ChatLieu,
                     MoTa = sanPhamDauTien.MoTa,
                     SoLuongDaBan = SoLuongDaBan,
-                    GioiTinh = sanPhamDauTien.GioiTinh == 0 ? "Nam" : "Nữ",
-                    Hot = false
+                    GioiTinh = sanPhamDauTien.GioiTinh == 0
+                    ? "Nam"
+                    : sanPhamDauTien.GioiTinh == 1
+                        ? "Nữ"
+                        : "Unisex",
+                    Hot = SoLuongDaBan > 10 ? true : false,
+                    ListHashTag = ListHashTag,
+                    KhuyenMaiMax = KhuyenMaiChung > MaxKM ? KhuyenMaiChung : MaxKM
                 });
+            }
+
+            if (string.IsNullOrEmpty(id))
+            {
+                var topList = listsp.OrderByDescending(g => g.SoLuongDaBan).ToList();
+                return topList;
             }
             var tops = listsp.Where(g => g.ID.Trim() != id.Trim()).OrderByDescending(h => h.SoLuongDaBan).Take(6).ToList();
             return tops;

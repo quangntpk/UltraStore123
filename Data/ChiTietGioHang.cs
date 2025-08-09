@@ -12,7 +12,9 @@ namespace UltraStrore.Data
         public int? MaCombo { get; set; }
         public int? Gia { get; set; }
         public int? ThanhTien { get; set; }
-
+        public int? MaKhuyenMai { get; set; }
+        public int? Percent { get; set; }
+        public bool? DeadTime { get; set; }
         public virtual ComBoSanPham? MaComboNavigation { get; set; }
         public virtual GioHang? MaGioHangNavigation { get; set; }
         public virtual SanPham? MaSanPhamNavigation { get; set; }
