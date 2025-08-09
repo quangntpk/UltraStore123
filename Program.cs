@@ -39,6 +39,9 @@ namespace UltraStrore
             builder.Services.AddHttpClient();
 
             builder.Services.AddScoped<IOrderNotificationService, OrderNotificationService>();
+            builder.Services.AddScoped<IQRCodeService, QRCodeService>();
+
+            builder.Services.AddScoped<IOrderNotificationService, OrderNotificationService>();
 
             builder.Services.AddScoped<IGeminiServices, GeminiServices>();
             builder.Services.AddScoped<ICartServices, CartServices>();
