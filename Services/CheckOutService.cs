@@ -21,13 +21,20 @@ namespace UltraStrore.Services
         private readonly ILogger<CheckOutService> _logger;
         private readonly VnPayConfig _vnpayConfig;
         private readonly IVnPayServies _vnPayService;
+        private readonly IOrderNotificationService _orderNotificationService;
 
-        public CheckOutService(ApplicationDbContext context, ILogger<CheckOutService> logger, VnPayConfig vnpayConfig, IVnPayServies vnPayService)
+        public CheckOutService(
+            ApplicationDbContext context,
+            ILogger<CheckOutService> logger,
+            VnPayConfig vnpayConfig,
+            IVnPayServies vnPayService,
+            IOrderNotificationService orderNotificationService)
         {
             _context = context;
             _logger = logger;
             _vnpayConfig = vnpayConfig;
             _vnPayService = vnPayService;
+            _orderNotificationService = orderNotificationService;
         }
 
         public async Task<PaymentResponse> ProcessPaymentAsync(PaymentRequestDto request, HttpContext httpContext)
@@ -449,6 +456,40 @@ namespace UltraStrore.Services
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
+
+                // ✅ THÊM PHẦN GỬI EMAIL CHO VNPAY
+                try
+                {
+                    // Lấy thông tin đơn hàng với user
+                    var orderWithUser = await _context.DonHangs
+                        .Include(d => d.MaNguoiDungNavigation)
+                        .FirstOrDefaultAsync(d => d.MaDonHang == donHang.MaDonHang);
+
+                    if (orderWithUser != null && orderWithUser.MaNguoiDungNavigation != null &&
+                        !string.IsNullOrEmpty(orderWithUser.MaNguoiDungNavigation.Email))
+                    {
+                        string email = orderWithUser.MaNguoiDungNavigation.Email;
+                        string statusMessage = "Đơn hàng của bạn đã được thanh toán thành công qua VNPay và đang được xử lý.";
+
+                        _logger.LogInformation($"[VNPAY EMAIL] Sending email to: {email} for order: {donHang.MaDonHang}");
+
+                        await _orderNotificationService.SendOrderStatusNotificationAsync(
+                            email,
+                            donHang.MaDonHang,
+                            statusMessage);
+
+                        _logger.LogInformation($"[VNPAY EMAIL] Email sent successfully for order: {donHang.MaDonHang}");
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"[VNPAY EMAIL] Không thể gửi email - không tìm thấy thông tin user hoặc email cho đơn hàng: {donHang.MaDonHang}");
+                    }
+                }
+                catch (Exception emailEx)
+                {
+                    _logger.LogError(emailEx, $"[VNPAY EMAIL] Lỗi khi gửi email xác nhận đơn hàng VNPay: {donHang.MaDonHang}");
+                    // Không throw lỗi để không ảnh hưởng đến flow chính
+                }
 
                 var redirectUrl = $"http://localhost:8080/PaymentSuccess?status=success&orderId={donHang.MaDonHang}&transactionId={vnPayResponse.TransactionId}";
                 Console.WriteLine($"Redirecting to: {redirectUrl}");

@@ -1,0 +1,54 @@
+[
+  {
+    "IDSanPham": "A00003",
+    "ListHashTag": [
+      {
+        "ID": 1,
+        "Name": "2025"
+      }
+    ]
+  },
+  {
+    "IDSanPham": "Q00001",
+    "ListHashTag": [
+      {
+        "ID": 1,
+        "Name": "2025"
+      },
+      {
+        "ID": 2,
+        "Name": "2024"
+      }
+    ]
+  },
+  {
+    "IDSanPham": "A00004",
+    "ListHashTag": [
+      {
+        "ID": 1,
+        "Name": "2025"
+      },
+      {
+        "ID": 2,
+        "Name": "2024"
+      }
+    ]
+  },
+  {
+    "IDSanPham": "A00001",
+    "ListHashTag": [
+      {
+        "ID": 2,
+        "Name": "2024"
+      },
+      {
+        "ID": 1,
+        "Name": "2025"
+      },
+      {
+        "ID": 3,
+        "Name": "Detective Set"
+      }
+    ]
+  }
+]
