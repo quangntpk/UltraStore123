@@ -1,23 +1,27 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using UltraStrore.Data;
-using UltraStrore.Models.CreateModels;
-using UltraStrore.Models.EditModels;
-using UltraStrore.Models.ViewModels;
-using UltraStrore.Repository;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.IdentityModel.Tokens;
+using UltraStrore.Data;
 using UltraStrore.Helper;
+using UltraStrore.Models.CreateModels;
+using UltraStrore.Models.EditModels;
+using UltraStrore.Models.ViewModels;
+using UltraStrore.Repository;
+using UltraStrore.Services;
+using UltraStrore.Utils;
+
 
 public class VoucherServices : IVoucherServices
 {
     private readonly ApplicationDbContext _context;
-
-    public VoucherServices(ApplicationDbContext context)
+    private readonly IGHNService _gHNService;
+    public VoucherServices(ApplicationDbContext context, IGHNService gHNService)
     {
         _context = context;
+        _gHNService = gHNService;
     }
 
     public List<VoucherView> GetAllVouchers()
@@ -90,7 +94,7 @@ public class VoucherServices : IVoucherServices
             var now = DateTime.Now;
 
             if (voucher == null)
-            {
+            {   
                 return new ValidateCouponResponse
                 {
                     Success = false,
@@ -134,72 +138,7 @@ public class VoucherServices : IVoucherServices
                 };
             }
 
-            var shippingData = new Dictionary<string, decimal>
-         {
-            { "Hà Nội", (40000) },
-    { "Hồ Chí Minh", (20000) },
-    { "Hải Phòng", (45000) },
-    { "Đà Nẵng", (30000) },
-    { "Cần Thơ", (30000) },
-    { "An Giang", (35000) },
-    { "Bà Rịa - Vũng Tàu", (25000)},
-    { "Bắc Giang", (45000 ) },
-    { "Bắc Kạn", (50000) },
-    { "Bạc Liêu", (35000) },
-    { "Bắc Ninh", (40000 ) },
-    { "Bến Tre", (30000) },
-    { "Bình Định", (25000) },
-    { "Bình Dương", (20000) },
-    { "Bình Phước", (20000) },
-    { "Bình Thuận", (25000) },
-    { "Cà Mau", (35000) },
-    { "Cao Bằng", (50000) },
-    { "Đắk Lắk", (0) },
-    { "Đắk Nông", (15000) },
-    { "Điện Biên", (50000) },
-    { "Đồng Nai", (20000) },
-    { "Đồng Tháp", (30000) },
-    { "Gia Lai", (15000) },
-    { "Hà Giang", (50000) },
-    { "Hà Nam", (45000 ) },
-    { "Hà Tĩnh", (35000) },
-    { "Hải Dương", (45000 ) },
-    { "Hậu Giang", (35000) },
-    { "Hòa Bình", (45000 ) },
-    { "Hưng Yên", (40000 ) },
-    { "Khánh Hòa", (25000) },
-    { "Kiên Giang", (35000) },
-    { "Kon Tum", (15000) },
-    { "Lai Châu", (50000) },
-    { "Lâm Đồng", (20000) },
-    { "Lạng Sơn", (50000) },
-    { "Lào Cai", (50000) },
-    { "Long An", (30000) },
-    { "Nam Định", (45000 ) },
-    { "Nghệ An", (35000) },
-    { "Ninh Bình", (45000 ) },
-    { "Ninh Thuận", (25000) },
-    { "Phú Thọ", (45000 ) },
-    { "Phú Yên", (25000) },
-    { "Quảng Bình", (35000) },
-    { "Quảng Nam", (25000) },
-    { "Quảng Ngãi", (25000) },
-    { "Quảng Ninh", (50000) },
-    { "Quảng Trị", (30000) },
-    { "Sóc Trăng", (35000) },
-    { "Sơn La", (50000) },
-    { "Tây Ninh", (25000) },
-    { "Thái Bình", (45000 ) },
-    { "Thái Nguyên", (45000 ) },
-    { "Thanh Hóa", (40000) },
-    { "Thừa Thiên Huế", (30000) },
-    { "Tiền Giang", (30000) },
-    { "Trà Vinh", (30000) },
-    { "Tuyên Quang", (50000) },
-    { "Vĩnh Long", (30000) },
-    { "Vĩnh Phúc", (45000 ) },
-    { "Yên Bái", (50000) }
-        };
+           
 
             var address = await _context.DanhSachDiaChis
                 .Where(a => a.MaNguoiDung == cart.MaNguoiDung && a.TrangThai == 1)
@@ -212,8 +151,26 @@ public class VoucherServices : IVoucherServices
                     .FirstOrDefaultAsync();
             }
 
-            string deliveryCity = address?.Tinh ?? "Không xác định";
-            decimal shippingCost = shippingData.ContainsKey(deliveryCity) ? shippingData[deliveryCity] : 0;
+            decimal shippingCost = 0;
+            if (address != null)
+            {
+                // Gọi API GHN để lấy phí ship
+                var shippingFeeRequest = new ShippingFeeRequest
+                {
+                    service_type_id = 2, // Dịch vụ tiêu chuẩn, có thể điều chỉnh
+                    to_district_id = await GetDistrictIdFromName(address.QuanHuyen, address.Tinh), // Cần ánh xạ quận/huyện
+                    to_ward_code = await GetWardCodeFromName(address.PhuongXa, address.QuanHuyen, address.Tinh), // Cần ánh xạ phường/xã
+                    weight = 1000, // Giả định trọng lượng 1kg, điều chỉnh theo giỏ hàng
+                    length = 15,   // Giả định kích thước, điều chỉnh theo sản phẩm
+                    width = 15,
+                    height = 15,
+                    insurance_value = 0, // Giá trị bảo hiểm, điều chỉnh nếu cần
+                    coupon = null
+                };
+
+                var shippingFeeResponse = await _gHNService.GetShippingFee(shippingFeeRequest);
+                shippingCost = shippingFeeResponse.total ?? 0;
+            }
 
             decimal discountAmount = 0;
             decimal finalAmount = originalAmount;
@@ -279,6 +236,25 @@ public class VoucherServices : IVoucherServices
                 FinalAmount = 0,
             };
         }
+    }
+    private async Task<int> GetDistrictIdFromName(string districtName, string provinceName)
+    {
+        var provinces = await _gHNService.GetProvinces();
+        var province = provinces.FirstOrDefault(p => p.ProvinceName.ToLower().Contains(provinceName.ToLower()));
+        if (province == null) return 0;
+
+        var districts = await _gHNService.GetDistricts(province.ProvinceID);
+        return districts.FirstOrDefault(d => d.DistrictName.ToLower().Contains(districtName.ToLower()))?.DistrictID ?? 0;
+    }
+
+
+    private async Task<string> GetWardCodeFromName(string wardName, string districtName, string provinceName)
+    {
+        var districtId = await GetDistrictIdFromName(districtName, provinceName);
+        if (districtId == 0) return "";
+
+        var wards = await _gHNService.GetWards(districtId);
+        return wards.FirstOrDefault(w => w.WardName.ToLower().Contains(wardName.ToLower()))?.WardCode ?? "";
     }
 
     public async Task<VoucherView> CreateVoucher(VoucherCreate voucher)

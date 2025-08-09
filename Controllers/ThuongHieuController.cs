@@ -5,9 +5,11 @@ using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace UltraStrore.Controllers
 {
+    [Authorize(Roles = "admin,staff")]
     [Route("api/[controller]")]
     [ApiController]
     public class ThuongHieuController : ControllerBase

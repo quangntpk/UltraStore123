@@ -1,15 +1,17 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using UltraStrore.Services;
-using UltraStrore.Models.ViewModels;
-using UltraStrore.Repository;
 using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.EditModels;
+using UltraStrore.Models.ViewModels;
+using UltraStrore.Repository;
+using UltraStrore.Services;
 
 namespace UltraStrore.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+
     public class VoucherController : ControllerBase
     {
         private readonly IVoucherServices _voucherServices;
@@ -44,6 +46,7 @@ namespace UltraStrore.Controllers
             return BadRequest(response);
         }
 
+        [Authorize(Roles = "admin,staff")]
         [HttpPost]
         public async Task<ActionResult<VoucherView>> CreateVoucher([FromBody] VoucherCreate voucher)
         {
@@ -63,6 +66,7 @@ namespace UltraStrore.Controllers
             }
         }
 
+        [Authorize(Roles = "admin,staff")]
         [HttpPut]
         public async Task<ActionResult<VoucherView>> EditVoucher([FromBody] VoucherEdit voucher)
         {
@@ -82,6 +86,7 @@ namespace UltraStrore.Controllers
             }
         }
 
+        [Authorize(Roles = "admin,staff")]
         [HttpDelete("{maVoucher}")]
         public async Task<ActionResult> DeleteVoucher(int maVoucher)
         {

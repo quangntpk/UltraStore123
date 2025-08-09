@@ -139,6 +139,9 @@ namespace UltraStrore
                 };
             });
 
+            builder.Services.AddAuthorization();
+
+
             builder.Services.AddSwaggerGen(options =>
             {
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -204,6 +207,7 @@ namespace UltraStrore
             // Thêm UseCors trước UseAuthorization và MapControllers
             app.UseCors("AllowAll");
 
+
             app.UseTokenBlacklist();
 
             app.UseSession();
@@ -211,6 +215,8 @@ namespace UltraStrore
             app.UseAuthentication();
 
             app.UseAuthorization();
+
+            app.UseMiddleware<RestrictAdminAccessMiddleware>();
 
             app.MapControllers();
             app.UseEndpoints(endpoints =>

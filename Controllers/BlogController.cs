@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.EditModels;
@@ -53,6 +54,7 @@ namespace UltraStrore.Controllers
             return Ok(blog);
         }
 
+        [Authorize(Roles = "admin,staff")]
         [HttpPost("CreateBlog")]
         public async Task<ActionResult<BlogView>> CreateBlog([FromBody] BlogCreate blogCreate)
         {
@@ -67,6 +69,7 @@ namespace UltraStrore.Controllers
             }
         }
 
+        [Authorize(Roles = "admin,staff")]
         [HttpPut("{maBlog}")]
         public async Task<ActionResult<BlogView>> EditBlog(int maBlog, [FromBody] BlogEdit blogEdit)
         {
@@ -87,6 +90,7 @@ namespace UltraStrore.Controllers
             }
         }
 
+        [Authorize(Roles = "admin,staff")]
         [HttpDelete("{maBlog}")]
         public async Task<ActionResult> DeleteBlog(int maBlog)
         {

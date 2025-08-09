@@ -5,6 +5,7 @@ using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace UltraStrore.Controllers
 {
@@ -55,6 +56,7 @@ namespace UltraStrore.Controllers
             }
         }
 
+        [Authorize(Roles = "admin,staff")]
         [HttpPost]
         public async Task<IActionResult> CreateLoaiSanPham([FromBody] LoaiSanPhamCreate model)
         {
@@ -80,6 +82,7 @@ namespace UltraStrore.Controllers
             }
         }
 
+        [Authorize(Roles = "admin,staff")]
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateLoaiSanPham(int id, [FromBody] LoaiSanPhamEdit model)
         {
@@ -108,6 +111,7 @@ namespace UltraStrore.Controllers
             }
         }
 
+        [Authorize(Roles = "admin,staff")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteLoaiSanPham(int id)
         {

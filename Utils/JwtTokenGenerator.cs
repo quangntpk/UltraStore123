@@ -19,10 +19,10 @@ namespace UltraStrore.Utils
         {
             string roleName = user.VaiTro switch
             {
-                1 => "Admin",
-                2 => "Nhân Viên",
-                0 => "Người Dùng",
-                _ => "Nguoi Dung"
+                1 => "admin",
+                2 => "staff",
+                0 => "customer",
+                _ => "customer"
             };
 
             var claims = new[]
@@ -30,7 +30,7 @@ namespace UltraStrore.Utils
                 new Claim(JwtRegisteredClaimNames.Sub, user.TaiKhoan),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(ClaimTypes.NameIdentifier, user.MaNguoiDung),
-                new Claim(ClaimTypes.Role, roleName) 
+                new Claim(ClaimTypes.Role, roleName.ToLower()) 
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));

@@ -61,6 +61,52 @@ namespace UltraStrore.Controllers
             }
         }
 
+        [HttpPost("DangNhap")]
+        public async Task<IActionResult> DangNhap([FromBody] DangNhapView model)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var (user, token) = await _nguoiDungServices.DangNhap(model);
+                Console.WriteLine($"VaiTro: {user.VaiTro}");
+
+                string redirectUrl = user.VaiTro switch
+                {
+                    1 => "http://localhost:8080/Admin",
+                    2 => "http://localhost:8080/staff    ",
+                    _ => "http://localhost:8080/"
+                };
+                return Ok(new
+                {
+                    message = "Đăng nhập thành công",
+                    user  =  new
+                    {
+                        user.MaNguoiDung,
+                        user.TaiKhoan,
+                        user.HoTen,
+                        user.Email,
+                        Role = user.VaiTro switch
+                        {
+                            1 => "Admin",
+                            2 => "Staff",
+                            0 => "Customer",
+                            _=> "Customer"
+                        }
+                    },
+                    token,
+                    redirectUrl
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
 
         [HttpPost("VerifyOtpActivate")]
         public async Task<IActionResult> ActivateAccountlAsync([FromBody] XacMinhOtpView request)
@@ -79,36 +125,7 @@ namespace UltraStrore.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
-        }
-
-        [HttpPost("DangNhap")]
-        public async Task<IActionResult> DangNhap([FromBody] DangNhapView model)
-        {
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
-                var (user, token) = await _nguoiDungServices.DangNhap(model);
-
-                string redirectUrl = user.VaiTro == 1
-                    ? "http://localhost:8080"
-                    : "http://localhost:8080";
-                return Ok(new
-                {
-                    message = "Đăng nhập thành công",
-                    user,
-                    token,
-                    redirectUrl
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
+        }       
 
         [HttpGet("google-login")]
         public IActionResult GoogleLogin(string returnUrl = "/api/XacThuc/google-callback")
@@ -224,7 +241,7 @@ namespace UltraStrore.Controllers
                     TaiKhoan = userInfo.Email,
                     VaiTro = 0,
                     TrangThai = 0,
-                    NgayTao = DateTime.Now
+                    NgayTao = DateTime.Now,
                 };
 
                 var createdUser = await _nguoiDungServices.CreateNguoiDung(newUser);
