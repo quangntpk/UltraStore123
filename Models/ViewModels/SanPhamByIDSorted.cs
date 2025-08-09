@@ -20,5 +20,6 @@ namespace UltraStrore.Models.ViewModels
         public List<byte[]>? HinhAnhs { get; set; }
         public MoTaSanPhamCreateModel? MoTaChiTiet { get; set; }
         public List<DetailHashTagSP>? ListHashTag { get; set; }
+        public int? KhuyenMaiMax { get; set; }
     }
 }

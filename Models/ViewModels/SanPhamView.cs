@@ -19,5 +19,6 @@
         public string? GioiTinh { get; set; }
         public bool? Hot { get; set; }
         public List<DetailHashTagSP>? ListHashTag { get; set; }
+        public int KhuyenMaiMax { get; set; }
     }
 }

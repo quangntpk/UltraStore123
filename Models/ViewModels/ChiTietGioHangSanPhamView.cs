@@ -10,5 +10,8 @@
         public int? SoLuong { get; set; }
         public int? TienSanPham { get;set; }
         public byte[]? HinhAnh { get; set; }
+        public int? MaKhuyenMai { get; set; }
+        public int? ThanhTien { get; set; }
+
     }
 }

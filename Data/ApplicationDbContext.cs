@@ -20,7 +20,6 @@ namespace UltraStrore.Data
             : base(options)
         {
         }
-
         public virtual DbSet<BinhLuan> BinhLuans { get; set; } = null!;
         public virtual DbSet<ChiTietComBo> ChiTietComBos { get; set; } = null!;
         public virtual DbSet<ChiTietDonHang> ChiTietDonHangs { get; set; } = null!;
@@ -48,6 +47,8 @@ namespace UltraStrore.Data
         public virtual DbSet<DonHangSupport> DonHangSupports { get; set; } = null!;
         public virtual DbSet<Blogs> Blogs { get; set; } = null!;
         public virtual DbSet<HashTag> HashTags { get; set; } = null!;
+        public virtual DbSet<KhuyenMai> KhuyenMais { get; set; }
+        public virtual DbSet<ChiTietKhuyenMai> ChiTietKhuyenMais { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -232,6 +233,9 @@ namespace UltraStrore.Data
                 entity.HasOne(d => d.MaGioHangNavigation).WithMany(p => p.ChiTietGioHangs)
                     .HasForeignKey(d => d.MaGioHang)
                     .HasConstraintName("FK_CHI_TIET_GIO_HANG_GIO_HANG");
+                entity.Property(e => e.MaKhuyenMai).IsRequired(false);
+                entity.Property(e => e.Percent).IsRequired(false);
+                entity.Property(e => e.DeadTime).IsRequired(false);
             });
 
             modelBuilder.Entity<ComBoSanPham>(entity =>
@@ -1093,7 +1097,27 @@ namespace UltraStrore.Data
                     .HasConstraintName("FK_TINNHAN_NGUOINHAN")
                     .OnDelete(DeleteBehavior.NoAction);
             });
+            modelBuilder.Entity<KhuyenMai>(entity =>
+            {
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.ID).ValueGeneratedOnAdd();
+                entity.Property(e => e.TenKhuyenMai).IsRequired();
+                entity.Property(e => e.BatDau).IsRequired(false);
+                entity.Property(e => e.KetThuc).IsRequired(false);
+                entity.Property(e => e.PercentChung).IsRequired(false);
+                entity.Property(e => e.All).IsRequired();
+                entity.Property(e=>e.TrangThai).IsRequired();
+            });
+            modelBuilder.Entity<ChiTietKhuyenMai>(entity =>
+            {
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.ID).ValueGeneratedOnAdd();
+                entity.Property(e => e.MaKhuyenMai).IsRequired();
+                entity.Property(e => e.SP).IsRequired(false);
+                entity.Property(e => e.CB).IsRequired(false);
+                entity.Property(e => e.PercentRieng).IsRequired(false);
 
+            });
             modelBuilder.Entity<Voucher>()
         .ToTable("VOUCHER");
 
@@ -1106,7 +1130,6 @@ namespace UltraStrore.Data
                 .WithMany(v => v.Coupons)
                 .HasForeignKey(c => c.MaVoucher);
             OnModelCreatingPartial(modelBuilder);
-
 
 
             modelBuilder.Entity<ThuongHieu>().HasData(
@@ -2087,7 +2110,46 @@ namespace UltraStrore.Data
                }
 
                    );
-
+            modelBuilder.Entity<KhuyenMai>().HasData(
+                new KhuyenMai
+                {
+                    ID = 1,
+                    TenKhuyenMai = "Giảm giá Hè 2025",
+                    BatDau = new DateOnly(2025, 8, 1),
+                    KetThuc = new DateOnly(2025, 10, 31),
+                    PercentChung = 10,
+                    All = true,
+                    TrangThai = true
+                },
+                new KhuyenMai
+                {
+                    ID = 2,
+                    TenKhuyenMai = "Khuyến mãi Sinh nhật",
+                    BatDau = new DateOnly(2025, 8, 1),
+                    KetThuc = new DateOnly(2025, 9, 30),
+                    PercentChung = null,
+                    All = false,
+                    TrangThai = true
+                }
+            );
+            modelBuilder.Entity<ChiTietKhuyenMai>().HasData(
+                new ChiTietKhuyenMai
+                {
+                    ID = 1,
+                    MaKhuyenMai = 2,  
+                    SP = "A00001",  
+                    CB = null,
+                    PercentRieng = 15
+                },
+                new ChiTietKhuyenMai
+                {
+                    ID = 2,
+                    MaKhuyenMai = 2,
+                    SP = "A00002",
+                    CB = 1,
+                    PercentRieng = 20
+                }
+            );
         }
 
 
