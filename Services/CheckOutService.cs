@@ -343,13 +343,16 @@ namespace UltraStrore.Services
         }
 
 
-        public async Task ProcessVnPayCallbackAsync(IQueryCollection query, HttpContext httpContext)
+        public async Task<PaymentResponse> ProcessVnPayCallbackAsync(IQueryCollection query, HttpContext httpContext)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
+                Console.WriteLine("[DEBUG] Starting VNPay callback processing...");
+
                 var vnPayResponse = _vnPayService.PaymentExecute(query);
+                Console.WriteLine($"[DEBUG] VNPay response: Success={vnPayResponse.Success}, Code={vnPayResponse.VnPayResponseCode}");
 
                 if (!vnPayResponse.Success)
                 {
@@ -362,19 +365,35 @@ namespace UltraStrore.Services
                     };
 
                     message = System.Text.RegularExpressions.Regex.Replace(message, "[^\\x00-\\x7F]", "");
+                    Console.WriteLine($"[ERROR] VNPay payment failed: {message}");
+
                     httpContext.Response.Redirect(
                         $"http://localhost:8080/PaymentFail?status=failed&message={Uri.EscapeDataString(message)}"
                     );
-                    return;
+
+                    // ✅ RETURN FAILED RESPONSE
+                    return new PaymentResponse
+                    {
+                        Success = false,
+                        Message = message,
+                        TransactionId = vnPayResponse.TransactionId
+                    };
                 }
 
                 var tempOrderId = vnPayResponse.OrderId;
+                Console.WriteLine($"[DEBUG] Processing temp order ID: {tempOrderId}");
 
                 var pendingOrder = await _context.PendingOrders.FirstOrDefaultAsync(c => c.TempOrderId == tempOrderId);
                 if (pendingOrder == null)
                 {
+                    Console.WriteLine($"[ERROR] Pending order not found: {tempOrderId}");
                     httpContext.Response.Redirect("http://localhost:8080/PaymentFail?status=failed&message=Khong tim thay ma don hang tam thoi");
-                    return;
+                    return new PaymentResponse
+                    {
+                        Success = false,
+                        Message = "Không tìm thấy mã đơn hàng tạm thời",
+                        TransactionId = vnPayResponse.TransactionId
+                    };
                 }
 
                 var orderData = System.Text.Json.JsonSerializer.Deserialize<PendingVnPayOrder>(pendingOrder.OrderData,
@@ -386,9 +405,17 @@ namespace UltraStrore.Services
 
                 if (orderData.TempOrderId != tempOrderId)
                 {
+                    Console.WriteLine($"[ERROR] Temp order ID mismatch: {orderData.TempOrderId} vs {tempOrderId}");
                     httpContext.Response.Redirect("http://localhost:8080/PaymentFail?status=failed&message=Ma don hang tam thoi khong khop");
-                    return;
+                    return new PaymentResponse
+                    {
+                        Success = false,
+                        Message = "Mã đơn hàng tạm thời không khớp",
+                        TransactionId = vnPayResponse.TransactionId
+                    };
                 }
+
+                Console.WriteLine("[DEBUG] Creating final order...");
 
                 var donHang = orderData.Order;
                 donHang.TrangThaiDonHang = TrangThaiDonHang.DangXuLy;
@@ -400,6 +427,7 @@ namespace UltraStrore.Services
                 _context.DonHangs.Add(donHang);
                 await _context.SaveChangesAsync();
 
+                Console.WriteLine($"[DEBUG] Order created with ID: {donHang.MaDonHang}");
 
                 var chiTietDonHangs = orderData.ChiTietGioHangs.Select(item =>
                 {
@@ -425,6 +453,7 @@ namespace UltraStrore.Services
 
                 if (!string.IsNullOrEmpty(orderData.CouponCode))
                 {
+                    Console.WriteLine($"[DEBUG] Processing coupon: {orderData.CouponCode}");
                     var coupon = await _context.Coupons
                         .Include(c => c.MaVoucherNavigation)
                         .FirstOrDefaultAsync(c => c.MaNhap == orderData.CouponCode);
@@ -442,6 +471,7 @@ namespace UltraStrore.Services
 
                 if (cart != null)
                 {
+                    Console.WriteLine($"[DEBUG] Removing cart: {cartId}");
                     _context.ChiTietGioHangs.RemoveRange(cart.ChiTietGioHangs);
                     _context.GioHangs.Remove(cart);
                 }
@@ -450,18 +480,44 @@ namespace UltraStrore.Services
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
+                Console.WriteLine($"[SUCCESS] VNPay payment processed successfully for order {donHang.MaDonHang}");
+
                 var redirectUrl = $"http://localhost:8080/PaymentSuccess?status=success&orderId={donHang.MaDonHang}&transactionId={vnPayResponse.TransactionId}";
-                Console.WriteLine($"Redirecting to: {redirectUrl}");
+                Console.WriteLine($"[DEBUG] Redirecting to: {redirectUrl}");
                 httpContext.Response.Redirect(redirectUrl);
+
+                // ✅ RETURN SUCCESS RESPONSE WITH ALL REQUIRED DATA
+                return new PaymentResponse
+                {
+                    Success = true,
+                    OrderId = donHang.MaDonHang,
+                    Message = "VNPay payment successful",
+                    TransactionId = vnPayResponse.TransactionId,
+                    FinalAmount = orderData.FinalAmount,
+                    OriginalAmount = orderData.OriginalAmount,
+                    DiscountAmount = orderData.DiscountAmount,
+                    ShippingFee = orderData.ShippingFee
+                };
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
                 _logger.LogError(ex, "Lỗi khi xử lý callback VNPay");
+                Console.WriteLine($"[ERROR] VNPay callback processing failed: {ex.Message}");
+                Console.WriteLine($"[ERROR] Stack trace: {ex.StackTrace}");
+
                 string errorMessage = "Loi khi xu ly callback VNPay";
                 httpContext.Response.Redirect(
                     $"http://localhost:8080/PaymentFail?status=failed&message={Uri.EscapeDataString(errorMessage)}"
                 );
+
+                // ✅ RETURN ERROR RESPONSE
+                return new PaymentResponse
+                {
+                    Success = false,
+                    Message = errorMessage,
+                    TransactionId = ""
+                };
             }
         }
 
