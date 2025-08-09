@@ -56,6 +56,9 @@ namespace UltraStrore
             builder.Services.AddTransient<EmailService>();
             builder.Services.AddScoped<IThongKeServices, ThongKeServices>();
 
+            builder.Services.AddScoped<IOrderNotificationService, OrderNotificationService>();
+            builder.Services.AddScoped<IQRCodeService, QRCodeService>();
+
             builder.Services.AddScoped<IBlogServices, BlogServices>();
             builder.Services.AddScoped<IYeuThichServices, YeuThichServices>();
             builder.Services.AddScoped<IComboServices, ComboServices>();
@@ -71,6 +74,7 @@ namespace UltraStrore
             builder.Services.Configure<OpenAISettings>(builder.Configuration.GetSection("OpenAI"));
             builder.Services.Configure<GoogleApisSettings>(builder.Configuration.GetSection("GoogleApis"));
             builder.Services.AddHttpClient<IGoogleApisServices, GoogleApisServices>();
+
 
 
             builder.Services.AddSingleton(sp =>
