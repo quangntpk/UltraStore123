@@ -223,7 +223,7 @@ namespace UltraStrore.Controllers
                     HoTen = userInfo.Name,
                     TaiKhoan = userInfo.Email,
                     VaiTro = 0,
-                    TrangThai = 1,
+                    TrangThai = 0,
                     NgayTao = DateTime.Now
                 };
 

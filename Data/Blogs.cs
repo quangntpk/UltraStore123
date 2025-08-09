@@ -23,5 +23,7 @@
         public bool IsPublished { get; set; }
 
         public List<string>? Tags { get; set; }
+        public int Likes { get; set; } = 0; // Total number of likes
+        public List<string>? UserLikes { get; set; } = new List<string>();
     }
 }

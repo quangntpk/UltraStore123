@@ -1,50 +1,74 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.Json;
+using System.Threading.Tasks;
 using UltraStrore.Data;
 using UltraStrore.Models.CreateModels;
 using UltraStrore.Models.EditModels;
 using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace UltraStrore.Services
 {
     public class ThuongHieuServices : IThuongHieuServices
     {
         private readonly ApplicationDbContext _context;
+        private readonly string _jsonFilePath;
 
         public ThuongHieuServices(ApplicationDbContext context)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _jsonFilePath = Path.Combine(Directory.GetCurrentDirectory(), "DanhMuc", "thuonghieu.json");
+
+            var directory = Path.GetDirectoryName(_jsonFilePath);
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+            if (!File.Exists(_jsonFilePath))
+            {
+                File.WriteAllText(_jsonFilePath, "[]");
+            }
+        }
+
+        private async Task<List<ThuongHieu>> ReadJsonFileAsync()
+        {
+            using var stream = new FileStream(_jsonFilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            return await JsonSerializer.DeserializeAsync<List<ThuongHieu>>(stream) ?? new List<ThuongHieu>();
+        }
+
+        private async Task WriteJsonFileAsync(List<ThuongHieu> thuongHieus)
+        {
+            using var stream = new FileStream(_jsonFilePath, FileMode.Create, FileAccess.Write, FileShare.None);
+            await JsonSerializer.SerializeAsync(stream, thuongHieus, new JsonSerializerOptions { WriteIndented = true });
         }
 
         public async Task<List<ThuongHieuView>> GetAllThuongHieuAsync()
         {
-            var list = await _context.ThuongHieus
-                .AsNoTracking()
-                .ToListAsync();
-
+            var list = await ReadJsonFileAsync();
             return list.Select(t => new ThuongHieuView
             {
                 MaThuongHieu = t.MaThuongHieu,
                 TenThuongHieu = t.TenThuongHieu,
+                TrangThai = t.TrangThai,
                 HinhAnh = t.HinhAnh
             }).ToList();
         }
 
         public async Task<ThuongHieuView> GetThuongHieuAsync(int maThuongHieu)
         {
-            var thuongHieu = await _context.ThuongHieus
-                .AsNoTracking()
-                .FirstOrDefaultAsync(t => t.MaThuongHieu == maThuongHieu)
+            var list = await ReadJsonFileAsync();
+            var thuongHieu = list.FirstOrDefault(t => t.MaThuongHieu == maThuongHieu)
                 ?? throw new KeyNotFoundException("Thương hiệu không tồn tại.");
 
             return new ThuongHieuView
             {
                 MaThuongHieu = thuongHieu.MaThuongHieu,
                 TenThuongHieu = thuongHieu.TenThuongHieu,
+                TrangThai = thuongHieu.TrangThai,
                 HinhAnh = thuongHieu.HinhAnh
             };
         }
@@ -57,19 +81,26 @@ namespace UltraStrore.Services
             if (string.IsNullOrWhiteSpace(model.TenThuongHieu))
                 throw new ArgumentException("Tên thương hiệu không được để trống.", nameof(model.TenThuongHieu));
 
+            var list = await ReadJsonFileAsync();
+            if (list.Any(t => t.TenThuongHieu == model.TenThuongHieu))
+                throw new InvalidOperationException("Tên thương hiệu đã tồn tại.");
+
             var newThuongHieu = new ThuongHieu
             {
+                MaThuongHieu = list.Any() ? list.Max(t => t.MaThuongHieu) + 1 : 1,
                 TenThuongHieu = model.TenThuongHieu,
+                TrangThai = model.TrangThai,
                 HinhAnh = model.HinhAnh
             };
 
-            _context.ThuongHieus.Add(newThuongHieu);
-            await _context.SaveChangesAsync();
+            list.Add(newThuongHieu);
+            await WriteJsonFileAsync(list);
 
             return new ThuongHieuView
             {
                 MaThuongHieu = newThuongHieu.MaThuongHieu,
                 TenThuongHieu = newThuongHieu.TenThuongHieu,
+                TrangThai = newThuongHieu.TrangThai,
                 HinhAnh = newThuongHieu.HinhAnh
             };
         }
@@ -79,58 +110,68 @@ namespace UltraStrore.Services
             if (model == null)
                 throw new ArgumentNullException(nameof(model));
 
-            var thuongHieu = await _context.ThuongHieus
-                .FirstOrDefaultAsync(t => t.MaThuongHieu == model.MaThuongHieu)
+            var list = await ReadJsonFileAsync();
+            var thuongHieu = list.FirstOrDefault(t => t.MaThuongHieu == model.MaThuongHieu)
                 ?? throw new KeyNotFoundException("Thương hiệu không tồn tại.");
 
+            if (!string.IsNullOrWhiteSpace(model.TenThuongHieu))
+            {
+                if (list.Any(t => t.TenThuongHieu == model.TenThuongHieu && t.MaThuongHieu != model.MaThuongHieu))
+                    throw new InvalidOperationException("Tên thương hiệu đã tồn tại.");
+            }
+
             thuongHieu.TenThuongHieu = model.TenThuongHieu ?? thuongHieu.TenThuongHieu;
+            thuongHieu.TrangThai = model.TrangThai ?? thuongHieu.TrangThai;
             thuongHieu.HinhAnh = model.HinhAnh ?? thuongHieu.HinhAnh;
 
-            await _context.SaveChangesAsync();
+            await WriteJsonFileAsync(list);
 
             return new ThuongHieuView
             {
                 MaThuongHieu = thuongHieu.MaThuongHieu,
                 TenThuongHieu = thuongHieu.TenThuongHieu,
+                TrangThai = thuongHieu.TrangThai,
                 HinhAnh = thuongHieu.HinhAnh
             };
         }
 
         public async Task<bool> DeleteThuongHieuAsync(int maThuongHieu)
         {
-            var thuongHieu = await _context.ThuongHieus
-                .FirstOrDefaultAsync(t => t.MaThuongHieu == maThuongHieu);
-
+            var list = await ReadJsonFileAsync();
+            var thuongHieu = list.FirstOrDefault(t => t.MaThuongHieu == maThuongHieu);
             if (thuongHieu == null)
                 return false;
 
-            _context.ThuongHieus.Remove(thuongHieu);
-            await _context.SaveChangesAsync();
+            var hasSanPhams = await _context.SanPhams
+                .AnyAsync(s => s.MaThuongHieu == maThuongHieu);
+
+            list.Remove(thuongHieu);
+            await WriteJsonFileAsync(list);
             return true;
         }
 
         public async Task<List<ThuongHieuView>> SearchThuongHieuAsync(string tenThuongHieu)
         {
-            var query = _context.ThuongHieus.AsNoTracking();
-
+            var list = await ReadJsonFileAsync();
             if (!string.IsNullOrWhiteSpace(tenThuongHieu))
             {
-                query = query.Where(t => t.TenThuongHieu.Contains(tenThuongHieu, StringComparison.OrdinalIgnoreCase));
+                tenThuongHieu = tenThuongHieu.Trim().ToLower();
+                list = list.Where(t => t.TenThuongHieu.ToLower().Contains(tenThuongHieu)).ToList();
             }
 
-            var list = await query.ToListAsync();
             return list.Select(t => new ThuongHieuView
             {
                 MaThuongHieu = t.MaThuongHieu,
                 TenThuongHieu = t.TenThuongHieu,
+                TrangThai = t.TrangThai,
                 HinhAnh = t.HinhAnh
             }).ToList();
         }
 
         public async Task<List<SanPhamView>> GetSanPhamByThuongHieuAsync(int maThuongHieu)
         {
-            var thuongHieuExists = await _context.ThuongHieus.AnyAsync(t => t.MaThuongHieu == maThuongHieu);
-            if (!thuongHieuExists)
+            var list = await ReadJsonFileAsync();
+            if (!list.Any(t => t.MaThuongHieu == maThuongHieu))
                 throw new KeyNotFoundException("Thương hiệu không tồn tại.");
 
             var sanPhams = await _context.SanPhams

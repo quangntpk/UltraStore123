@@ -107,7 +107,7 @@ namespace UltraStrore.Services
                     1 => "Đang xử lý",
                     2 => "Đang giao",
                     3 => "Hoàn thành",
-                    4 => "Đã hủy",
+                    5 => "Đã hủy",
                     _ => "Không xác định"
                 };
             }

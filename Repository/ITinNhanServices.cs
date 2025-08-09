@@ -11,4 +11,4 @@ namespace UltraStrore.Repository
         Task<IEnumerable<TinNhanView>> LayTinNhanGiuaHaiNguoiAsync(string nguoiGuiId, string nguoiNhanId);
         Task<IEnumerable<TinNhanView>> LayDanhSachThreadsAsync(string userId);
     }
-}   
+}
