@@ -25,34 +25,15 @@ namespace UltraStrore.Services
         {
             var list = await _context.KichThuocs.AsNoTracking().ToListAsync();
             List<KichThuocView> List = new List<KichThuocView>();
-            foreach(var item in list)
-            {
-                var TenLoai = _context.LoaiSanPhams.Where(g => g.MaLoaiSanPham == item.MaLoai).Select(g => g.TenLoaiSanPham).FirstOrDefault();
-                KichThuocView newKT = new KichThuocView
-                {
-                    MaKichThuoc = item.MaKichThuoc,
-                    TenLoai = TenLoai,
-                    TenKichThuoc = item.TenKichThuoc
-                };
-                List.Add(newKT);
-            } 
+
             return List;
         }
 
         public async Task<KichThuocView> GetKichThuocAsync(int maKichThuoc)
         {
-            var kichThuoc = await _context.KichThuocs.AsNoTracking()
-                .FirstOrDefaultAsync(k => k.MaKichThuoc == maKichThuoc)
-                ?? throw new KeyNotFoundException("Kích thước không tồn tại.");
-            var TenLoai =  _context.LoaiSanPhams.Where(g => g.MaLoaiSanPham == kichThuoc.MaLoai).Select(g => g.TenLoaiSanPham).FirstOrDefault();
-            return new KichThuocView
-            {
-                MaKichThuoc = kichThuoc.MaKichThuoc,
-                TenLoai = TenLoai,
-                TenKichThuoc = kichThuoc.TenKichThuoc
-            };
-        }
 
+            return null;
+        } 
         public async Task<APIResponse> CreateKichThuocAsync(KichThuocCreate model)
         {
             APIResponse response = new APIResponse();

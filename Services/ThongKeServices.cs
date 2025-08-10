@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using UltraStrore.Data;
 using UltraStrore.Models.ViewModels;
 using UltraStrore.Repository;
@@ -9,12 +10,24 @@ namespace UltraStrore.Services
     public class ThongKeServices : IThongKeServices
     {
         private readonly ApplicationDbContext _context;
-
+        private readonly string _loaiSanPhamPath;
         public ThongKeServices(ApplicationDbContext context)
         {
             _context = context;
+            _loaiSanPhamPath = Path.Combine(Directory.GetCurrentDirectory(), "DanhMuc", "loaisanpham.json");
         }
-
+        private async Task<List<LoaiSanPham>> LoadLoaiSanPhamAsync()
+        {
+            if (File.Exists(_loaiSanPhamPath))
+            {
+                var jsonContent = await File.ReadAllTextAsync(_loaiSanPhamPath);
+                if (!string.IsNullOrWhiteSpace(jsonContent))
+                {
+                    return JsonSerializer.Deserialize<List<LoaiSanPham>>(jsonContent) ?? new List<LoaiSanPham>();
+                }
+            }
+            return new List<LoaiSanPham>();
+        }
         public List<ThongKeView> GetDailyStatistics(int year, int month, int day)
         {
             return _context.DonHangs
@@ -116,8 +129,9 @@ namespace UltraStrore.Services
             return groupedData;
         }
 
-        public List<TopProductView> GetTopProductsStatistics(int year, int? month = null, int? day = null)
+        public async Task<List<TopProductView>> GetTopProductsStatistics(int year, int? month = null, int? day = null)
         {
+            var loaiSanPhams = await LoadLoaiSanPhamAsync();
             var statusMap = new Dictionary<int, string>
             {
                 { 0, "Chưa xác nhận" },
@@ -132,18 +146,16 @@ namespace UltraStrore.Services
                         join dh in _context.DonHangs on ctdh.MaDonHang equals dh.MaDonHang
                         join th in _context.ThuongHieus on sp.MaThuongHieu equals th.MaThuongHieu into thuongHieuGroup
                         from th in thuongHieuGroup.DefaultIfEmpty()
-                        join lsp in _context.LoaiSanPhams on sp.MaLoaiSanPham equals lsp.MaLoaiSanPham into loaiSanPhamGroup
-                        from lsp in loaiSanPhamGroup.DefaultIfEmpty()
                         where dh.NgayDat.HasValue && dh.NgayDat.Value.Year == year
                             && (!month.HasValue || dh.NgayDat.Value.Month == month.Value)
                             && (!day.HasValue || dh.NgayDat.Value.Day == day.Value)
                             && ((int)dh.TrangThaiDonHang == 2 || (int)dh.TrangThaiDonHang == 3)
-                        group new { sp, ctdh, dh, th, lsp } by new
+                        group new { sp, ctdh, dh, th } by new
                         {
                             sp.TenSanPham,
                             ThuongHieu = th != null ? th.TenThuongHieu : null,
                             sp.ChatLieu,
-                            LoaiSanPham = lsp != null ? lsp.TenLoaiSanPham : null
+                            LoaiSanPham = loaiSanPhams.Where(g => g.MaLoaiSanPham == sp.MaLoaiSanPham).Select(g => g.TenLoaiSanPham).FirstOrDefault()
                         } into g
                         select new TopProductView
                         {

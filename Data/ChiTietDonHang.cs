@@ -12,7 +12,10 @@ namespace UltraStrore.Data
         public int? Gia { get; set; }
         public int? ThanhTien { get; set; }
         public int? MaCombo { get; set; }
-        public string? SanPhamMaSanPham { get; set; } // Ánh xạ cột SanPhamMaSanPham
+        public string? SanPhamMaSanPham { get; set; }
+        public int? MaKhuyenMai { get; set; }
+        public int? Percent { get; set; }
+        public bool? DeadTime { get; set; }
 
         public virtual ComBoSanPham? MaComboNavigation { get; set; }
         public virtual DonHang? MaDonHangNavigation { get; set; } // Thêm quan hệ với DonHang
