@@ -38,7 +38,6 @@ namespace UltraStrore.Services
         }
         public async Task<PaymentResponse> InstantCheckout(PaymentRequestDto1 request, HttpContext httpContext)
         {
-            InstantBuy = true;
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -763,7 +762,6 @@ namespace UltraStrore.Services
             }
         }
 
-
         public async Task<PaymentResponse> ProcessVnPayCallbackAsync(IQueryCollection query, HttpContext httpContext)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -850,21 +848,18 @@ namespace UltraStrore.Services
                         {
                             var sanPham = await _context.SanPhams
                                 .FirstOrDefaultAsync(sp => sp.MaSanPham == comboItem.MaSanPham);
-                            if (sanPham == null)
-                            {
-                                await transaction.RollbackAsync();
-                                httpContext.Response.Redirect(
-                                    $"http://localhost:8080/PaymentFail?status=failed&message=Sản phẩm với mã {comboItem.MaSanPham} không tồn tại"
-                                );
-                                return;
-                            }
                             if (sanPham.SoLuong < comboItem.SoLuong * item.SoLuong)
                             {
                                 await transaction.RollbackAsync();
                                 httpContext.Response.Redirect(
                                     $"http://localhost:8080/PaymentFail?status=failed&message=Sản phẩm {sanPham.TenSanPham} không đủ số lượng tồn kho"
                                 );
-                                return;
+                                return new PaymentResponse
+                                {
+                                    Success = false,
+                                    Message = $"Sản phẩm {sanPham.TenSanPham} không đủ số lượng tồn kho",
+                                    TransactionId = vnPayResponse.TransactionId
+                                };
                             }
                         }
                     }
@@ -877,21 +872,18 @@ namespace UltraStrore.Services
                         }
                         var sanPham = await _context.SanPhams
                             .FirstOrDefaultAsync(sp => sp.MaSanPham == item.MaSanPham);
-                        if (sanPham == null)
-                        {
-                            await transaction.RollbackAsync();
-                            httpContext.Response.Redirect(
-                                $"http://localhost:8080/PaymentFail?status=failed&message=Sản phẩm với mã {item.MaSanPham} không tồn tại"
-                            );
-                            return;
-                        }
                         if (sanPham.SoLuong < item.SoLuong)
                         {
                             await transaction.RollbackAsync();
                             httpContext.Response.Redirect(
                                 $"http://localhost:8080/PaymentFail?status=failed&message=Sản phẩm {sanPham.TenSanPham} không đủ số lượng tồn kho"
                             );
-                            return;
+                            return new PaymentResponse
+                            {
+                                Success = false,
+                                Message = $"Sản phẩm {sanPham.TenSanPham} không đủ số lượng tồn kho",
+                                TransactionId = vnPayResponse.TransactionId
+                            };
                         }
                     }
                 }
@@ -911,7 +903,7 @@ namespace UltraStrore.Services
                             if (sanPham != null)
                             {
                                 sanPham.SoLuong -= comboItem.SoLuong * item.SoLuong;
-                                _logger.LogInformation($"Reduced quantity for product {sanPham.MaSanPham} by {comboItem.SoLuong * item.SoLuong} for order {donHangTemp.MaDonHang}");
+                                _logger.LogInformation($"Reduced quantity for product {sanPham.MaSanPham} by {comboItem.SoLuong * item.SoLuong} for order {orderData.Order.MaDonHang}");
                             }
                         }
                     }
@@ -927,7 +919,7 @@ namespace UltraStrore.Services
                         if (sanPham != null)
                         {
                             sanPham.SoLuong -= item.SoLuong;
-                            _logger.LogInformation($"Reduced quantity for product {sanPham.MaSanPham} by {item.SoLuong} for order {donHangTemp.MaDonHang}");
+                            _logger.LogInformation($"Reduced quantity for product {sanPham.MaSanPham} by {item.SoLuong} for order {orderData.Order.MaDonHang}");
                         }
                     }
                 }
@@ -946,56 +938,30 @@ namespace UltraStrore.Services
 
                 Console.WriteLine($"[DEBUG] Order created with ID: {donHang.MaDonHang}");
 
-                var chiTietDonHangs = orderData.ChiTietGioHangs
-                        .Select(item =>
-                        {
-                            if (item.MaSanPham == null)
-                            {
-                                _logger.LogWarning($"ChiTietGioHangDto có MaSanPham null: {JsonSerializer.Serialize(item)}");
-                            }
-                            return item;
-                        })
-                        .Where(item => item.MaSanPham != null)
-                        .Select(item => new ChiTietDonHang
-                        {
-                            MaSanPham = item.MaSanPham.ToString(),
-                            SoLuong = item.SoLuong,
-                            Gia = (int?)item.Gia,
-                            ThanhTien = (int?)item.ThanhTien,
-                            MaCombo = item.MaCombo,
-                            SanPhamMaSanPham = item.MaSanPham.ToString(),
-                            MaDonHang = donHangTemp.MaDonHang
-                        }).ToList();
-                    _context.ChiTietDonHangs.AddRange(chiTietDonHangs);
+                // Create order details
+                var orderDetails = orderData.ChiTietGioHangs
+                    .Where(item => !string.IsNullOrEmpty(item.MaSanPham))
+                    .Select(item => new ChiTietDonHang
+                    {
+                        MaSanPham = item.MaSanPham.ToString(),
+                        SoLuong = item.SoLuong,
+                        Gia = (int?)item.Gia,
+                        ThanhTien = (int?)item.ThanhTien,
+                        MaCombo = item.MaCombo,
+                        SanPhamMaSanPham = item.MaSanPham.ToString(),
+                        MaDonHang = donHang.MaDonHang // Use the real order ID
+                    }).ToList();
+
+                _context.ChiTietDonHangs.AddRange(orderDetails);
+
+                // Handle instant buy scenario
                 if (InstantBuy)
                 {
-                    donHangTemp.ChiTietDonHangs[0].SanPhamMaSanPham = donHangTemp.ChiTietDonHangs[0].MaSanPham;
-                    _context.DonHangs.Add(donHangTemp);
-                    await _context.SaveChangesAsync();
-                    InstantBuy = true;
-                    var chiTietDonHangs = orderData.ChiTietGioHangs
-                        .Select(item =>
-                        {
-                            if (item.MaSanPham == null)
-                            {
-                                _logger.LogWarning($"ChiTietGioHangDto có MaSanPham null: {JsonSerializer.Serialize(item)}");
-                            }
-                            return item;
-                        })
-                        .Where(item => item.MaSanPham != null)
-                        .Select(item => new ChiTietDonHang
-                        {
-                            MaSanPham = item.MaSanPham.ToString(),
-                            SoLuong = item.SoLuong,
-                            Gia = (int?)item.Gia,
-                            ThanhTien = (int?)item.ThanhTien,
-                            MaCombo = item.MaCombo,
-                            SanPhamMaSanPham = item.MaSanPham.ToString(),
-                            MaDonHang = donHangTemp.MaDonHang
-                        }).ToList();
-                    _context.ChiTietDonHangs.AddRange(chiTietDonHangs);
+                    // Additional processing for instant buy if needed
+                    InstantBuy = false; // Reset the flag
                 }
 
+                // Process coupon if exists
                 if (!string.IsNullOrEmpty(orderData.CouponCode))
                 {
                     Console.WriteLine($"[DEBUG] Processing coupon: {orderData.CouponCode}");
@@ -1008,6 +974,7 @@ namespace UltraStrore.Services
                     }
                 }
 
+                // Remove cart if not instant buy
                 var cartId = orderData.CartId;
                 var cart = await _context.GioHangs
                     .Include(c => c.ChiTietGioHangs)
@@ -1019,15 +986,16 @@ namespace UltraStrore.Services
                     _context.ChiTietGioHangs.RemoveRange(cart.ChiTietGioHangs);
                     _context.GioHangs.Remove(cart);
                 }
+
+                // Remove pending order
                 _context.PendingOrders.Remove(pendingOrder);
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                // ✅ THÊM PHẦN GỬI EMAIL CHO VNPAY
+                // Send email notification
                 try
                 {
-                    // Lấy thông tin đơn hàng với user
                     var orderWithUser = await _context.DonHangs
                         .Include(d => d.MaNguoiDungNavigation)
                         .FirstOrDefaultAsync(d => d.MaDonHang == donHang.MaDonHang);
@@ -1055,8 +1023,8 @@ namespace UltraStrore.Services
                 catch (Exception emailEx)
                 {
                     _logger.LogError(emailEx, $"[VNPAY EMAIL] Lỗi khi gửi email xác nhận đơn hàng VNPay: {donHang.MaDonHang}");
-                    // Không throw lỗi để không ảnh hưởng đến flow chính
                 }
+
                 Console.WriteLine($"[SUCCESS] VNPay payment processed successfully for order {donHang.MaDonHang}");
 
                 var redirectUrl = $"http://localhost:8080/PaymentSuccess?status=success&orderId={donHang.MaDonHang}&transactionId={vnPayResponse.TransactionId}";
@@ -1064,16 +1032,16 @@ namespace UltraStrore.Services
 
                 httpContext.Response.Redirect(redirectUrl);
 
-                // ✅ RETURN SUCCESS RESPONSE WITH ALL REQUIRED DATA
+                // Return success response with explicit casting for decimal values
                 return new PaymentResponse
                 {
                     Success = true,
                     OrderId = donHang.MaDonHang,
                     Message = "VNPay payment successful",
                     TransactionId = vnPayResponse.TransactionId,
-                    FinalAmount = orderData.FinalAmount,
-                    OriginalAmount = orderData.OriginalAmount,
-                    DiscountAmount = orderData.DiscountAmount,
+                    FinalAmount = (decimal)(orderData.FinalAmount ?? 0),
+                    OriginalAmount = (decimal)(orderData.OriginalAmount ?? 0),
+                    DiscountAmount = (decimal)(orderData.DiscountAmount ?? 0),
                     ShippingFee = orderData.ShippingFee
                 };
             }
@@ -1089,7 +1057,6 @@ namespace UltraStrore.Services
                     $"http://localhost:8080/PaymentFail?status=failed&message={Uri.EscapeDataString(errorMessage)}"
                 );
 
-                // ✅ RETURN ERROR RESPONSE
                 return new PaymentResponse
                 {
                     Success = false,

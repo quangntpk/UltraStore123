@@ -15,5 +15,4 @@ namespace UltraStrore.Repository
         Task<bool> DeleteLoaiSanPhamAsync(int maLoaiSanPham);
         Task<List<LoaiSanPhamView>> SearchLoaiSanPhamAsync(string? tenLoai, string? kiHieu, int? trangThai = null);
     }
-
 }
