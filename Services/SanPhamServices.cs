@@ -48,7 +48,7 @@ namespace UltraStrore.Services
             return new List<LoaiSanPham>();
         }
 
-        public async Task<List<SanPhamView>> ListSanPham(string id)
+        public async Task<List<SanPhamView>> ListSanPham(string? id)
         {
             var KhuyenMaiView = (await _serviceKM.ListKhuyenMaiAdmin(null)).ToList();
             int KhuyenMaiChung = KhuyenMaiView.Where(g => g.PercentChung.HasValue).OrderByDescending(g => g.PercentChung).Select(g => g.PercentChung).FirstOrDefault() ?? 0;
@@ -176,74 +176,243 @@ namespace UltraStrore.Services
 
         public async Task<List<SanPhamByIDSorted>> SanPhamByIDSorteds(string? id)
         {
-            var KhuyenMaiView = (await _serviceKM.ListKhuyenMaiAdmin(null)).ToList();
-            int KhuyenMaiChung = KhuyenMaiView.Where(g => g.PercentChung.HasValue).OrderByDescending(g => g.PercentChung).Select(g => g.PercentChung).FirstOrDefault() ?? 0;
-            List<SanPhamByIDSorted> listsp = new List<SanPhamByIDSorted>();
-            var nhomSanPham = _context.SanPhams.Where(g => g.MaSanPham.Contains(id)).GroupBy(s => s.MaSanPham.Substring(0, 13)).ToList();
-            var loaiSanPhams = await LoadLoaiSanPhamAsync();
-
-            foreach (var nhom in nhomSanPham)
+            try
             {
-                var sanPhamDauTien = nhom.First();
-                var HinhAnhSanPhamList = _context.HinhAnhs.Where(g => g.MaSanPham == sanPhamDauTien.MaSanPham.Substring(0, 6)).Select(g => g.TenHinhAnh).ToList();
-                var listMauSac = sanPhamDauTien.MaSanPham.Split('_')[1];
-                List<SanPhamEditDetail> detailedit = new List<SanPhamEditDetail>();
-                foreach (var item in nhom)
+                Console.WriteLine($"=== SanPhamByIDSorteds Service Debug ===");
+                Console.WriteLine($"Service received ID: '{id}'");
+
+                // Kiểm tra tham số đầu vào
+                if (string.IsNullOrWhiteSpace(id))
                 {
-                    SanPhamEditDetail ed = new SanPhamEditDetail();
-                    ed.KichThuoc = item.KichThuoc;
-                    if (item.SoLuongDaBan != null)
-                        ed.SoLuong = item.SoLuong - item.SoLuongDaBan ?? 0;
-                    else
-                        ed.SoLuong = item.SoLuong;
-                    ed.Gia = item.Gia ?? 0;
-                    ed.GiaNhap = item.GiaNhap ?? 0;
-                    ed.HinhAnh = _context.HinhAnhs.Where(g => g.MaSanPham == item.MaSanPham).Select(h => h.Data).FirstOrDefault();
-                    detailedit.Add(ed);
+                    Console.WriteLine("ERROR: Service received null or empty ID");
+                    return new List<SanPhamByIDSorted>();
                 }
-                var tongSoLuong = nhom.Sum(sp => sp.SoLuong);
-                var MaLoai = loaiSanPhams.Where(g => g.MaLoaiSanPham == sanPhamDauTien.MaLoaiSanPham).Select(g => g.TenLoaiSanPham).FirstOrDefault();
-                var ThuongHieu = _context.ThuongHieus.Where(g => g.MaThuongHieu == sanPhamDauTien.MaThuongHieu).Select(g => g.TenThuongHieu).FirstOrDefault();
-                var HinhAnh = _context.HinhAnhs.Where(g => g.MaSanPham.Trim() == sanPhamDauTien.MaSanPham.Substring(0, 6).Trim()).Select(g => g.Data).ToList();
-                string json = File.ReadAllText(_dbPath);
-                var FullChiTiet = JsonSerializer.Deserialize<List<MoTaSanPhamCreateModel>>(json);
-                string hashtag = File.ReadAllText(_htPath);
-                var FullHashTag = JsonSerializer.Deserialize<List<HashTagSp>>(hashtag);
-                List<DetailHashTagSP> DHTSP = FullHashTag.Where(g => sanPhamDauTien.MaSanPham.Contains(g.IDSanPham)).SelectMany(g => g.ListHashTag).ToList();
-                var MoTaCT = FullChiTiet.Where(g => g.MaSanPham == id.Substring(0, 6)).FirstOrDefault();
-                int MaxKM = 0;
-                var KhuyenMaiRieng = KhuyenMaiView.Where(g => !g.PercentChung.HasValue).ToList();
-                foreach (var KM in KhuyenMaiRieng)
+
+                // Step 1: Lấy khuyến mãi
+                Console.WriteLine("Step 1: Getting KhuyenMai data...");
+                var KhuyenMaiView = (await _serviceKM.ListKhuyenMaiAdmin(null)).ToList();
+                Console.WriteLine($"KhuyenMai count: {KhuyenMaiView?.Count ?? 0}");
+
+                int KhuyenMaiChung = KhuyenMaiView.Where(g => g.PercentChung.HasValue)
+                    .OrderByDescending(g => g.PercentChung)
+                    .Select(g => g.PercentChung)
+                    .FirstOrDefault() ?? 0;
+                Console.WriteLine($"KhuyenMaiChung: {KhuyenMaiChung}");
+
+                // Step 2: Query sản phẩm
+                Console.WriteLine($"Step 2: Querying SanPhams with ID contains: '{id}'");
+                var sanPhamQuery = _context.SanPhams.Where(g => g.MaSanPham.Contains(id));
+                Console.WriteLine($"SanPham query created");
+
+                var sanPhamList = sanPhamQuery.ToList();
+                Console.WriteLine($"SanPham found: {sanPhamList.Count}");
+
+                if (sanPhamList.Count == 0)
                 {
-                    foreach (var dis in KM.DanhSachKhuyenMai)
+                    Console.WriteLine("WARNING: No SanPham found with the given ID");
+                    return new List<SanPhamByIDSorted>();
+                }
+
+                // Step 3: Group by MaSanPham substring
+                Console.WriteLine("Step 3: Grouping SanPhams...");
+                var nhomSanPham = sanPhamList.GroupBy(s => s.MaSanPham.Substring(0, 13)).ToList();
+                Console.WriteLine($"Groups created: {nhomSanPham.Count}");
+
+                // Step 4: Load LoaiSanPham
+                Console.WriteLine("Step 4: Loading LoaiSanPham...");
+                var loaiSanPhams = await LoadLoaiSanPhamAsync();
+                Console.WriteLine($"LoaiSanPham loaded: {loaiSanPhams?.Count() ?? 0}");
+
+                List<SanPhamByIDSorted> listsp = new List<SanPhamByIDSorted>();
+
+                foreach (var nhom in nhomSanPham)
+                {
+                    try
                     {
-                        if (dis.IdSanPham != null && dis.IdSanPham.Trim() == sanPhamDauTien.MaSanPham.Substring(0, 6).Trim())
+                        Console.WriteLine($"Processing group with {nhom.Count()} items");
+                        var sanPhamDauTien = nhom.First();
+                        Console.WriteLine($"First product: {sanPhamDauTien.MaSanPham}");
+
+                        // Kiểm tra độ dài MaSanPham
+                        if (sanPhamDauTien.MaSanPham.Length < 6)
                         {
-                            if (dis.Percent > MaxKM)
-                                MaxKM = dis.Percent ?? MaxKM;
+                            Console.WriteLine($"ERROR: MaSanPham too short: {sanPhamDauTien.MaSanPham}");
+                            continue;
                         }
+
+                        // Step 5: Lấy hình ảnh
+                        Console.WriteLine("Step 5: Getting HinhAnh...");
+                        var maSanPhamSubstring = sanPhamDauTien.MaSanPham.Substring(0, 6);
+                        Console.WriteLine($"MaSanPham substring (0,6): '{maSanPhamSubstring}'");
+
+                        var HinhAnhSanPhamList = _context.HinhAnhs
+                            .Where(g => g.MaSanPham == maSanPhamSubstring)
+                            .Select(g => g.TenHinhAnh)
+                            .ToList();
+                        Console.WriteLine($"HinhAnh found: {HinhAnhSanPhamList.Count}");
+
+                        // Step 6: Xử lý màu sắc
+                        Console.WriteLine("Step 6: Processing MauSac...");
+                        var maSanPhamParts = sanPhamDauTien.MaSanPham.Split('_');
+                        Console.WriteLine($"MaSanPham parts: {string.Join(", ", maSanPhamParts)}");
+
+                        if (maSanPhamParts.Length < 2)
+                        {
+                            Console.WriteLine($"ERROR: MaSanPham format invalid: {sanPhamDauTien.MaSanPham}");
+                            continue;
+                        }
+                        var listMauSac = maSanPhamParts[1];
+                        Console.WriteLine($"MauSac: '{listMauSac}'");
+
+                        // Step 7: Xử lý chi tiết sản phẩm
+                        Console.WriteLine("Step 7: Processing Details...");
+                        List<SanPhamEditDetail> detailedit = new List<SanPhamEditDetail>();
+                        foreach (var item in nhom)
+                        {
+                            SanPhamEditDetail ed = new SanPhamEditDetail
+                            {
+                                KichThuoc = item.KichThuoc,
+                                SoLuong = item.SoLuongDaBan != null ? item.SoLuong - item.SoLuongDaBan ?? 0 : item.SoLuong,
+                                Gia = item.Gia ?? 0,
+                                GiaNhap = item.GiaNhap ?? 0,
+                                HinhAnh = _context.HinhAnhs.Where(g => g.MaSanPham == item.MaSanPham).Select(h => h.Data).FirstOrDefault()
+                            };
+                            detailedit.Add(ed);
+                        }
+                        Console.WriteLine($"Details processed: {detailedit.Count}");
+
+                        // Step 8: Các thông tin khác
+                        Console.WriteLine("Step 8: Getting other info...");
+                        var MaLoai = loaiSanPhams.Where(g => g.MaLoaiSanPham == sanPhamDauTien.MaLoaiSanPham)
+                            .Select(g => g.TenLoaiSanPham).FirstOrDefault();
+
+                        var ThuongHieu = _context.ThuongHieus.Where(g => g.MaThuongHieu == sanPhamDauTien.MaThuongHieu)
+                            .Select(g => g.TenThuongHieu).FirstOrDefault();
+
+                        var HinhAnh = _context.HinhAnhs.Where(g => g.MaSanPham.Trim() == sanPhamDauTien.MaSanPham.Substring(0, 6).Trim())
+                            .Select(g => g.Data).ToList();
+
+                        Console.WriteLine($"MaLoai: {MaLoai}, ThuongHieu: {ThuongHieu}, HinhAnh count: {HinhAnh.Count}");
+
+                        // Step 9: Đọc file JSON - NGUY HIỂM NHẤT
+                        Console.WriteLine("Step 9: Reading JSON files...");
+                        List<MoTaSanPhamCreateModel> FullChiTiet = new List<MoTaSanPhamCreateModel>();
+                        List<HashTagSp> FullHashTag = new List<HashTagSp>();
+
+                        try
+                        {
+                            if (File.Exists(_dbPath))
+                            {
+                                string json = File.ReadAllText(_dbPath);
+                                Console.WriteLine($"JSON file read successfully, length: {json.Length}");
+                                FullChiTiet = JsonSerializer.Deserialize<List<MoTaSanPhamCreateModel>>(json) ?? new List<MoTaSanPhamCreateModel>();
+                                Console.WriteLine($"FullChiTiet deserialized: {FullChiTiet.Count}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"WARNING: JSON file not found at: {_dbPath}");
+                            }
+                        }
+                        catch (Exception jsonEx)
+                        {
+                            Console.WriteLine($"ERROR reading JSON file: {jsonEx.Message}");
+                            FullChiTiet = new List<MoTaSanPhamCreateModel>();
+                        }
+
+                        try
+                        {
+                            if (File.Exists(_htPath))
+                            {
+                                string hashtag = File.ReadAllText(_htPath);
+                                Console.WriteLine($"HashTag file read successfully, length: {hashtag.Length}");
+                                FullHashTag = JsonSerializer.Deserialize<List<HashTagSp>>(hashtag) ?? new List<HashTagSp>();
+                                Console.WriteLine($"FullHashTag deserialized: {FullHashTag.Count}");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"WARNING: HashTag file not found at: {_htPath}");
+                            }
+                        }
+                        catch (Exception hashEx)
+                        {
+                            Console.WriteLine($"ERROR reading HashTag file: {hashEx.Message}");
+                            FullHashTag = new List<HashTagSp>();
+                        }
+
+                        // Step 10: Xử lý hashtag và mô tả
+                        Console.WriteLine("Step 10: Processing hashtag and description...");
+                        List<DetailHashTagSP> DHTSP = FullHashTag.Where(g => sanPhamDauTien.MaSanPham.Contains(g.IDSanPham))
+                            .SelectMany(g => g.ListHashTag).ToList();
+
+                        var idSubstring = id.Length >= 6 ? id.Substring(0, 6) : id;
+                        var MoTaCT = FullChiTiet.Where(g => g.MaSanPham == idSubstring).FirstOrDefault();
+
+                        Console.WriteLine($"DHTSP count: {DHTSP.Count}, MoTaCT found: {MoTaCT != null}");
+
+                        // Step 11: Xử lý khuyến mãi riêng
+                        Console.WriteLine("Step 11: Processing individual promotions...");
+                        int MaxKM = 0;
+                        var KhuyenMaiRieng = KhuyenMaiView.Where(g => !g.PercentChung.HasValue).ToList();
+
+                        foreach (var KM in KhuyenMaiRieng)
+                        {
+                            if (KM.DanhSachKhuyenMai != null)
+                            {
+                                foreach (var dis in KM.DanhSachKhuyenMai)
+                                {
+                                    if (dis.IdSanPham != null && dis.IdSanPham.Trim() == sanPhamDauTien.MaSanPham.Substring(0, 6).Trim())
+                                    {
+                                        if (dis.Percent > MaxKM)
+                                            MaxKM = dis.Percent ?? MaxKM;
+                                    }
+                                }
+                            }
+                        }
+
+                        Console.WriteLine($"MaxKM: {MaxKM}, Final KhuyenMai: {(KhuyenMaiChung > MaxKM ? KhuyenMaiChung : MaxKM)}");
+
+                        // Step 12: Tạo đối tượng kết quả
+                        var result = new SanPhamByIDSorted
+                        {
+                            TH = sanPhamDauTien.MaThuongHieu,
+                            LSP = sanPhamDauTien.MaLoaiSanPham,
+                            ID = sanPhamDauTien.MaSanPham.Substring(0, 13),
+                            TenSanPham = sanPhamDauTien.TenSanPham,
+                            MauSac = listMauSac,
+                            LoaiSanPham = MaLoai,
+                            MaThuongHieu = ThuongHieu,
+                            Details = detailedit,
+                            HinhAnhs = HinhAnh,
+                            ChatLieu = sanPhamDauTien.ChatLieu,
+                            MoTa = sanPhamDauTien.MoTa,
+                            GioiTinh = sanPhamDauTien.GioiTinh,
+                            MoTaChiTiet = MoTaCT,
+                            ListHashTag = DHTSP,
+                            KhuyenMaiMax = KhuyenMaiChung > MaxKM ? KhuyenMaiChung : MaxKM
+                        };
+
+                        listsp.Add(result);
+                        Console.WriteLine($"Successfully processed group, total results: {listsp.Count}");
+                    }
+                    catch (Exception groupEx)
+                    {
+                        Console.WriteLine($"ERROR processing group: {groupEx.Message}");
+                        Console.WriteLine($"StackTrace: {groupEx.StackTrace}");
+                        // Continue với group tiếp theo
                     }
                 }
-                listsp.Add(new SanPhamByIDSorted
-                {
-                    TH = sanPhamDauTien.MaThuongHieu,
-                    LSP = sanPhamDauTien.MaLoaiSanPham,
-                    ID = sanPhamDauTien.MaSanPham.Substring(0, 13),
-                    TenSanPham = sanPhamDauTien.TenSanPham,
-                    MauSac = listMauSac,
-                    LoaiSanPham = MaLoai,
-                    MaThuongHieu = ThuongHieu,
-                    Details = detailedit,
-                    HinhAnhs = HinhAnh,
-                    ChatLieu = sanPhamDauTien.ChatLieu,
-                    MoTa = sanPhamDauTien.MoTa,
-                    GioiTinh = sanPhamDauTien.GioiTinh,
-                    MoTaChiTiet = MoTaCT,
-                    ListHashTag = DHTSP,
-                    KhuyenMaiMax = KhuyenMaiChung > MaxKM ? KhuyenMaiChung : MaxKM
-                });
+
+                Console.WriteLine($"=== Service completed successfully, returning {listsp.Count} items ===");
+                return listsp;
             }
-            return listsp;
+            catch (Exception ex)
+            {
+                Console.WriteLine($"FATAL ERROR in SanPhamByIDSorteds:");
+                Console.WriteLine($"Message: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                Console.WriteLine($"InnerException: {ex.InnerException?.Message}");
+                throw; // Re-throw để controller bắt được
+            }
         }
 
         public async Task<APIResponse> EditSanPham(FullInfoSanPhamEdit info)
