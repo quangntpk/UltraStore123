@@ -14,6 +14,7 @@ namespace UltraStrore.Repository
         Task<APIResponse> KhuyenMaiCreate(KhuyenMaiCreate data);
         Task<APIResponse> KhuyenMaiUpdate(KhuyenMaiEdit data);
         Task<APIResponse> MoTaKhuyenMaiEdit(MoTaKhuyenMai data);
+        Task<APIResponse> DisableKhuyenMai(int id);
 
     }
 }

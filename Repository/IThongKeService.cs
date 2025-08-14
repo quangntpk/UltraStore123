@@ -12,6 +12,6 @@ namespace UltraStrore.Repository
         List<ThongKeView> GetMonthlyStatistics(int year, int month);
         List<ThongKeView> GetYearlyStatistics(int year);
         List<ThongKeView> GetOrderStatusStatistics(int? year = null, int? month = null, int? day = null);
-        List<TopProductView> GetTopProductsStatistics(int year, int? month = null, int? day = null);
+        Task<List<TopProductView>> GetTopProductsStatistics(int year, int? month = null, int? day = null);
     }
 }

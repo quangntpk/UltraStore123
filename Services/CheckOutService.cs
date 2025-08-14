@@ -158,23 +158,25 @@ namespace UltraStrore.Services
                     foreach (var chiTiet in chiTietDonHangs)
                     {
                         chiTiet.MaDonHang = donHang.MaDonHang;
-
-                        var sanPhams = await _context.SanPhams
-                            .FirstOrDefaultAsync(sp => sp.MaSanPham == chiTiet.MaSanPham);
-
-                        if (sanPhams == null)
+                        if(chiTiet.MaSanPham!=null)
                         {
-                            await transaction.RollbackAsync();
-                            return new PaymentResponse { Success = false, Message = $"Sản phẩm với mã {chiTiet.MaSanPham} không tồn tại" };
-                        }
+                            var sanPhams = await _context.SanPhams
+                              .FirstOrDefaultAsync(sp => sp.MaSanPham == chiTiet.MaSanPham);
+                            if (sanPhams == null)
+                            {
+                                await transaction.RollbackAsync();
+                                return new PaymentResponse { Success = false, Message = $"Sản phẩm với mã {chiTiet.MaSanPham} không tồn tại" };
+                            }
 
-                        if (sanPhams.SoLuong < chiTiet.SoLuong)
-                        {
-                            await transaction.RollbackAsync();
-                            return new PaymentResponse { Success = false, Message = $"Sản phẩm {sanPhams.TenSanPham} không đủ số lượng tồn kho" };
-                        }
+                            if (sanPhams.SoLuong < chiTiet.SoLuong)
+                            {
+                                await transaction.RollbackAsync();
+                                return new PaymentResponse { Success = false, Message = $"Sản phẩm {sanPhams.TenSanPham} không đủ số lượng tồn kho" };
+                            }
 
-                        sanPhams.SoLuong -= chiTiet.SoLuong;
+                            sanPhams.SoLuong -= chiTiet.SoLuong;
+                        }    
+                   
                     }
                     foreach (var support in donHangSupports)
                     {
@@ -482,8 +484,9 @@ namespace UltraStrore.Services
                             .ToListAsync();
                         foreach (var comboItem in comboItems)
                         {
+                            var ChiTietSp = _context.GioHangSupports.Where(g => g.ChiTietGioHang == item.MaCtgh && g.MaChiTietCombo == comboItem.MaChiTietComBo).Select(g => g.MaSanPham).FirstOrDefault();
                             var sanPham = await _context.SanPhams
-                                .FirstOrDefaultAsync(sp => sp.MaSanPham == comboItem.MaSanPham);
+                                .FirstOrDefaultAsync(sp => sp.MaSanPham == ChiTietSp);
                             if (sanPham == null)
                             {
                                 await transaction.RollbackAsync();
@@ -557,6 +560,7 @@ namespace UltraStrore.Services
                     else
                     {
                         CTDH.MaSanPham = item.MaSanPham;
+                        CTDH.MaKhuyenMai = item.MaKhuyenMai;
                         _context.ChiTietDonHangs.Add(CTDH);
                         await _context.SaveChangesAsync();
                         chiTietDonHangs.Add(CTDH);
@@ -634,8 +638,9 @@ namespace UltraStrore.Services
                                 .ToListAsync();
                             foreach (var comboItem in comboItems)
                             {
+                                var ChiTietSp = _context.GioHangSupports.Where(g => g.ChiTietGioHang == item.MaCtgh && g.MaChiTietCombo == comboItem.MaChiTietComBo).Select(g => g.MaSanPham).FirstOrDefault();
                                 var sanPham = await _context.SanPhams
-                                    .FirstOrDefaultAsync(sp => sp.MaSanPham == comboItem.MaSanPham);
+                                    .FirstOrDefaultAsync(sp => sp.MaSanPham == ChiTietSp);
                                 sanPham.SoLuong -= comboItem.SoLuong * item.SoLuong;
                             }
                         }
@@ -846,6 +851,7 @@ namespace UltraStrore.Services
                             .ToListAsync();
                         foreach (var comboItem in comboItems)
                         {
+                            var ChiTietSp = _context.GioHangSupports.Where(g => g.ChiTietGioHang == item.MaCtgh && g.MaChiTietCombo == comboItem.MaChiTietComBo).Select(g => g.MaSanPham).FirstOrDefault();
                             var sanPham = await _context.SanPhams
                                 .FirstOrDefaultAsync(sp => sp.MaSanPham == comboItem.MaSanPham);
                             if (sanPham.SoLuong < comboItem.SoLuong * item.SoLuong)
@@ -860,16 +866,17 @@ namespace UltraStrore.Services
                                     Message = $"Sản phẩm {sanPham.TenSanPham} không đủ số lượng tồn kho",
                                     TransactionId = vnPayResponse.TransactionId
                                 };
+                                .FirstOrDefaultAsync(sp => sp.MaSanPham == ChiTietSp);
+                            if (sanPham == null)
+                            {
+                                await transaction.RollbackAsync();
+                                return new PaymentResponse { Success = false, Message = $"Sản phẩm với mã {comboItem.MaSanPham} không tồn tại" };
                             }
+                           
                         }
                     }
                     else
                     {
-                        if (string.IsNullOrEmpty(item.MaSanPham))
-                        {
-                            _logger.LogWarning($"ChiTietGioHangDto có MaSanPham null: {JsonSerializer.Serialize(item)}");
-                            continue;
-                        }
                         var sanPham = await _context.SanPhams
                             .FirstOrDefaultAsync(sp => sp.MaSanPham == item.MaSanPham);
                         if (sanPham.SoLuong < item.SoLuong)
@@ -884,7 +891,12 @@ namespace UltraStrore.Services
                                 Message = $"Sản phẩm {sanPham.TenSanPham} không đủ số lượng tồn kho",
                                 TransactionId = vnPayResponse.TransactionId
                             };
+                        if (sanPham == null)
+                        {
+                            await transaction.RollbackAsync();
+                            return new PaymentResponse { Success = false, Message = $"Sản phẩm với mã {item.MaSanPham} không tồn tại" };
                         }
+                       
                     }
                 }
 
@@ -898,8 +910,9 @@ namespace UltraStrore.Services
                             .ToListAsync();
                         foreach (var comboItem in comboItems)
                         {
+                            var ChiTietSp = _context.GioHangSupports.Where(g => g.ChiTietGioHang == item.MaCtgh && g.MaChiTietCombo == comboItem.MaChiTietComBo).Select(g => g.MaSanPham).FirstOrDefault();
                             var sanPham = await _context.SanPhams
-                                .FirstOrDefaultAsync(sp => sp.MaSanPham == comboItem.MaSanPham);
+                                .FirstOrDefaultAsync(sp => sp.MaSanPham == ChiTietSp);
                             if (sanPham != null)
                             {
                                 sanPham.SoLuong -= comboItem.SoLuong * item.SoLuong;
@@ -959,6 +972,31 @@ namespace UltraStrore.Services
                 {
                     // Additional processing for instant buy if needed
                     InstantBuy = false; // Reset the flag
+                    donHangTemp.ChiTietDonHangs[0].SanPhamMaSanPham = donHangTemp.ChiTietDonHangs[0].MaSanPham;
+                    _context.DonHangs.Add(donHangTemp);
+                    await _context.SaveChangesAsync();
+                    InstantBuy = true;
+                    var chiTietDonHangs2 = orderData.ChiTietGioHangs
+                        .Select(item =>
+                        {
+                            if (item.MaSanPham == null)
+                            {
+                                _logger.LogWarning($"ChiTietGioHangDto có MaSanPham null: {JsonSerializer.Serialize(item)}");
+                            }
+                            return item;
+                        })
+                        .Where(item => item.MaSanPham != null)
+                        .Select(item => new ChiTietDonHang
+                        {
+                            MaSanPham = item.MaSanPham.ToString(),
+                            SoLuong = item.SoLuong,
+                            Gia = (int?)item.Gia,
+                            ThanhTien = (int?)item.ThanhTien,
+                            MaCombo = item.MaCombo,
+                            SanPhamMaSanPham = item.MaSanPham.ToString(),
+                            MaDonHang = donHangTemp.MaDonHang
+                        }).ToList();
+                    _context.ChiTietDonHangs.AddRange(chiTietDonHangs2);
                 }
 
                 // Process coupon if exists

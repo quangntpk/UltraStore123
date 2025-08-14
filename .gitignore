@@ -50,4 +50,5 @@
 .vs/UltraStrore/v17/.futdcache.v2
 .vs/UltraStrore/v17/.suo
 .vs/UltraStrore/v17/DocumentLayout.json
-appsettings.json
+**/bin/
+**/obj/

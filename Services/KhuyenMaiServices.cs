@@ -406,6 +406,31 @@ namespace UltraStrore.Services
             }
             return response;
         }
+
+        public async Task<APIResponse> DisableKhuyenMai(int id)
+        {
+            var response = new APIResponse();
+            using var transation = _context.Database.BeginTransaction();
+            try
+            {
+                var KM = _context.KhuyenMais.Where(g => g.ID == id).FirstOrDefault();
+                if (KM.TrangThai)
+                    KM.TrangThai = false;
+                else
+                    KM.TrangThai = true;
+                _context.KhuyenMais.Update(KM);
+                await _context.SaveChangesAsync();
+                await transation.CommitAsync();
+                response.ResponseCode = 200;                
+            }
+            catch (Exception ex)
+            {
+                await transation.RollbackAsync();
+                response.ErrorMessage = ex.Message;
+                response.ResponseCode = 400;
+            }
+            return response;
+        }
     }
 }
 

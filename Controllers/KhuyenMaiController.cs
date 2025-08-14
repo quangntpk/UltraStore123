@@ -55,5 +55,34 @@ namespace UltraStrore.Controllers
             var info = await _services.MoTaKhuyenMaiEdit(data);
             return info;
         }
+        [HttpPost("DisableKhuyenMai")]
+        public async Task<APIResponse> DisableKhuyenMai(int id)
+        {
+            var info = await _services.DisableKhuyenMai(id);
+            return info;
+        }
+        [HttpGet("TestSanPhamByIDSorted")]
+        public async Task<IActionResult> TestSanPhamByIDSorted(string? id)
+        {
+            try
+            {
+                // Test connection
+                var connectionString = HttpContext.RequestServices
+                    .GetRequiredService<IConfiguration>()
+                    .GetConnectionString("DefaultConnection");
+
+                return Ok(new
+                {
+                    receivedId = id,
+                    connectionStringExists = !string.IsNullOrEmpty(connectionString),
+                    connectionString = connectionString?.Substring(0, 50) + "..." // Chỉ hiện một phần
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ex.Message);
+            }
+        }
+
     }
 }
