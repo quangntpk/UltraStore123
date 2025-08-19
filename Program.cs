@@ -43,6 +43,8 @@ namespace UltraStrore
 
             builder.Services.AddScoped<IOrderNotificationService, OrderNotificationService>();
 
+            builder.Services.AddScoped<ITelegramServices, TelegramServices>();
+
             builder.Services.AddScoped<IGeminiServices, GeminiServices>();
             builder.Services.AddScoped<ICartServices, CartServices>();
             builder.Services.AddScoped<ISanPhamServices, SanPhamServices>();
