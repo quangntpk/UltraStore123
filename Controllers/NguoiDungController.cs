@@ -8,7 +8,7 @@ using UltraStrore.Utils; // Để sử dụng PasswordHasher
 
 namespace UltraStrore.Controllers
 {
-    [Authorize(Roles = "admin")]
+    //[Authorize(Roles = "admin")]
     [Route("api/[controller]")]
     [ApiController]
     public class NguoiDungController : ControllerBase

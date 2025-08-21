@@ -10,7 +10,7 @@ using UltraStrore.Services;
 
 namespace UltraStrore.Controllers
 {
-    [Authorize(Roles = "admin,staff")]
+    //[Authorize(Roles = "admin,staff")]
     [Route("api/[controller]")]
     [ApiController]
     public class HashTagController : ControllerBase

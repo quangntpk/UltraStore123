@@ -79,7 +79,7 @@ namespace UltraStrore.Controllers
                     return NotFound(new { message = "Không tìm thấy đơn hàng." });
                 }
 
-                string qrLink = $"http://localhost:8080/user/hoadon?orderId={order.MaDonHang}";
+                string qrLink = $"https://fashionhub.name.vn/user/hoadon?orderId={order.MaDonHang}";
                 var qrBytes = _qrCodeService.GenerateQRCode(qrLink, 10);
                 return File(qrBytes, "image/png", $"test-qr-{orderId}.png");
             }
@@ -90,7 +90,7 @@ namespace UltraStrore.Controllers
                 // ✅ FIX: Fallback sử dụng method alternative
                 try
                 {
-                    string qrLink = $"http://localhost:8080/user/hoadon?orderId={orderId}";
+                    string qrLink = $"https://fashionhub.name.vn/user/hoadon?orderId={orderId}";
                     var qrBytes = _qrCodeService.GenerateQRCodeAlternative(qrLink, 10);
                     return File(qrBytes, "image/png", $"test-qr-{orderId}.png");
                 }
@@ -113,7 +113,7 @@ namespace UltraStrore.Controllers
                     return NotFound(new { message = "Không tìm thấy đơn hàng." });
                 }
 
-                string qrLink = $"http://localhost:8080/user/hoadon?orderId={order.MaDonHang}";
+                string qrLink = $"https://fashionhub.name.vn/user/hoadon?orderId={order.MaDonHang}";
                 var qrBase64 = _qrCodeService.GenerateQRCodeBase64(qrLink, 10);
 
                 return Ok(new

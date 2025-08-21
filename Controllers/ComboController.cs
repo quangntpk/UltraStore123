@@ -25,7 +25,6 @@ namespace UltraStrore.Controllers
             var data = await services.ComboViews(id);
             return Ok(data);   
         }
-        [Authorize(Roles = "admin,staff")]
         [HttpGet("ComboSanPhamViewAdmin")]
         public async Task<IActionResult> ComboSanPhamViewAdmin(int? id)
         {           
@@ -34,21 +33,20 @@ namespace UltraStrore.Controllers
                 return Ok(data);  
         }
 
-        [Authorize(Roles = "admin,staff")]
         [HttpPost("CreateComboSanPham")]
         public async Task<IActionResult> AddCombo(ComboCreate info)
         {
             var data = await services.AddCombo(info);  
             return Ok();
         }
-        [Authorize(Roles = "admin,staff")]
+
         [HttpPost("EditComboSanPham")]
         public async Task<IActionResult> EditCombo(ComboEdit info)
         {
             var data = await services.EditCombo(info);
             return Ok(data);
         }
-        [Authorize(Roles = "admin,staff")]
+
         [HttpGet("DeleteCombo")]
         public async Task<IActionResult> DeleteCombo(int id)
         {

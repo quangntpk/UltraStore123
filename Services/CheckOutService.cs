@@ -28,7 +28,7 @@ namespace UltraStrore.Services
         public static List<DonHangSupport> donHangSupportsTemp;
 
 
-        public CheckOutService(ApplicationDbContext context, ILogger<CheckOutService> logger, VnPayConfig vnpayConfig, IVnPayServies vnPayService,IOrderNotificationService orderNotificationService)
+        public CheckOutService(ApplicationDbContext context, ILogger<CheckOutService> logger, VnPayConfig vnpayConfig, IVnPayServies vnPayService, IOrderNotificationService orderNotificationService)
         {
             _context = context;
             _logger = logger;
@@ -159,7 +159,7 @@ namespace UltraStrore.Services
                     foreach (var chiTiet in chiTietDonHangs)
                     {
                         chiTiet.MaDonHang = donHang.MaDonHang;
-                        if(chiTiet.MaSanPham!=null)
+                        if (chiTiet.MaSanPham != null)
                         {
                             var sanPhams = await _context.SanPhams
                               .FirstOrDefaultAsync(sp => sp.MaSanPham == chiTiet.MaSanPham);
@@ -176,8 +176,8 @@ namespace UltraStrore.Services
                             }
 
                             sanPhams.SoLuong -= chiTiet.SoLuong;
-                        }    
-                   
+                        }
+
                     }
                     foreach (var support in donHangSupports)
                     {
@@ -239,7 +239,7 @@ namespace UltraStrore.Services
                     {
                         chiTiet.MaDonHang = donHang.MaDonHang;
 
-                        var sanPhams = await _context.SanPhams 
+                        var sanPhams = await _context.SanPhams
                             .FirstOrDefaultAsync(sp => sp.MaSanPham == chiTiet.MaSanPham);
 
                         if (sanPhams == null)
@@ -453,29 +453,9 @@ namespace UltraStrore.Services
                     return new PaymentResponse { Success = false, Message = "Thông tin người nhận không hợp lệ" };
                 }
 
-                var chiTietDonHangs = new List<ChiTietDonHang>();
-                var donHangSupports = new List<DonHangSupport>();
-                var donHang = new DonHang
-                {
-                    MaNguoiDung = orderDto.MaNguoiDung,
-                    TenNguoiNhan = orderDto.TenNguoiNhan,
-                    Sdt = orderDto.Sdt,
-                    DiaChi = orderDto.DiaChi,
-                    NgayDat = orderDto.NgayDat,
-                    TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan,
-                    TrangThaiHang = orderDto.TrangThaiHang,
-                    DiscountAmount = orderDto.DiscountAmount,
-                    ShippingFee = orderDto.ShippingFee,
-                    FinalAmount = orderDto.FinalAmount
-                };
-                _context.DonHangs.Add(donHang);
-                await _context.SaveChangesAsync();
-                donHangTemp = donHang;
-
                 var GioHang = _context.GioHangs.Where(g => g.MaNguoiDung == orderDto.MaNguoiDung).FirstOrDefault();
                 var CTGH = _context.ChiTietGioHangs.Where(g => g.MaGioHang == GioHang.MaGioHang).ToList();
 
-                // Validate stock before processing order details
                 foreach (var item in CTGH)
                 {
                     if (item.MaCombo != null)
@@ -517,64 +497,77 @@ namespace UltraStrore.Services
                     }
                 }
 
-                foreach (var item in CTGH)
-                {
-                    ChiTietDonHang CTDH = new ChiTietDonHang
-                    {
-                        MaDonHang = donHang.MaDonHang,
-                        Gia = item.Gia,
-                        SoLuong = item.SoLuong,
-                        ThanhTien = item.ThanhTien
-                    };
-
-                    if (item.MaCombo != null)
-                    {
-                        CTDH.MaCombo = item.MaCombo;
-                        _context.ChiTietDonHangs.Add(CTDH);
-                        await _context.SaveChangesAsync();
-                        chiTietDonHangs.Add(CTDH);
-
-                        var CTCOMBO = await _context.ChiTietComBos
-                            .Where(g => g.MaComBo == item.MaCombo)
-                            .ToListAsync();
-                        foreach (var item2 in CTCOMBO)
-                        {
-                            var GHSP = await _context.GioHangSupports
-                                .Where(g => g.MaChiTietCombo == item2.MaChiTietComBo && g.ChiTietGioHang == item.MaCtgh)
-                                .ToListAsync();
-                            foreach (var item3 in GHSP)
-                            {
-                                DonHangSupport newDHSP = new DonHangSupport
-                                {
-                                    MaSanPham = item3.MaSanPham,
-                                    MaChiTietCombo = item3.MaChiTietCombo,
-                                    ChiTietGioHang = CTDH.MaCtdh,
-                                    SoLuong = item3.SoLuong,
-                                    Version = item3.Version
-                                };
-                                _context.DonHangSupports.Add(newDHSP);
-                                await _context.SaveChangesAsync();
-                                donHangSupports.Add(newDHSP);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        CTDH.MaSanPham = item.MaSanPham;
-                        CTDH.MaKhuyenMai = item.MaKhuyenMai;
-                        _context.ChiTietDonHangs.Add(CTDH);
-                        await _context.SaveChangesAsync();
-                        chiTietDonHangs.Add(CTDH);
-                    }
-                }
-                await _context.SaveChangesAsync();
-                donHangSupportsTemp = donHangSupports;
-                donHangTemp = donHang;
-                chiTietDonHangTemp = chiTietDonHangs;
-
                 if (request.PaymentMethod.ToLower() == "cash")
                 {
-                    // Reduce product quantities for cash payment
+                    var donHang = new DonHang
+                    {
+                        MaNguoiDung = orderDto.MaNguoiDung,
+                        TenNguoiNhan = orderDto.TenNguoiNhan,
+                        Sdt = orderDto.Sdt,
+                        DiaChi = orderDto.DiaChi,
+                        NgayDat = orderDto.NgayDat,
+                        TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan,
+                        TrangThaiHang = orderDto.TrangThaiHang,
+                        DiscountAmount = orderDto.DiscountAmount,
+                        ShippingFee = orderDto.ShippingFee,
+                        FinalAmount = orderDto.FinalAmount
+                    };
+                    _context.DonHangs.Add(donHang);
+                    await _context.SaveChangesAsync();
+
+                    var chiTietDonHangs = new List<ChiTietDonHang>();
+                    var donHangSupports = new List<DonHangSupport>();
+
+                    foreach (var item in CTGH)
+                    {
+                        ChiTietDonHang CTDH = new ChiTietDonHang
+                        {
+                            MaDonHang = donHang.MaDonHang,
+                            Gia = item.Gia,
+                            SoLuong = item.SoLuong,
+                            ThanhTien = item.ThanhTien
+                        };
+
+                        if (item.MaCombo != null)
+                        {
+                            CTDH.MaCombo = item.MaCombo;
+                            _context.ChiTietDonHangs.Add(CTDH);
+                            await _context.SaveChangesAsync();
+                            chiTietDonHangs.Add(CTDH);
+
+                            var CTCOMBO = await _context.ChiTietComBos
+                                .Where(g => g.MaComBo == item.MaCombo)
+                                .ToListAsync();
+                            foreach (var item2 in CTCOMBO)
+                            {
+                                var GHSP = await _context.GioHangSupports
+                                    .Where(g => g.MaChiTietCombo == item2.MaChiTietComBo && g.ChiTietGioHang == item.MaCtgh)
+                                    .ToListAsync();
+                                foreach (var item3 in GHSP)
+                                {
+                                    DonHangSupport newDHSP = new DonHangSupport
+                                    {
+                                        MaSanPham = item3.MaSanPham,
+                                        MaChiTietCombo = item3.MaChiTietCombo,
+                                        ChiTietGioHang = CTDH.MaCtdh,
+                                        SoLuong = item3.SoLuong,
+                                        Version = item3.Version
+                                    };
+                                    _context.DonHangSupports.Add(newDHSP);
+                                    await _context.SaveChangesAsync();
+                                    donHangSupports.Add(newDHSP);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            CTDH.MaSanPham = item.MaSanPham;
+                            CTDH.MaKhuyenMai = item.MaKhuyenMai;
+                            _context.ChiTietDonHangs.Add(CTDH);
+                            await _context.SaveChangesAsync();
+                            chiTietDonHangs.Add(CTDH);
+                        }
+                    }
                     foreach (var item in CTGH)
                     {
                         if (item.MaCombo != null)
@@ -629,7 +622,76 @@ namespace UltraStrore.Services
                 }
                 else if (request.PaymentMethod.ToLower() == "cod")
                 {
-                    // Reduce product quantities for COD payment
+                    var donHang = new DonHang
+                    {
+                        MaNguoiDung = orderDto.MaNguoiDung,
+                        TenNguoiNhan = orderDto.TenNguoiNhan,
+                        Sdt = orderDto.Sdt,
+                        DiaChi = orderDto.DiaChi,
+                        NgayDat = orderDto.NgayDat,
+                        TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan,
+                        TrangThaiHang = orderDto.TrangThaiHang,
+                        DiscountAmount = orderDto.DiscountAmount,
+                        ShippingFee = orderDto.ShippingFee,
+                        FinalAmount = orderDto.FinalAmount
+                    };
+                    _context.DonHangs.Add(donHang);
+                    await _context.SaveChangesAsync();
+
+                    var chiTietDonHangs = new List<ChiTietDonHang>();
+                    var donHangSupports = new List<DonHangSupport>();
+
+                    foreach (var item in CTGH)
+                    {
+                        ChiTietDonHang CTDH = new ChiTietDonHang
+                        {
+                            MaDonHang = donHang.MaDonHang,
+                            Gia = item.Gia,
+                            SoLuong = item.SoLuong,
+                            ThanhTien = item.ThanhTien
+                        };
+
+                        if (item.MaCombo != null)
+                        {
+                            CTDH.MaCombo = item.MaCombo;
+                            _context.ChiTietDonHangs.Add(CTDH);
+                            await _context.SaveChangesAsync();
+                            chiTietDonHangs.Add(CTDH);
+
+                            var CTCOMBO = await _context.ChiTietComBos
+                                .Where(g => g.MaComBo == item.MaCombo)
+                                .ToListAsync();
+                            foreach (var item2 in CTCOMBO)
+                            {
+                                var GHSP = await _context.GioHangSupports
+                                    .Where(g => g.MaChiTietCombo == item2.MaChiTietComBo && g.ChiTietGioHang == item.MaCtgh)
+                                    .ToListAsync();
+                                foreach (var item3 in GHSP)
+                                {
+                                    DonHangSupport newDHSP = new DonHangSupport
+                                    {
+                                        MaSanPham = item3.MaSanPham,
+                                        MaChiTietCombo = item3.MaChiTietCombo,
+                                        ChiTietGioHang = CTDH.MaCtdh,
+                                        SoLuong = item3.SoLuong,
+                                        Version = item3.Version
+                                    };
+                                    _context.DonHangSupports.Add(newDHSP);
+                                    await _context.SaveChangesAsync();
+                                    donHangSupports.Add(newDHSP);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            CTDH.MaSanPham = item.MaSanPham;
+                            CTDH.MaKhuyenMai = item.MaKhuyenMai;
+                            _context.ChiTietDonHangs.Add(CTDH);
+                            await _context.SaveChangesAsync();
+                            chiTietDonHangs.Add(CTDH);
+                        }
+                    }
+
                     foreach (var item in CTGH)
                     {
                         if (item.MaCombo != null)
@@ -723,7 +785,6 @@ namespace UltraStrore.Services
                         OrderData = orderDataJson,
                         CreatedAt = DateTime.Now,
                     };
-                    donHangTemp = donHang;
                     _context.PendingOrders.Add(pendingOrder);
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
@@ -781,10 +842,6 @@ namespace UltraStrore.Services
 
                 if (!vnPayResponse.Success)
                 {
-                    _context.DonHangSupports.RemoveRange(donHangSupportsTemp);
-                    _context.ChiTietDonHangs.RemoveRange(chiTietDonHangTemp);
-                    _context.DonHangs.RemoveRange(donHangTemp);
-                    await _context.SaveChangesAsync();
                     string message = vnPayResponse.VnPayResponseCode switch
                     {
                         "01" => "Giao dich chua hoan tat (nguoi dung huy)",
@@ -797,10 +854,9 @@ namespace UltraStrore.Services
                     Console.WriteLine($"[ERROR] VNPay payment failed: {message}");
 
                     httpContext.Response.Redirect(
-                        $"http://localhost:8080/PaymentFail?status=failed&message={Uri.EscapeDataString(message)}"
+                        $"https://fashionhub.name.vn/PaymentFail?status=failed&message={Uri.EscapeDataString(message)}"
                     );
 
-                    // ✅ RETURN FAILED RESPONSE
                     return new PaymentResponse
                     {
                         Success = false,
@@ -815,7 +871,7 @@ namespace UltraStrore.Services
                 if (pendingOrder == null)
                 {
                     Console.WriteLine($"[ERROR] Pending order not found: {tempOrderId}");
-                    httpContext.Response.Redirect("http://localhost:8080/PaymentFail?status=failed&message=Khong tim thay ma don hang tam thoi");
+                    httpContext.Response.Redirect("https://fashionhub.name.vn/PaymentFail?status=failed&message=Khong tim thay ma don hang tam thoi");
                     return new PaymentResponse
                     {
                         Success = false,
@@ -834,7 +890,7 @@ namespace UltraStrore.Services
                 if (orderData.TempOrderId != tempOrderId)
                 {
                     Console.WriteLine($"[ERROR] Temp order ID mismatch: {orderData.TempOrderId} vs {tempOrderId}");
-                    httpContext.Response.Redirect("http://localhost:8080/PaymentFail?status=failed&message=Ma don hang tam thoi khong khop");
+                    httpContext.Response.Redirect("https://fashionhub.name.vn/PaymentFail?status=failed&message=Ma don hang tam thoi khong khop");
                     return new PaymentResponse
                     {
                         Success = false,
@@ -842,8 +898,6 @@ namespace UltraStrore.Services
                         TransactionId = vnPayResponse.TransactionId
                     };
                 }
-
-                // Validate stock before processing
                 foreach (var item in orderData.ChiTietGioHangs)
                 {
                     if (item.MaCombo != null)
@@ -885,7 +939,70 @@ namespace UltraStrore.Services
                     }
                 }
 
-                // Reduce product quantities
+                var donHang = new DonHang
+                {
+                    MaNguoiDung = orderData.Order.MaNguoiDung,
+                    TenNguoiNhan = orderData.Order.TenNguoiNhan,
+                    Sdt = orderData.Order.Sdt,
+                    DiaChi = orderData.Order.DiaChi,
+                    NgayDat = orderData.Order.NgayDat,
+                    TrangThaiDonHang = TrangThaiDonHang.ChuaXacNhan,
+                    TrangThaiHang = TrangThaiThanhToan.ThanhToanVNPay,
+                    DiscountAmount = orderData.DiscountAmount,
+                    ShippingFee = orderData.ShippingFee,
+                    FinalAmount = orderData.FinalAmount
+                };
+                _context.DonHangs.Add(donHang);
+                await _context.SaveChangesAsync();
+
+                Console.WriteLine($"[DEBUG] Order created with ID: {donHang.MaDonHang}");
+
+                var chiTietDonHangs = new List<ChiTietDonHang>();
+                var donHangSupports = new List<DonHangSupport>();
+
+                foreach (var item in orderData.ChiTietGioHangs)
+                {
+                    ChiTietDonHang CTDH = new ChiTietDonHang
+                    {
+                        MaDonHang = donHang.MaDonHang,
+                        Gia = (int)item.Gia,
+                        SoLuong = item.SoLuong,
+                        ThanhTien = (int)item.ThanhTien,
+                        MaCombo = item.MaCombo,
+                        MaSanPham = item.MaSanPham
+                    };
+                    _context.ChiTietDonHangs.Add(CTDH);
+                    await _context.SaveChangesAsync();
+                    chiTietDonHangs.Add(CTDH);
+
+                    if (item.MaCombo != null)
+                    {
+                        var comboItems = await _context.ChiTietComBos
+                            .Where(ct => ct.MaComBo == item.MaCombo)
+                            .ToListAsync();
+                        foreach (var comboItem in comboItems)
+                        {
+                            var GHSP = await _context.GioHangSupports
+                                .Where(g => g.MaChiTietCombo == comboItem.MaChiTietComBo && g.ChiTietGioHang == item.MaCtgh)
+                                .ToListAsync();
+                            foreach (var item3 in GHSP)
+                            {
+                                DonHangSupport newDHSP = new DonHangSupport
+                                {
+                                    MaSanPham = item3.MaSanPham,
+                                    MaChiTietCombo = item3.MaChiTietCombo,
+                                    ChiTietGioHang = CTDH.MaCtdh,
+                                    SoLuong = item3.SoLuong,
+                                    Version = item3.Version
+                                };
+                                _context.DonHangSupports.Add(newDHSP);
+                                await _context.SaveChangesAsync();
+                                donHangSupports.Add(newDHSP);
+                            }
+                        }
+                    }
+                }
+
                 foreach (var item in orderData.ChiTietGioHangs)
                 {
                     if (item.MaCombo != null)
@@ -901,7 +1018,7 @@ namespace UltraStrore.Services
                             if (sanPham != null)
                             {
                                 sanPham.SoLuong -= comboItem.SoLuong * item.SoLuong;
-                                _logger.LogInformation($"Reduced quantity for product {sanPham.MaSanPham} by {comboItem.SoLuong * item.SoLuong} for order {donHangTemp.MaDonHang}");
+                                _logger.LogInformation($"Reduced quantity for product {sanPham.MaSanPham} by {comboItem.SoLuong * item.SoLuong} for order {donHang.MaDonHang}");
                             }
                         }
                     }
@@ -917,73 +1034,9 @@ namespace UltraStrore.Services
                         if (sanPham != null)
                         {
                             sanPham.SoLuong -= item.SoLuong;
-                            _logger.LogInformation($"Reduced quantity for product {sanPham.MaSanPham} by {item.SoLuong} for order {donHangTemp.MaDonHang}");
+                            _logger.LogInformation($"Reduced quantity for product {sanPham.MaSanPham} by {item.SoLuong} for order {donHang.MaDonHang}");
                         }
                     }
-                }
-
-                Console.WriteLine("[DEBUG] Creating final order...");
-
-                var donHang = orderData.Order;
-                donHang.TrangThaiDonHang = TrangThaiDonHang.DangXuLy;
-                donHang.TrangThaiHang = TrangThaiThanhToan.ThanhToanVNPay;
-                donHang.DiscountAmount = orderData.DiscountAmount;
-                donHang.ShippingFee = orderData.ShippingFee;
-                donHang.FinalAmount = orderData.FinalAmount;
-
-                _context.DonHangs.Add(donHang);
-                await _context.SaveChangesAsync();
-
-                Console.WriteLine($"[DEBUG] Order created with ID: {donHang.MaDonHang}");
-
-                var chiTietDonHangs = orderData.ChiTietGioHangs
-                        .Select(item =>
-                        {
-                            if (item.MaSanPham == null)
-                            {
-                                _logger.LogWarning($"ChiTietGioHangDto có MaSanPham null: {JsonSerializer.Serialize(item)}");
-                            }
-                            return item;
-                        })
-                        .Where(item => item.MaSanPham != null)
-                        .Select(item => new ChiTietDonHang
-                        {
-                            MaSanPham = item.MaSanPham.ToString(),
-                            SoLuong = item.SoLuong,
-                            Gia = (int?)item.Gia,
-                            ThanhTien = (int?)item.ThanhTien,
-                            MaCombo = item.MaCombo,
-                            SanPhamMaSanPham = item.MaSanPham.ToString(),
-                            MaDonHang = donHangTemp.MaDonHang
-                        }).ToList();
-                    _context.ChiTietDonHangs.AddRange(chiTietDonHangs);
-                if (InstantBuy)
-                {
-                    donHangTemp.ChiTietDonHangs[0].SanPhamMaSanPham = donHangTemp.ChiTietDonHangs[0].MaSanPham;
-                    _context.DonHangs.Add(donHangTemp);
-                    await _context.SaveChangesAsync();
-                    InstantBuy = true;
-                    var chiTietDonHangs2 = orderData.ChiTietGioHangs
-                        .Select(item =>
-                        {
-                            if (item.MaSanPham == null)
-                            {
-                                _logger.LogWarning($"ChiTietGioHangDto có MaSanPham null: {JsonSerializer.Serialize(item)}");
-                            }
-                            return item;
-                        })
-                        .Where(item => item.MaSanPham != null)
-                        .Select(item => new ChiTietDonHang
-                        {
-                            MaSanPham = item.MaSanPham.ToString(),
-                            SoLuong = item.SoLuong,
-                            Gia = (int?)item.Gia,
-                            ThanhTien = (int?)item.ThanhTien,
-                            MaCombo = item.MaCombo,
-                            SanPhamMaSanPham = item.MaSanPham.ToString(),
-                            MaDonHang = donHangTemp.MaDonHang
-                        }).ToList();
-                    _context.ChiTietDonHangs.AddRange(chiTietDonHangs2);
                 }
 
                 if (!string.IsNullOrEmpty(orderData.CouponCode))
@@ -1009,15 +1062,13 @@ namespace UltraStrore.Services
                     _context.ChiTietGioHangs.RemoveRange(cart.ChiTietGioHangs);
                     _context.GioHangs.Remove(cart);
                 }
-                _context.PendingOrders.Remove(pendingOrder);
 
+                _context.PendingOrders.Remove(pendingOrder);
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
-                // ✅ THÊM PHẦN GỬI EMAIL CHO VNPAY
                 try
                 {
-                    // Lấy thông tin đơn hàng với user
                     var orderWithUser = await _context.DonHangs
                         .Include(d => d.MaNguoiDungNavigation)
                         .FirstOrDefaultAsync(d => d.MaDonHang == donHang.MaDonHang);
@@ -1045,16 +1096,16 @@ namespace UltraStrore.Services
                 catch (Exception emailEx)
                 {
                     _logger.LogError(emailEx, $"[VNPAY EMAIL] Lỗi khi gửi email xác nhận đơn hàng VNPay: {donHang.MaDonHang}");
-                    // Không throw lỗi để không ảnh hưởng đến flow chính
                 }
+
                 Console.WriteLine($"[SUCCESS] VNPay payment processed successfully for order {donHang.MaDonHang}");
 
-                var redirectUrl = $"http://localhost:8080/PaymentSuccess?status=success&orderId={donHang.MaDonHang}&transactionId={vnPayResponse.TransactionId}";
+                var redirectUrl = $"https://fashionhub.name.vn/PaymentSuccess?status=success&orderId={donHang.MaDonHang}&transactionId={vnPayResponse.TransactionId}";
+                httpContext.Response.Redirect(redirectUrl);
                 Console.WriteLine($"[DEBUG] Redirecting to: {redirectUrl}");
 
                 httpContext.Response.Redirect(redirectUrl);
 
-                // ✅ RETURN SUCCESS RESPONSE WITH ALL REQUIRED DATA
                 return new PaymentResponse
                 {
                     Success = true,
@@ -1064,7 +1115,7 @@ namespace UltraStrore.Services
                     FinalAmount = orderData.FinalAmount ?? 0,
                     OriginalAmount = orderData.OriginalAmount ?? 0,
                     DiscountAmount = orderData.DiscountAmount ?? 0,
-                    ShippingFee = orderData.ShippingFee 
+                    ShippingFee = orderData.ShippingFee
                 };
             }
             catch (Exception ex)
@@ -1076,10 +1127,9 @@ namespace UltraStrore.Services
 
                 string errorMessage = "Loi khi xu ly callback VNPay";
                 httpContext.Response.Redirect(
-                    $"http://localhost:8080/PaymentFail?status=failed&message={Uri.EscapeDataString(errorMessage)}"
+                    $"https://fashionhub.name.vn/PaymentFail?status=failed&message={Uri.EscapeDataString(errorMessage)}"
                 );
 
-                // ✅ RETURN ERROR RESPONSE
                 return new PaymentResponse
                 {
                     Success = false,

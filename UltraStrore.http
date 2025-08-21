@@ -1,4 +1,4 @@
-@UltraStrore_HostAddress = http://localhost:8080
+@UltraStrore_HostAddress = https://fashionhub.name.vn
 
 GET {{UltraStrore_HostAddress}}/weatherforecast/
 Accept: application/json

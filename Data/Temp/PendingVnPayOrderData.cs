@@ -15,5 +15,6 @@ namespace UltraStrore.Data.Temp
 
         public List<ChiTietGioHangDto>? ChiTietGioHangs { get; set; }
         public List<DonHangSupportDto>? DonHangSupports { get; set; }
+        public List<ChiTietDonHangDto>? ChiTietDonHangs { get; set; }
     }
 }

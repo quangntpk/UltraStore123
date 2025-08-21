@@ -267,8 +267,8 @@ namespace UltraStrore.Controllers
             };
 
             string redirectUrl = existingUser.VaiTro == 1
-               ? "http://localhost:8080"
-               : "http://localhost:8080";
+               ? "https://fashionhub.name.vn"
+               : "https://fashionhub.name.vn";
 
             var redirectWithData = $"{redirectUrl}?token={Uri.EscapeDataString(token)}&userId={existingUser.MaNguoiDung}&email={Uri.EscapeDataString(existingUser.Email)}&name={Uri.EscapeDataString(existingUser.HoTen)}&role={existingUser.VaiTro}";
 
@@ -289,7 +289,7 @@ namespace UltraStrore.Controllers
             return Ok(new
             {
                 message = "Đăng xuất thành công",
-                redirecTo = "http://localhost:8080/login?logout=true"
+                redirecTo = "https://fashionhub.name.vn/login?logout=true"
             });
         }
 

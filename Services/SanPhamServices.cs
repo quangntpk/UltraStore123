@@ -1012,7 +1012,7 @@ namespace UltraStrore.Services
             }
             catch (Exception ex)
             {
-                // Handle exception if needed
+         
             }
             return ListProduct;
         }

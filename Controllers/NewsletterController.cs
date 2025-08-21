@@ -92,7 +92,7 @@ public class NewsletterController : ControllerBase
                                             <table role='presentation' border='0' cellpadding='0' cellspacing='0' style='margin: 0 auto;'>
                                                 <tr>
                                                     <td style='background-color: #6B46C1; border-radius: 5px;'>
-                                                        <a href='http://localhost:8080' style='display: inline-block; padding: 12px 24px; font-size: 16px; color: #ffffff; text-decoration: none; border-radius: 5px;'>Khám phá ngay</a>
+                                                        <a href='https://fashionhub.name.vn' style='display: inline-block; padding: 12px 24px; font-size: 16px; color: #ffffff; text-decoration: none; border-radius: 5px;'>Khám phá ngay</a>
                                                     </td>
                                                 </tr>
                                             </table>

@@ -14,15 +14,21 @@ namespace UltraStrore.Controllers
     {
         private readonly ICheckOutServices _paymentService;
         private readonly IOrderNotificationService _orderNotificationService;
+        private readonly ITelegramServices _telegramServices;
+        private readonly ILogger<CheckOutController> _logger;
         private readonly ApplicationDbContext _context;
 
         public CheckOutController(
             ICheckOutServices paymentService,
             IOrderNotificationService orderNotificationService,
+            ITelegramServices telegramServices,
+            ILogger<CheckOutController> logger,
             ApplicationDbContext context)
         {
             _paymentService = paymentService;
             _orderNotificationService = orderNotificationService;
+            _telegramServices = telegramServices;
+            _logger = logger;
             _context = context;
         }
 
@@ -93,6 +99,15 @@ namespace UltraStrore.Controllers
                         statusMessage);
 
                     Console.WriteLine($"[SUCCESS] Email sent successfully to {email} for order {orderId}");
+                    try
+                    {
+                        await _telegramServices.SendOrderNotificationAsync(orderId);
+                        _logger.LogInformation($"✅ Telegram notification sent for COD order {orderId}");
+                    }
+                    catch (Exception telegramEx)
+                    {
+                        _logger.LogError(telegramEx, $"❌ Failed to send Telegram notification for order {orderId}");
+                    }
                 }
                 else
                 {

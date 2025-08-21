@@ -285,7 +285,7 @@ namespace UltraStrore.Services
                     productData.AppendLine($"Màu sắc: {string.Join(", ", product.MauSac)}");
                     productData.AppendLine($"Kích thước: {string.Join(", ", product.KichThuoc)}");
                     productData.AppendLine($"Thương hiệu: {product.ThuongHieu}");
-                    productData.AppendLine($"Link: http://localhost:8080/product/{product.ID}\n");
+                    productData.AppendLine($"Link: https://fashionhub.name.vn/product/{product.ID}\n");
                 }
 
                 var prompt = $@"Dựa trên danh sách sản phẩm sau: 

@@ -16,7 +16,7 @@ using UltraStrore.Repository;
 
 namespace UltraStrore.Controllers
 {
-    [Authorize(Roles = "admin,staff")]
+    //[Authorize(Roles = "admin,staff")]
     [Route("api/[controller]")]
     [ApiController]
     public class LienHeController : ControllerBase
@@ -142,7 +142,7 @@ namespace UltraStrore.Controllers
                         </div>
                         <div class='footer'>
                           <p>FashionHub © {DateTime.Now.Year}. Mọi quyền được bảo lưu.</p>
-                          <p><a href='http://localhost:8080'>Truy cập trang web của chúng tôi</a></p>
+                          <p><a href='https://fashionhub.name.vn'>Truy cập trang web của chúng tôi</a></p>
                         </div>
                       </div>
                     </body>
@@ -222,7 +222,7 @@ namespace UltraStrore.Controllers
                     </div>
                     <div class='footer'>
                       <p>FashionHub © {DateTime.Now.Year}. Mọi quyền được bảo lưu.</p>
-                      <p><a href='http://localhost:8080'>Truy cập trang web của chúng tôi</a></p>
+                      <p><a href='https://fashionhub.name.vn'>Truy cập trang web của chúng tôi</a></p>
                     </div>
                   </div>
                 </body>

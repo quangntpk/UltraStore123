@@ -10,9 +10,9 @@ namespace UltraStrore.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class KhuyenMaiController  : ControllerBase
+    public class KhuyenMaiController : ControllerBase
     {
-        private readonly IKhuyenMaiServices _services; 
+        private readonly IKhuyenMaiServices _services;
         public KhuyenMaiController(IKhuyenMaiServices services)
         {
             _services = services;
@@ -34,7 +34,7 @@ namespace UltraStrore.Controllers
         {
             var info = await _services.KhuyenMaiCreate(data);
             return info;
-             
+
         }
         [HttpPost("MoTaKhuyenMaiCreate")]
         public async Task<APIResponse> MoTaKhuyenMaiCreate(MoTaKhuyenMai data)

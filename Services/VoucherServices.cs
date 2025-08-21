@@ -59,6 +59,24 @@ public class VoucherServices : IVoucherServices
     {
         try
         {
+            // Kiểm tra đầu vào
+            if (string.IsNullOrWhiteSpace(code))
+            {
+                return new ValidateCouponResponse
+                {
+                    Success = false,
+                    Message = "Mã giảm giá không được để trống"
+                };
+            }
+            if (cartId <= 0)
+            {
+                return new ValidateCouponResponse
+                {
+                    Success = false,
+                    Message = "ID giỏ hàng không hợp lệ"
+                };
+            }
+
             // Lấy giỏ hàng và chi tiết giỏ hàng
             var cart = await _context.GioHangs
                 .Include(c => c.ChiTietGioHangs)
@@ -71,6 +89,15 @@ public class VoucherServices : IVoucherServices
                 {
                     Success = false,
                     Message = "Giỏ hàng không tồn tại"
+                };
+            }
+
+            if (cart.ChiTietGioHangs == null || !cart.ChiTietGioHangs.Any())
+            {
+                return new ValidateCouponResponse
+                {
+                    Success = false,
+                    Message = "Giỏ hàng không có sản phẩm"
                 };
             }
 
@@ -94,7 +121,7 @@ public class VoucherServices : IVoucherServices
             var now = DateTime.Now;
 
             if (voucher == null)
-            {   
+            {
                 return new ValidateCouponResponse
                 {
                     Success = false,
@@ -102,7 +129,7 @@ public class VoucherServices : IVoucherServices
                 };
             }
 
-            if(voucher.TrangThai != 0)
+            if (voucher.TrangThai != 0)
             {
                 return new ValidateCouponResponse
                 {
@@ -129,7 +156,7 @@ public class VoucherServices : IVoucherServices
                 };
             }
 
-            if(originalAmount < (voucher.DieuKien ?? 0))
+            if (originalAmount < (voucher.DieuKien ?? 0))
             {
                 return new ValidateCouponResponse
                 {
@@ -137,8 +164,6 @@ public class VoucherServices : IVoucherServices
                     Message = "Tổng tiền không đủ điều kiện để sử dụng mã giảm giá"
                 };
             }
-
-           
 
             var address = await _context.DanhSachDiaChis
                 .Where(a => a.MaNguoiDung == cart.MaNguoiDung && a.TrangThai == 1)
@@ -154,22 +179,44 @@ public class VoucherServices : IVoucherServices
             decimal shippingCost = 0;
             if (address != null)
             {
-                // Gọi API GHN để lấy phí ship
-                var shippingFeeRequest = new ShippingFeeRequest
+                try
                 {
-                    service_type_id = 2, // Dịch vụ tiêu chuẩn, có thể điều chỉnh
-                    to_district_id = await GetDistrictIdFromName(address.QuanHuyen, address.Tinh), // Cần ánh xạ quận/huyện
-                    to_ward_code = await GetWardCodeFromName(address.PhuongXa, address.QuanHuyen, address.Tinh), // Cần ánh xạ phường/xã
-                    weight = 1000, // Giả định trọng lượng 1kg, điều chỉnh theo giỏ hàng
-                    length = 15,   // Giả định kích thước, điều chỉnh theo sản phẩm
-                    width = 15,
-                    height = 15,
-                    insurance_value = 0, // Giá trị bảo hiểm, điều chỉnh nếu cần
-                    coupon = null
-                };
+                    var districtId = await GetDistrictIdFromName(address.QuanHuyen, address.Tinh);
+                    var wardCode = await GetWardCodeFromName(address.PhuongXa, address.QuanHuyen, address.Tinh);
 
-                var shippingFeeResponse = await _gHNService.GetShippingFee(shippingFeeRequest);
-                shippingCost = shippingFeeResponse.total ?? 0;
+                    if (districtId == 0 || string.IsNullOrEmpty(wardCode))
+                    {
+                        return new ValidateCouponResponse
+                        {
+                            Success = false,
+                            Message = "Không thể xác định mã quận/huyện hoặc phường/xã"
+                        };
+                    }
+
+                    var shippingFeeRequest = new ShippingFeeRequest
+                    {
+                        service_type_id = 2,
+                        to_district_id = districtId,
+                        to_ward_code = wardCode,
+                        weight = 1000,
+                        length = 15,
+                        width = 15,
+                        height = 15,
+                        insurance_value = 0,
+                        coupon = null
+                    };
+
+                    var shippingFeeResponse = await _gHNService.GetShippingFee(shippingFeeRequest);
+                    shippingCost = shippingFeeResponse.total ?? 0;
+                }
+                catch (Exception ex)
+                {
+                    return new ValidateCouponResponse
+                    {
+                        Success = false,
+                        Message = "Lỗi khi tính phí vận chuyển: " + ex.Message
+                    };
+                }
             }
 
             decimal discountAmount = 0;
@@ -177,7 +224,6 @@ public class VoucherServices : IVoucherServices
 
             switch (voucher.LoaiVoucher)
             {
-
                 case 0:
                     decimal discountPercentage = (decimal)(voucher.GiaTri ?? 0);
                     discountAmount = originalAmount * (discountPercentage / 100);
@@ -194,13 +240,13 @@ public class VoucherServices : IVoucherServices
                     decimal maxDiscountFixed = voucher.GiaTriToiDa ?? 0;
                     if (discountAmount > maxDiscountFixed)
                     {
-                        discountAmount  = maxDiscountFixed;
+                        discountAmount = maxDiscountFixed;
                     }
                     finalAmount = originalAmount - discountAmount;
                     break;
 
-                case 2: 
-                    discountAmount = shippingCost; 
+                case 2:
+                    discountAmount = shippingCost;
                     finalAmount = originalAmount;
                     break;
 
@@ -223,7 +269,7 @@ public class VoucherServices : IVoucherServices
                 Success = true,
                 Message = "Mã giảm giá hợp lệ",
                 DiscountAmount = discountAmount,
-                FinalAmount = finalAmount,
+                FinalAmount = finalAmount
             };
         }
         catch (Exception ex)
@@ -231,9 +277,9 @@ public class VoucherServices : IVoucherServices
             return new ValidateCouponResponse
             {
                 Success = false,
-                Message = "Lỗi hệ thống khi xác thực mã giảm giá",
+                Message = "Lỗi hệ thống khi xác thực mã giảm giá: " + ex.Message,
                 DiscountAmount = 0,
-                FinalAmount = 0,
+                FinalAmount = 0
             };
         }
     }

@@ -23,9 +23,15 @@ namespace UltraStrore
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            if (builder.Environment.IsDevelopment())
+            {
 
-            // Configure Kestrel để lắng nghe trên port 8080 (Azure yêu cầu)
-            builder.WebHost.UseUrls("http://*:8080");
+            }
+            else
+            {
+                // Azure deployment - lắng nghe trên port 8080
+                builder.WebHost.UseUrls("http://*:8080");
+            }
 
             // Thêm logging chi tiết hơn
             builder.Logging.AddConsole();
@@ -80,7 +86,7 @@ namespace UltraStrore
             builder.Services.AddScoped<IVnPayServies, VnPayService>();
             builder.Services.AddScoped<IHashTagServices, HashTagServices>();
             builder.Services.AddScoped<IOpenAIServices, OpenAIServices>();
-
+            builder.Services.AddScoped<ITelegramServices, TelegramServices>();
             // Singleton services
             builder.Services.AddSingleton<ITokenBlacklistService, TokenBlacklistService>();
             builder.Services.AddTransient<EmailService>();
@@ -122,7 +128,7 @@ namespace UltraStrore
                     {
                         // Development: Cho phép localhost
                         corsBuilder
-                            .SetIsOriginAllowed(origin => origin.Contains("localhost"))
+                            .WithOrigins("http://localhost:8080", "https://localhost:8080")
                             .AllowAnyMethod()
                             .AllowAnyHeader()
                             .AllowCredentials();
@@ -133,7 +139,8 @@ namespace UltraStrore
                         corsBuilder
                             .WithOrigins(
                                 "https://fashionhub.name.vn",
-                                "https://admin.your-production-domain.com"
+                                "https://fashionhub2-bqdrh8fxbwd4ghgd.indonesiacentral-01.azurewebsites.net",
+                                "https://fashionhubvns.netlify.app"
                             )
                             .AllowAnyMethod()
                             .AllowAnyHeader()
@@ -178,7 +185,7 @@ namespace UltraStrore
 
             builder.Services.AddAuthorization();
 
-            // Swagger Configuration
+            // Swagger Configuration - Enable cho cả Development và Production
             builder.Services.AddSwaggerGen(options =>
             {
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -206,6 +213,19 @@ namespace UltraStrore
                     }
                 });
 
+                // API Information
+                options.SwaggerDoc("v1", new OpenApiInfo
+                {
+                    Version = "v1",
+                    Title = "UltraStore API",
+                    Description = "API Documentation for UltraStore Application",
+                    Contact = new OpenApiContact
+                    {
+                        Name = "UltraStore Team",
+                        Email = "support@ultrastore.com"
+                    }
+                });
+
                 // XML Documentation (chỉ nếu file tồn tại)
                 var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
                 var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
@@ -223,12 +243,6 @@ namespace UltraStrore
             if (app.Environment.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                app.UseSwagger();
-                app.UseSwaggerUI(c =>
-                {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "UltraStore API V1");
-                    c.RoutePrefix = "swagger";
-                });
             }
             else
             {
@@ -236,6 +250,39 @@ namespace UltraStrore
                 // Không dùng HSTS trên Azure App Service
                 // app.UseHsts();
             }
+
+            // Swagger - Enable cho cả Development và Production
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "UltraStore API V1");
+                c.RoutePrefix = "swagger";
+                c.DocumentTitle = "UltraStore API Documentation";
+
+                // Customization cho Production
+                if (app.Environment.IsProduction())
+                {
+                    c.DefaultModelsExpandDepth(-1); // Hide models section by default
+                    c.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None); // Collapse all sections
+
+                    // Add production warning banner
+                    c.HeadContent += @"
+                        <style>
+                            .swagger-ui .topbar { 
+                                background-color: #dc3545 !important; 
+                            }
+                            .swagger-ui .topbar::after {
+                                content: '⚠️ PRODUCTION ENVIRONMENT - USE WITH CAUTION';
+                                color: white;
+                                font-weight: bold;
+                                position: absolute;
+                                right: 20px;
+                                top: 15px;
+                                font-size: 14px;
+                            }
+                        </style>";
+                }
+            });
 
             // Forwarded Headers (quan trọng cho Azure)
             app.UseForwardedHeaders(new ForwardedHeadersOptions
@@ -253,7 +300,9 @@ namespace UltraStrore
                         status = "OK",
                         message = "UltraStore API is running",
                         environment = app.Environment.EnvironmentName,
-                        timestamp = DateTime.UtcNow
+                        timestamp = DateTime.UtcNow,
+                        swagger_url = "/swagger/index.html",
+                        health_check_url = "/health"
                     });
                 }
                 catch (Exception ex)
@@ -264,7 +313,12 @@ namespace UltraStrore
             });
 
             // Thêm health check endpoint cho Azure
-            app.MapGet("/health", () => Results.Ok(new { status = "healthy" }));
+            app.MapGet("/health", () => Results.Ok(new
+            {
+                status = "healthy",
+                environment = app.Environment.EnvironmentName,
+                timestamp = DateTime.UtcNow
+            }));
 
             // Static files (kiểm tra thư mục tồn tại)
             var uploadsPath = Path.Combine(app.Environment.WebRootPath ?? "wwwroot", "uploads", "chat");
@@ -285,6 +339,19 @@ namespace UltraStrore
                         }
                     }
                 });
+            }
+            else
+            {
+                // Tạo thư mục uploads nếu không tồn tại
+                try
+                {
+                    Directory.CreateDirectory(uploadsPath);
+                    app.Logger.LogInformation("Created uploads directory: {Path}", uploadsPath);
+                }
+                catch (Exception ex)
+                {
+                    app.Logger.LogWarning(ex, "Could not create uploads directory: {Path}", uploadsPath);
+                }
             }
 
             // HTTPS Redirection - Chỉ trong môi trường phát triển hoặc khi có HTTPS
@@ -334,18 +401,32 @@ namespace UltraStrore
             // Start the application
             try
             {
-                app.Logger.LogInformation("Starting UltraStore API on port 8080...");
-
-                // Log all registered routes for debugging
-                var routes = app.Services.GetService<Microsoft.AspNetCore.Routing.EndpointDataSource>();
-                if (routes != null)
+                if (app.Environment.IsDevelopment())
                 {
-                    foreach (var endpoint in routes.Endpoints)
-                    {
-                        app.Logger.LogInformation("Route: {DisplayName}", endpoint.DisplayName);
-                    }
+                    app.Logger.LogInformation("Starting UltraStore API in Development mode...");
+                    app.Logger.LogInformation("Swagger UI available at: http://localhost:{Port}",
+                        app.Configuration["ASPNETCORE_URLS"] ?? "https://localhost:7000");
+                }
+                else
+                {
+                    app.Logger.LogInformation("Starting UltraStore API on port 8080...");
+                    app.Logger.LogInformation("Swagger UI available at: /swagger/index.html");
                 }
 
+                app.Logger.LogInformation("Environment: {Environment}", app.Environment.EnvironmentName);
+
+                // Log all registered routes for debugging (chỉ trong Development)
+                if (app.Environment.IsDevelopment())
+                {
+                    var routes = app.Services.GetService<Microsoft.AspNetCore.Routing.EndpointDataSource>();
+                    if (routes != null)
+                    {
+                        foreach (var endpoint in routes.Endpoints)
+                        {
+                            app.Logger.LogInformation("Route: {DisplayName}", endpoint.DisplayName);
+                        }
+                    }
+                }
                 app.Run();
             }
             catch (Exception ex)

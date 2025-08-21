@@ -476,11 +476,20 @@ namespace UltraStrore.Services
             {
                 var GioHang = _context.GioHangs.Where(g => g.MaNguoiDung.Trim() == info.MaKhachHang).FirstOrDefault();
                 var ChiTietGiohang = _context.ChiTietGioHangs.Where(g => g.MaGioHang == GioHang.MaGioHang && g.MaSanPham == info.IDSanPham).FirstOrDefault();
-                ChiTietGiohang.SoLuong--;
-                _context.ChiTietGioHangs.Update(ChiTietGiohang);
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                response.ResponseCode = 200;
+                if(ChiTietGiohang.SoLuong<= 1)
+                {
+                    response.ResponseCode = 400;
+                    response.Result = "Số lượng sản phẩm không thể giảm xuống dưới 1.";
+                    return response;
+                }
+                else
+                {
+                    ChiTietGiohang.SoLuong--;
+                    _context.ChiTietGioHangs.Update(ChiTietGiohang);
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    response.ResponseCode = 200;
+                }    
             }
             catch (Exception ex) 
             {
@@ -499,11 +508,21 @@ namespace UltraStrore.Services
             {
                 var GioHang = _context.GioHangs.Where(g => g.MaNguoiDung.Trim() == info.MaKhachHang).FirstOrDefault();
                 var ChiTietGiohang = _context.ChiTietGioHangs.Where(g => g.MaGioHang == GioHang.MaGioHang && g.MaSanPham == info.IDSanPham).FirstOrDefault();
-                ChiTietGiohang.SoLuong++;
-                _context.ChiTietGioHangs.Update(ChiTietGiohang);
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-                response.ResponseCode = 200;
+                var SanPham = _context.SanPhams.Where(g => g.MaSanPham == info.IDSanPham).FirstOrDefault();
+                if (SanPham.SoLuong < ChiTietGiohang.SoLuong + 1)
+                {
+                    response.ResponseCode = 400;
+                    response.Result = "Số lượng sản phẩm không đủ để tăng.";
+                    return response;
+                }
+                else 
+                {
+                    ChiTietGiohang.SoLuong++;
+                    _context.ChiTietGioHangs.Update(ChiTietGiohang);
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                    response.ResponseCode = 200;
+                }
             }
             catch (Exception ex)
             {

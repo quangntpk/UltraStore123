@@ -46,16 +46,20 @@ namespace UltraStrore.Controllers
         }
 
         [HttpGet("TopProducts")]
-        public IActionResult GetTopProductsStatistics(int year, int? month = null, int? day = null)
+        public async Task<IActionResult> GetTopProductsStatistics(int year, int? month = null, int? day = null)
         {
             try
             {
-                var result = _thongKeServices.GetTopProductsStatistics(year, month, day);
+                var result = await _thongKeServices.GetTopProductsStatistics(year, month, day);
                 return Ok(result);
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred while fetching top products statistics.", error = ex.Message });
+                return StatusCode(500, new
+                {
+                    message = "An error occurred while fetching top products statistics.",
+                    error = ex.Message
+                });
             }
         }
     }

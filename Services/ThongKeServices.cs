@@ -141,46 +141,64 @@ namespace UltraStrore.Services
                 { 4, "Đã hủy" }
             };
 
-            var query = from sp in _context.SanPhams
-                        join ctdh in _context.ChiTietDonHangs on sp.MaSanPham equals ctdh.MaSanPham
-                        join dh in _context.DonHangs on ctdh.MaDonHang equals dh.MaDonHang
-                        join th in _context.ThuongHieus on sp.MaThuongHieu equals th.MaThuongHieu into thuongHieuGroup
-                        from th in thuongHieuGroup.DefaultIfEmpty()
-                        where dh.NgayDat.HasValue && dh.NgayDat.Value.Year == year
-                            && (!month.HasValue || dh.NgayDat.Value.Month == month.Value)
-                            && (!day.HasValue || dh.NgayDat.Value.Day == day.Value)
-                            && ((int)dh.TrangThaiDonHang == 2 || (int)dh.TrangThaiDonHang == 3)
-                        group new { sp, ctdh, dh, th } by new
-                        {
-                            sp.TenSanPham,
-                            ThuongHieu = th != null ? th.TenThuongHieu : null,
-                            sp.ChatLieu,
-                            LoaiSanPham = loaiSanPhams.Where(g => g.MaLoaiSanPham == sp.MaLoaiSanPham).Select(g => g.TenLoaiSanPham).FirstOrDefault()
-                        } into g
-                        select new TopProductView
-                        {
-                            Id = $"{g.Key.TenSanPham ?? "Unknown"}-{g.Key.ThuongHieu ?? "Unknown"}-{g.Key.ChatLieu ?? "Unknown"}-{g.Key.LoaiSanPham ?? "Unknown"}".GetHashCode().ToString(),
-                            Name = g.Key.TenSanPham ?? "Unknown Product",
-                            ThuongHieu = g.Key.ThuongHieu ?? "Unknown Brand",
-                            ChatLieu = g.Key.ChatLieu ?? "Unknown Material",
-                            LoaiSanPham = g.Key.LoaiSanPham ?? "Unknown Category",
-                            SoLuongDaBan = g.Sum(x => x.ctdh.SoLuong ?? 0),
-                            DoanhThu = g.Sum(x => x.ctdh.ThanhTien ?? 0),
-                            StatusBreakdown = g
-                                .GroupBy(x => x.dh.TrangThaiDonHang)
-                                .Select(sg => new StatusBreakdownView
-                                {
-                                    Status = statusMap.ContainsKey((int)sg.Key) ? statusMap[(int)sg.Key] : "Không xác định",
-                                    SoLuong = sg.Sum(x => x.ctdh.SoLuong ?? 0),
-                                    DoanhThu = sg.Sum(x => x.ctdh.ThanhTien ?? 0)
-                                })
-                                .ToList()
-                        };
+            // Step 1: Query database WITHOUT using loaiSanPhams
+            var dbQuery = from sp in _context.SanPhams
+                          join ctdh in _context.ChiTietDonHangs on sp.MaSanPham equals ctdh.MaSanPham
+                          join dh in _context.DonHangs on ctdh.MaDonHang equals dh.MaDonHang
+                          join th in _context.ThuongHieus on sp.MaThuongHieu equals th.MaThuongHieu into thuongHieuGroup
+                          from th in thuongHieuGroup.DefaultIfEmpty()
+                          where dh.NgayDat.HasValue && dh.NgayDat.Value.Year == year
+                              && (!month.HasValue || dh.NgayDat.Value.Month == month.Value)
+                              && (!day.HasValue || dh.NgayDat.Value.Day == day.Value)
+                              && ((int)dh.TrangThaiDonHang == 2 || (int)dh.TrangThaiDonHang == 3)
+                          select new
+                          {
+                              TenSanPham = sp.TenSanPham,
+                              ThuongHieu = th != null ? th.TenThuongHieu : null,
+                              ChatLieu = sp.ChatLieu,
+                              MaLoaiSanPham = sp.MaLoaiSanPham, // Lấy MaLoaiSanPham để lookup sau
+                              SoLuong = ctdh.SoLuong ?? 0,
+                              ThanhTien = ctdh.ThanhTien ?? 0,
+                              TrangThaiDonHang = dh.TrangThaiDonHang
+                          };
 
-            return query
+            // Step 2: Execute database query first
+            var rawData = await dbQuery.ToListAsync();
+
+            // Step 3: Process in memory with loaiSanPhams
+            var groupedData = rawData
+                .GroupBy(x => new
+                {
+                    x.TenSanPham,
+                    x.ThuongHieu,
+                    x.ChatLieu,
+                    x.MaLoaiSanPham
+                })
+                .Select(g => new TopProductView
+                {
+                    Id = $"{g.Key.TenSanPham ?? "Unknown"}-{g.Key.ThuongHieu ?? "Unknown"}-{g.Key.ChatLieu ?? "Unknown"}-{g.Key.MaLoaiSanPham?.ToString() ?? "Unknown"}".GetHashCode().ToString(),
+                    Name = g.Key.TenSanPham ?? "Unknown Product",
+                    ThuongHieu = g.Key.ThuongHieu ?? "Unknown Brand",
+                    ChatLieu = g.Key.ChatLieu ?? "Unknown Material",
+                    // Lookup LoaiSanPham từ in-memory collection
+                    LoaiSanPham = loaiSanPhams.FirstOrDefault(lsp => lsp.MaLoaiSanPham == g.Key.MaLoaiSanPham)?.TenLoaiSanPham ?? "Unknown Category",
+                    SoLuongDaBan = g.Sum(x => x.SoLuong),
+                    DoanhThu = g.Sum(x => x.ThanhTien),
+                    StatusBreakdown = g
+                        .GroupBy(x => x.TrangThaiDonHang)
+                        .Select(sg => new StatusBreakdownView
+                        {
+                            Status = statusMap.ContainsKey((int)sg.Key) ? statusMap[(int)sg.Key] : "Không xác định",
+                            SoLuong = sg.Sum(x => x.SoLuong),
+                            DoanhThu = sg.Sum(x => x.ThanhTien)
+                        })
+                        .ToList()
+                })
                 .OrderByDescending(x => x.SoLuongDaBan)
                 .Take(10)
                 .ToList();
+
+            return groupedData;
         }
 
     }

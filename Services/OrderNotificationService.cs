@@ -41,7 +41,7 @@ namespace UltraStrore.Services
                 }
 
                 // Tạo link hóa đơn
-                string qrLink = $"http://localhost:8080/user/hoadon?orderId={order.MaDonHang}";
+                string qrLink = $"https://fashionhub.name.vn/user/hoadon?orderId={order.MaDonHang}";
                 Console.WriteLine($"[DEBUG] Generated QR link: {qrLink}");
 
                 // ✅ FIX: Tạo QR code với error handling tốt hơn
@@ -209,7 +209,7 @@ namespace UltraStrore.Services
             <div style='color: #666; font-size: 13px; line-height: 1.5;'>
                 <p style='margin: 5px 0;'>📞 Hotline hỗ trợ: <strong>1900-xxxx</strong></p>
                 <p style='margin: 5px 0;'>📧 Email: support@FashionHub.com</p>
-                <p style='margin: 5px 0;'>🌐 Website: <a href='http://localhost:8080' style='color: #e91e63; text-decoration: none;'>FashionHub.com</a></p>
+                <p style='margin: 5px 0;'>🌐 Website: <a href='https://fashionhub.name.vn' style='color: #e91e63; text-decoration: none;'>FashionHub.com</a></p>
             </div>
         </div>
     </div>
@@ -306,7 +306,7 @@ Hotline: 1900-xxxx
         </div>
         
         <div style='text-align: center; margin-bottom: 25px;'>
-            <p style='font-size: 14px; margin-bottom: 15px;'><strong>Xem chi tiết:</strong> <a href='http://localhost:8080/user/hoadon?orderId={dto.OrderId}' style='color: #e91e63; text-decoration: none;'>tại đây</a></p>
+            <p style='font-size: 14px; margin-bottom: 15px;'><strong>Xem chi tiết:</strong> <a href='https://fashionhub.name.vn/user/hoadon?orderId={dto.OrderId}' style='color: #e91e63; text-decoration: none;'>tại đây</a></p>
             <p style='font-size: 14px; margin-bottom: 15px; color: #666;'>Quét mã QR để truy cập nhanh:</p>
             
         </div>
@@ -321,7 +321,7 @@ Hotline: 1900-xxxx
                 var builder = new BodyBuilder
                 {
                     HtmlBody = htmlBody,
-                    TextBody = $"Đơn hàng ORD-{dto.OrderId:D5} xác nhận thành công.\nLink: http://localhost:8080/user/hoadon?orderId={dto.OrderId}"
+                    TextBody = $"Đơn hàng ORD-{dto.OrderId:D5} xác nhận thành công.\nLink: https://fashionhub.name.vn/user/hoadon?orderId={dto.OrderId}"
                 };
 
                 message.Body = builder.ToMessageBody();
