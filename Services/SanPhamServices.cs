@@ -50,7 +50,7 @@ namespace UltraStrore.Services
 
         public async Task<List<SanPhamView>> ListSanPham(string? id)
         {
-            var KhuyenMaiView = (await _serviceKM.ListKhuyenMaiAdmin(null)).ToList();
+            var KhuyenMaiView = (await _serviceKM.ListKhuyenMaiUser(null)).ToList();
             int KhuyenMaiChung = KhuyenMaiView.Where(g => g.PercentChung.HasValue).OrderByDescending(g => g.PercentChung).Select(g => g.PercentChung).FirstOrDefault() ?? 0;
             List<SanPhamView> listsp = new List<SanPhamView>();
             var nhomSanPham = _context.SanPhams.GroupBy(s => s.MaSanPham.Substring(0, 6)).ToList();
@@ -811,7 +811,8 @@ namespace UltraStrore.Services
             var KhuyenMaiView = (await _serviceKM.ListKhuyenMaiAdmin(null)).ToList();
             int KhuyenMaiChung = KhuyenMaiView.Where(g => g.PercentChung.HasValue).OrderByDescending(g => g.PercentChung).Select(g => g.PercentChung).FirstOrDefault() ?? 0;
             List<SanPhamView> listsp = new List<SanPhamView>();
-            var nhomSanPham = _context.SanPhams.GroupBy(s => s.MaSanPham.Substring(0, 6)).ToList();
+            var sanPham = _context.SanPhams.ToList();
+            var nhomSanPham = sanPham.GroupBy(s => s.MaSanPham.Substring(0, 6)).ToList();
             string hashtag = File.ReadAllText(_htPath);
             var FullHashTag = JsonSerializer.Deserialize<List<HashTagSp>>(hashtag);
             var loaiSanPhams = await LoadLoaiSanPhamAsync();
@@ -882,8 +883,9 @@ namespace UltraStrore.Services
                 var topList = listsp.OrderByDescending(g => g.SoLuongDaBan).ToList();
                 return topList;
             }
-            var tops = listsp.Where(g => g.ID.Trim() != id.Trim()).OrderByDescending(h => h.SoLuongDaBan).Take(6).ToList();
-            return tops;
+            string LSP = sanPham.Where(g => g.MaSanPham.Contains(id)).Select(g=>g.TenSanPham).FirstOrDefault()??"";
+            var Listsp = listsp.Where(g => g.LoaiSanPham.Trim() == LSP.Trim()).ToList();
+            return Listsp;
         }
 
         public async Task<APIResponse> MoTaSanPhamCreate(List<MoTaSanPhamCreateModel>? info)

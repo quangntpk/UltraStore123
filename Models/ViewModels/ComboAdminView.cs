@@ -14,5 +14,6 @@ namespace UltraStrore.Models.ViewModels
         public int SoLuong { get; set; }
         public DateOnly? NgayTao { get; set; }
         public int KhuyenMaiMax { get; set; }
+        public int? Discount { get; set; }
     }
 }

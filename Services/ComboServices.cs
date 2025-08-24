@@ -21,14 +21,15 @@ namespace UltraStrore.Services
         }
         public async Task<List<ComboAdminView>> ComboViews(int? id)
         {
-            var KhuyenMaiView = (await _serviceKM.ListKhuyenMaiAdmin(null)).ToList();
+            var KhuyenMaiView = (await _serviceKM.ListKhuyenMaiUser(null)).ToList();
             int KhuyenMaiChung = KhuyenMaiView.Where(g => g.PercentChung.HasValue).OrderByDescending(g => g.PercentChung).Select(g => g.PercentChung).FirstOrDefault() ?? 0;
             List<ComboAdminView> list = new List<ComboAdminView>();
             var data = id == null
                 ? _context.ComBoSanPhams.ToList()
-                : _context.ComBoSanPhams.Where(g => g.MaComBo == id).ToList();
+                : _context.ComBoSanPhams.Where(g => g.MaComBo == id && g.TrangThai==true).ToList();
             foreach (var item in data)
             {
+                int TongTienSP = 0;
                 ComboAdminView cbv = new ComboAdminView();
                 cbv.MaCombo = item.MaComBo;
                 cbv.Name = item.TenComBo;
@@ -52,10 +53,12 @@ namespace UltraStrore.Services
                     view.ThuongHieu = InfoSanPham[0].ThuongHieu;
                     view.LoaiSanPham = InfoSanPham[0].LoaiSanPham;
                     sp.Add(view);
+                    TongTienSP += InfoSanPham[0].DonGia;
                 }
                 cbv.SanPhams = sp;
                 cbv.MoTa = item.MoTa;
                 cbv.Gia = (int)item.TongGia;
+                cbv.Discount = 100-(int)cbv.Gia * 100 / TongTienSP;
                 if (item.TrangThai != null && item.TrangThai == true)
                 {
                     cbv.TrangThai = true;

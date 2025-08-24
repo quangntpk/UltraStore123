@@ -15,6 +15,7 @@ namespace UltraStrore.Models.ViewModels
         public List<byte[]>? HinhAnh { get; set; }
         public List<ChiTietKhuyenMaiView>? DanhSachKhuyenMai { get; set; }
         public MoTaKhuyenMai? MoTa { get; set; }
+        public bool? TrangThai { get; set; }
     }
 
     public class MoTaKhuyenMaiCreateModel

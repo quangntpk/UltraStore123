@@ -5,7 +5,7 @@ using UltraStrore.Repository;
 
 namespace UltraStrore.Controllers
 {
-    [Authorize(Roles = "admin")]
+    [Authorize(Roles = "admin,staff")]
     [Route("api/[controller]")]
     [ApiController]
     public class ThongKeController : ControllerBase

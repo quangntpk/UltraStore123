@@ -53,7 +53,8 @@ namespace UltraStrore.Services
                         NgayKetThuc = item.KetThuc,
                         TenKhuyenMai = item.TenKhuyenMai,
                         PercentChung = item.PercentChung,
-                        HinhAnh = new List<byte[]>()
+                        HinhAnh = new List<byte[]>(),
+                        TrangThai = item.TrangThai
                     };
 
                     List<ChiTietKhuyenMaiView> CTKMView = new List<ChiTietKhuyenMaiView>();
@@ -107,7 +108,7 @@ namespace UltraStrore.Services
                         }
                     }
 
-                    var dataEx = FullMoTa?.Where(g => int.Parse(g.IdMoTa) == item.ID).FirstOrDefault();
+                    var dataEx = FullMoTa?.Where(g => int.Parse(g.ID) == item.ID).FirstOrDefault();
                     if (dataEx != null && dataEx.MoTa != null)
                     {
                         KMView.MoTa = dataEx.MoTa;
@@ -183,7 +184,8 @@ namespace UltraStrore.Services
                         NgayKetThuc = item.KetThuc,
                         TenKhuyenMai = item.TenKhuyenMai,
                         PercentChung = item.PercentChung,
-                        HinhAnh = new List<byte[]>()
+                        HinhAnh = new List<byte[]>(),
+                        TrangThai = item.TrangThai,
                     };
 
                     List<ChiTietKhuyenMaiView> CTKMView = new List<ChiTietKhuyenMaiView>();
@@ -237,7 +239,7 @@ namespace UltraStrore.Services
                         }
                     }
 
-                    var dataEx = FullMoTa?.Where(g => int.Parse(g.IdMoTa) == item.ID).FirstOrDefault();
+                    var dataEx = FullMoTa?.Where(g => int.Parse(g.ID) == item.ID).FirstOrDefault();
                     if (dataEx != null && dataEx.MoTa != null)
                     {
                         KMView.MoTa = dataEx.MoTa;
@@ -503,6 +505,7 @@ namespace UltraStrore.Services
                 string filePath = Path.Combine(Directory.GetCurrentDirectory(), "DanhMuc", "KhuyenMai.json");
                 int newIdMoTa = existingData.Count > 0 ? existingData.Max(x => int.Parse(x.IdMoTa)) + 1 : 1;
                 var ready = existingData.FirstOrDefault(g => int.Parse(g.ID) == EditKM.ID);
+                var test = MoTaTempEdit;
                 existingData.RemoveAll(g => int.Parse(g.ID) == EditKM.ID);
                 _logger.LogInformation("Removed existing description for promotion ID: {PromotionId}", EditKM.ID);
 
@@ -526,6 +529,8 @@ namespace UltraStrore.Services
                     });
                     _logger.LogInformation("Reused existing promotion description with ID: {IdMoTa} for promotion ID: {PromotionId}", ready.IdMoTa, data.ID);
                 }
+                var test2 = existingData;
+                int i = 0;
                 string jsonString = JsonSerializer.Serialize(existingData, new JsonSerializerOptions { WriteIndented = true });
                 await File.WriteAllTextAsync(filePath, jsonString);
                 _logger.LogInformation("Updated promotion description file at: {Path}", filePath);
