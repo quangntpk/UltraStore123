@@ -24,6 +24,7 @@ namespace UltraStrore.Services
         private readonly string _dbPath;
         private readonly string _htPath;
         private readonly string _loaiSanPhamPath;
+        private readonly string _thPath;
         private readonly IKhuyenMaiServices _serviceKM;
 
         public SanPhamServices(ApplicationDbContext context, IWebHostEnvironment env, IKhuyenMaiServices services)
@@ -32,6 +33,7 @@ namespace UltraStrore.Services
             _dbPath = Path.Combine(env.WebRootPath, "db.json");
             _htPath = Path.Combine(Directory.GetCurrentDirectory(), "DanhMuc", "attachHashTag.json");
             _loaiSanPhamPath = Path.Combine(Directory.GetCurrentDirectory(), "DanhMuc", "loaisanpham.json");
+            _thPath = Path.Combine(Directory.GetCurrentDirectory(), "DanhMuc", "thuonghieu.json");
             _serviceKM = services;
         }
 
@@ -57,7 +59,8 @@ namespace UltraStrore.Services
             string hashtag = File.ReadAllText(_htPath);
             var FullHashTag = JsonSerializer.Deserialize<List<HashTagSp>>(hashtag);
             var loaiSanPhams = await LoadLoaiSanPhamAsync();
-
+            var ThuongHieu1 = File.ReadAllText(_thPath);
+            var FullTH = JsonSerializer.Deserialize<List<ThuongHieu>>(ThuongHieu1);
             foreach (var nhom in nhomSanPham)
             {
                 var sanPhamDauTien = nhom.First();
@@ -73,7 +76,7 @@ namespace UltraStrore.Services
                     .Where(g => g.MaLoaiSanPham == sanPhamDauTien.MaLoaiSanPham)
                     .Select(g => g.TenLoaiSanPham)
                     .FirstOrDefault();
-                var ThuongHieu = _context.ThuongHieus
+                var ThuongHieu = FullTH
                     .Where(g => g.MaThuongHieu == sanPhamDauTien.MaThuongHieu)
                     .Select(g => g.TenThuongHieu)
                     .FirstOrDefault();
@@ -138,7 +141,8 @@ namespace UltraStrore.Services
             string hashtag = File.ReadAllText(_htPath);
             var FullHashTag = JsonSerializer.Deserialize<List<HashTagSp>>(hashtag);
             var loaiSanPhams = await LoadLoaiSanPhamAsync();
-
+            var ThuongHieu1 = File.ReadAllText(_thPath);
+            var FullTH = JsonSerializer.Deserialize<List<ThuongHieu>>(ThuongHieu1);
             if (ListSanPham != null && ListSanPham.Count() > 0)
             {
                 foreach (var item in ListSanPham)
@@ -147,6 +151,10 @@ namespace UltraStrore.Services
                     var TenLoai = loaiSanPhams
                         .Where(g => g.MaLoaiSanPham == item.MaLoaiSanPham)
                         .Select(g => g.TenLoaiSanPham)
+                        .FirstOrDefault();
+                    var ThuongHieu = FullTH
+                        .Where(g => g.MaThuongHieu == item.MaThuongHieu)
+                        .Select(g => g.TenThuongHieu)
                         .FirstOrDefault();
                     Result.Add(new SanPhamView2
                     {
@@ -165,7 +173,7 @@ namespace UltraStrore.Services
                         MoTa = item.MoTa ?? null,
                         GioiTinh = item.GioiTinh ?? null,
                         SoLuongDaBan = item.SoLuongDaBan ?? 0,
-                        ThuongHieu = item.MaThuongHieuNavigation.TenThuongHieu ?? null,
+                        ThuongHieu = ThuongHieu ?? null,
                         LoaiSanPham = TenLoai,
                         ListHashTag = ListHashTag,
                     });
@@ -808,7 +816,7 @@ namespace UltraStrore.Services
 
         public async Task<List<SanPhamView>> ListSanPhamLQ(string? id)
         {
-            var KhuyenMaiView = (await _serviceKM.ListKhuyenMaiAdmin(null)).ToList();
+            var KhuyenMaiView = (await _serviceKM.ListKhuyenMaiUser(null)).ToList();
             int KhuyenMaiChung = KhuyenMaiView.Where(g => g.PercentChung.HasValue).OrderByDescending(g => g.PercentChung).Select(g => g.PercentChung).FirstOrDefault() ?? 0;
             List<SanPhamView> listsp = new List<SanPhamView>();
             var sanPham = _context.SanPhams.ToList();
@@ -816,7 +824,8 @@ namespace UltraStrore.Services
             string hashtag = File.ReadAllText(_htPath);
             var FullHashTag = JsonSerializer.Deserialize<List<HashTagSp>>(hashtag);
             var loaiSanPhams = await LoadLoaiSanPhamAsync();
-
+            var ThuongHieu1 = File.ReadAllText(_thPath);
+            var FullTH = JsonSerializer.Deserialize<List<ThuongHieu>>(ThuongHieu1);
             foreach (var nhom in nhomSanPham)
             {
                 var sanPhamDauTien = nhom.First();
@@ -832,7 +841,7 @@ namespace UltraStrore.Services
                     .Where(g => g.MaLoaiSanPham == sanPhamDauTien.MaLoaiSanPham)
                     .Select(g => g.TenLoaiSanPham)
                     .FirstOrDefault();
-                var ThuongHieu = _context.ThuongHieus
+                var ThuongHieu = FullTH
                     .Where(g => g.MaThuongHieu == sanPhamDauTien.MaThuongHieu)
                     .Select(g => g.TenThuongHieu)
                     .FirstOrDefault();
@@ -883,8 +892,10 @@ namespace UltraStrore.Services
                 var topList = listsp.OrderByDescending(g => g.SoLuongDaBan).ToList();
                 return topList;
             }
-            string LSP = sanPham.Where(g => g.MaSanPham.Contains(id)).Select(g=>g.TenSanPham).FirstOrDefault()??"";
-            var Listsp = listsp.Where(g => g.LoaiSanPham.Trim() == LSP.Trim()).ToList();
+            int LSP = sanPham.Where(g => g.MaSanPham.Contains(id)).Select(g=>g.MaThuongHieu).FirstOrDefault()??0;
+            string LSPName = FullTH.Where(g => g.MaThuongHieu == LSP).Select(g => g.TenThuongHieu).FirstOrDefault() ?? "";
+
+            var Listsp = listsp.Where(g => g.ThuongHieu == LSPName).ToList();
             return Listsp;
         }
 
